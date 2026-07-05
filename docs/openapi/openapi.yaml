@@ -424,8 +424,8 @@ paths:
         to create the Authorization header for subsequent API requests.
 
         Example:
-        1. Concatenate: "12345678:atu_Gxf2DRxSWCC2WIN8tvj7xDdA5h5ITt6a"
-        2. Base64 encode: echo -n "12345678:atu_Gxf..." | base64
+        1. Concatenate: "USER_ID:YOUR_API_TOKEN"
+        2. Base64 encode: echo -n "USER_ID:YOUR_API_TOKEN" | base64
         3. Use as: Authorization: Basic <base64-encoded-string>
       requestBody:
         required: true
@@ -435,7 +435,7 @@ paths:
               $ref: '#/components/schemas/AuthenticationRequest'
             example:
               email: "yourname@email.com"
-              password: "thisis-yourpa-ssword"
+              password: "your-password"
       responses:
         '200':
           description: Authentication successful
@@ -449,7 +449,7 @@ paths:
                   type: "authenticated_user"
                   attributes:
                     email: "yourname@email.com"
-                    token: "atu_Gxf2DRxSWCC2WIN8tvj7xDdA5h5ITt6a"
+                    token: "YOUR_API_TOKEN"
                     subscription_status: "basic"
                 meta:
                   password_reset: true

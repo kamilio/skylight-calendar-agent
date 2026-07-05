@@ -96,7 +96,7 @@ export async function requestJson<TResponse>(opts: {
       const excerpt = errorBodyExcerpt(text);
       const authenticationHint =
         response.status === 401 && opts.authenticated !== false
-          ? " Authentication was rejected; check the configured Skylight credentials or token."
+          ? " Authentication was rejected; check the configured Skylight credentials or token. Explicit auth header and token variables take precedence over email/password login."
           : "";
       throw new SkylightRequestError(
         response.status,

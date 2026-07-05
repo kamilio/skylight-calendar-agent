@@ -33,7 +33,10 @@ try {
   throw new Error("Unauthorized request unexpectedly succeeded");
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  if (!message.includes("check the configured Skylight credentials or token")) {
+  if (
+    !message.includes("check the configured Skylight credentials or token") ||
+    !message.includes("take precedence over email/password login")
+  ) {
     throw new Error(`Unauthorized error lacked credential guidance: ${message}`);
   }
 }

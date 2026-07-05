@@ -38,6 +38,8 @@ Instead of email and password, you may set one of:
 - `SKYLIGHT_BASIC_TOKEN` — base64-encoded Skylight user-id/token pair
 - `SKYLIGHT_BEARER_TOKEN` — web-app access token
 
+If multiple methods are set, precedence is full auth header, Basic token, Bearer token, then email/password login. Unset an expired token to fall back to email/password.
+
 See `.env.example` for optional API, calendar URL, and timezone settings. Credentials and captured traffic files are ignored by Git and excluded from the npm package.
 
 ## Lists and to-dos
@@ -58,8 +60,8 @@ Find the new list ID, then add one or many items:
 
 ```sh
 skylight lists list
-skylight lists item-create --list-id 5984736 --label "Replace air filter"
-skylight lists items-create --list-id 5984736 --labels "Buy filter" "Install filter"
+skylight lists item-create --list-id LIST_ID --label "Replace air filter"
+skylight lists items-create --list-id LIST_ID --labels "Buy filter" "Install filter"
 ```
 
 Skylight list items currently expose label, status, section, position, and creation time, but no due-date field. For a dated task, create a chore instead:
