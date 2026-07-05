@@ -15,8 +15,9 @@ import {
   jsonParam,
   nonBlankParam,
   normalizeRrule,
+  parseJsonContainer,
   parseJsonObject,
-  parseJsonValue,
+  parseNonEmptyJsonObject,
   pathSegment,
 } from "../skylight/validation.js";
 
@@ -535,7 +536,7 @@ export const calendarGroup = defineGroup({
         attributesJson: jsonParam({ description: "JSON object of attributes", short: "j" }),
       }),
       handler: async (ctx) => {
-        const attributes = parseJsonObject(ctx.params.attributesJson, "attributesJson");
+        const attributes = parseNonEmptyJsonObject(ctx.params.attributesJson, "attributesJson");
         const frameId = await resolveFrameId(ctx);
         if (ctx.params.calendarId) {
           return requestJson({
@@ -598,7 +599,7 @@ export const calendarGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
-        const categorizations = parseJsonValue(
+        const categorizations = parseJsonContainer(
           ctx.params.categorizationsJson,
           "categorizationsJson"
         );

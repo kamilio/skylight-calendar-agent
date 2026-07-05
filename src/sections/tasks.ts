@@ -9,7 +9,6 @@ import {
   nonBlankParam,
   normalizeRrule,
   parseNonEmptyJsonObject,
-  parseJsonObject,
   pathSegment,
   timeParam,
 } from "../skylight/validation.js";
@@ -53,7 +52,7 @@ export const tasksGroup = defineGroup({
         choreJson: jsonParam({ description: "Raw chore JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
-        const chore = parseJsonObject(ctx.params.choreJson, "choreJson");
+        const chore = parseNonEmptyJsonObject(ctx.params.choreJson, "choreJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -71,7 +70,7 @@ export const tasksGroup = defineGroup({
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
-        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
+        const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -225,7 +224,7 @@ export const tasksGroup = defineGroup({
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
-        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
+        const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -257,7 +256,10 @@ export const tasksGroup = defineGroup({
         taskBoxItemJson: jsonParam({ description: "Raw task box item JSON", short: "j" }),
       }),
       handler: async (ctx) => {
-        const taskBoxItem = parseJsonObject(ctx.params.taskBoxItemJson, "taskBoxItemJson") as {
+        const taskBoxItem = parseNonEmptyJsonObject(
+          ctx.params.taskBoxItemJson,
+          "taskBoxItemJson"
+        ) as {
           id?: string | number;
         };
         const frameId = await resolveFrameId(ctx);

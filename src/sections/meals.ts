@@ -148,7 +148,7 @@ export const mealsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
-        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
+        const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,

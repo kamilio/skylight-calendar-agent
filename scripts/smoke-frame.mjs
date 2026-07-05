@@ -42,7 +42,8 @@ if (unauthorized.code === 0 || unauthorized.paths.join(",") !== "/api/frames/123
 const missing = await runScenario(404);
 if (
   missing.code !== 0 ||
-  missing.paths.join(",") !== "/api/frames/123,/api/frames,/api/frames/456/lists"
+  missing.paths.join(",") !==
+    "/api/frames/123,/api/frames/calendar,/api/frames/456/lists"
 ) {
   throw new Error(`Missing candidate did not fall back correctly: ${JSON.stringify(missing)}`);
 }

@@ -4,7 +4,7 @@ import { requestJson } from "../skylight/http.js";
 import {
   jsonParam,
   nonBlankParam,
-  parseJsonObject,
+  parseNonEmptyJsonObject,
   pathSegment,
 } from "../skylight/validation.js";
 
@@ -290,7 +290,7 @@ export const photosGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
-        const payload = parseJsonObject(ctx.params.payloadJson, "payloadJson");
+        const payload = parseNonEmptyJsonObject(ctx.params.payloadJson, "payloadJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -307,7 +307,7 @@ export const photosGroup = defineGroup({
         payloadJson: jsonParam({ description: "JSON for {ext, frame_ids, ...}", short: "j" }),
       }),
       handler: async (ctx) => {
-        const payload = parseJsonObject(ctx.params.payloadJson, "payloadJson");
+        const payload = parseNonEmptyJsonObject(ctx.params.payloadJson, "payloadJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -324,7 +324,7 @@ export const photosGroup = defineGroup({
         payloadJson: jsonParam({ description: "JSON for {frame_ids, messages}", short: "j" }),
       }),
       handler: async (ctx) => {
-        const payload = parseJsonObject(ctx.params.payloadJson, "payloadJson");
+        const payload = parseNonEmptyJsonObject(ctx.params.payloadJson, "payloadJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",

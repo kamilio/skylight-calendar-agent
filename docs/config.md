@@ -20,7 +20,7 @@ Set either `SKYLIGHT_FRAME_ID` or an optional public `SKYLIGHT_CALENDAR_URL`.
 If `SKYLIGHT_FRAME_ID` is not set, the agent will:
 
 1. Try to parse the numeric id from `SKYLIGHT_CALENDAR_URL` (e.g. `/calendar/1234567` -> `1234567`).
-2. Try `GET /api/frames/{id}` with that id; only if it returns `404`, call `GET /api/frames` and use the only returned frame (or ask you to pick one).
+2. Try `GET /api/frames/{id}` with that id; only if it returns `404`, call `GET /api/frames/calendar` and use the only returned frame (or ask you to pick one). A `404` from the calendar listing falls back to the legacy `/api/frames` route.
 
 ## API base URL normalization
 

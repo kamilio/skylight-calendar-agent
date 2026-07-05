@@ -210,6 +210,15 @@ try {
   ]);
   await runExpectingFailure(["lists", "create-raw", "--list-json", "null"]);
   await runExpectingFailure(["lists", "create-raw", "--list-json", "[]"]);
+  await runExpectingFailure(["lists", "create-raw", "--list-json", "{}"]);
+  await runExpectingFailure([
+    "calendar",
+    "source-calendar-link-profiles",
+    "--calendar-id",
+    "7",
+    "--categorizations-json",
+    "null",
+  ]);
   await runExpectingFailure([
     "lists",
     "update",
@@ -342,6 +351,7 @@ try {
     "1.5",
   ]);
   await runExpectingFailure(["profiles", "owner-profile-update"]);
+  await runExpectingFailure(["profiles", "frames", "--type", "calender"]);
   await runExpectingFailure(["calendar", "notification-settings-update"]);
   await runExpectingFailure([
     "calendar",

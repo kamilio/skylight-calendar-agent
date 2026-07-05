@@ -29,7 +29,7 @@ OpenAPI endpoints generally require a `frameId` (`/api/frames/{frameId}/...`). W
 
 In the web app bundle, the route param is named `calendarId` but is passed to API calls as `frameId`, so `1234567` may already be the `frameId` for this project’s scope.
 
-The checked-in `skylight.har` capture currently does not include API calls (only static assets), so the endpoint list below is sourced from web bundle inspection.
+The local `skylight.har` capture includes authenticated API calls summarized in `docs/har-endpoints.md`. The broader endpoint families below combine that capture with web-bundle inspection.
 
 ## Discovered endpoint families (from web bundle inspection)
 

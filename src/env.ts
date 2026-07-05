@@ -1,6 +1,32 @@
 import fs from "node:fs";
 import path from "node:path";
 
+function parseQuotedValue(value: string, quote: '"' | "'"): string | null {
+  let parsed = "";
+  for (let index = 1; index < value.length; index += 1) {
+    const character = value[index];
+    if (character === quote) return parsed;
+    if (quote === '"' && character === "\\") {
+      index += 1;
+      if (index >= value.length) return null;
+      const escaped = value[index];
+      parsed +=
+        escaped === "n"
+          ? "\n"
+          : escaped === "r"
+            ? "\r"
+            : escaped === "t"
+              ? "\t"
+              : escaped === "\\" || escaped === '"'
+                ? escaped
+                : `\\${escaped}`;
+      continue;
+    }
+    parsed += character;
+  }
+  return null;
+}
+
 function parseDotEnv(contents: string): Record<string, string> {
   const out: Record<string, string> = {};
 
@@ -25,13 +51,13 @@ function parseDotEnv(contents: string): Record<string, string> {
     let value = line.slice(equalsIndex + 1).trim();
 
     if (value.startsWith('"')) {
-      const closingQuote = value.indexOf('"', 1);
-      if (closingQuote < 0) continue;
-      value = value.slice(1, closingQuote);
+      const parsed = parseQuotedValue(value, '"');
+      if (parsed === null) continue;
+      value = parsed;
     } else if (value.startsWith("'")) {
-      const closingQuote = value.indexOf("'", 1);
-      if (closingQuote < 0) continue;
-      value = value.slice(1, closingQuote);
+      const parsed = parseQuotedValue(value, "'");
+      if (parsed === null) continue;
+      value = parsed;
     } else {
       const commentIndex = value.indexOf("#");
       if (commentIndex >= 0) value = value.slice(0, commentIndex).trimEnd();

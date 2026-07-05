@@ -6,7 +6,6 @@ import {
   dateTimeParam,
   jsonParam,
   nonBlankParam,
-  parseJsonObject,
   parseNonEmptyJsonObject,
   pathSegment,
 } from "../skylight/validation.js";
@@ -75,7 +74,7 @@ export const rewardsGroup = defineGroup({
         rewardJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
-        const reward = parseJsonObject(ctx.params.rewardJson, "rewardJson");
+        const reward = parseNonEmptyJsonObject(ctx.params.rewardJson, "rewardJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,

@@ -94,13 +94,17 @@ export async function requestJson<TResponse>(opts: {
 
     if (!response.ok) {
       const excerpt = errorBodyExcerpt(text);
+      const authenticationHint =
+        response.status === 401 && opts.authenticated !== false
+          ? " Authentication was rejected; check the configured Skylight credentials or token."
+          : "";
       throw new SkylightRequestError(
         response.status,
         opts.method,
         opts.path,
         `Request failed (${response.status}) ${opts.method} ${opts.path}${
           excerpt.length > 0 ? `: ${excerpt}` : ""
-        }`
+        }.${authenticationHint}`
       );
     }
 

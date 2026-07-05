@@ -25,6 +25,21 @@ try {
 
 try {
   await requestJson({
+    fetch: async () => new Response("unauthorized", { status: 401 }),
+    env,
+    method: "GET",
+    path: "/api/test",
+  });
+  throw new Error("Unauthorized request unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("check the configured Skylight credentials or token")) {
+    throw new Error(`Unauthorized error lacked credential guidance: ${message}`);
+  }
+}
+
+try {
+  await requestJson({
     fetch: async () => new Response("\u001b[31mred\u001b[0m\rreplace", { status: 500 }),
     env,
     method: "GET",

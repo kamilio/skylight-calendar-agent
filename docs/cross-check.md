@@ -39,10 +39,10 @@ We matched:
 
 ## HAR cross-check
 
-`skylight.har` currently contains only `GET` requests for the SPA shell + static assets; it includes **no API calls** (no `/api/...`, no mutations). See `docs/har.md`.
+The local `skylight.har` includes authenticated API traffic, including calendar-frame discovery, calendar/task/reward/list/meal reads, chore create/update, and list-item creation. The normalized endpoint inventory is in `docs/har-endpoints.md`.
 
-## Known uncertainties (need a new HAR with API calls)
+## Known uncertainties
 
-- Exact request bodies for some endpoints (especially chores create/update, category multipart uploads).
+- Exact request bodies for endpoints not exercised in the current capture (especially uploads and some bulk mutations).
 - Array query serialization (e.g. bulk message deletion `message_ids`).
-- Whether `1234567` always equals the real `frameId` for your account; the agent verifies via `GET /api/frames/{id}` and falls back to enumerating `GET /api/frames` when needed.
+- Whether a public calendar URL id always equals the real `frameId`; the agent verifies via `GET /api/frames/{id}` and falls back to `GET /api/frames/calendar` when needed.

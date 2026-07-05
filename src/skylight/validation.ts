@@ -72,6 +72,17 @@ export function parseJsonObject(value: unknown, label: string): Record<string, u
   return parsed as Record<string, unknown>;
 }
 
+export function parseJsonContainer(
+  value: unknown,
+  label: string
+): Record<string, unknown> | unknown[] {
+  const parsed = parseJsonValue(value, label);
+  if (parsed === null || typeof parsed !== "object") {
+    throw new UserError(`${label} must be a JSON array or object.`);
+  }
+  return parsed as Record<string, unknown> | unknown[];
+}
+
 export function parseNonEmptyJsonObject(value: unknown, label: string): Record<string, unknown> {
   const parsed = parseJsonObject(value, label);
   if (Object.keys(parsed).length === 0) {

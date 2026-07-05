@@ -21,6 +21,7 @@ try {
     "dist/mcp.js",
     "dist/sections/lists.js.map",
     "src/sections/lists.ts",
+    ".env.example",
     "README.md",
     "LICENSE",
   ]) {

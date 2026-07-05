@@ -5,7 +5,6 @@ import {
   jsonParam,
   nonBlankParam,
   parseNonEmptyJsonObject,
-  parseJsonObject,
   parsePositiveSafeInteger,
   pathSegment,
   positiveIntegerStringParam,
@@ -97,7 +96,7 @@ export const listsGroup = defineGroup({
         listJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
-        const list = parseJsonObject(ctx.params.listJson, "listJson");
+        const list = parseNonEmptyJsonObject(ctx.params.listJson, "listJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -227,7 +226,7 @@ export const listsGroup = defineGroup({
         itemJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
-        const item = parseJsonObject(ctx.params.itemJson, "itemJson");
+        const item = parseNonEmptyJsonObject(ctx.params.itemJson, "itemJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,

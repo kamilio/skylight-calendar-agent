@@ -15,6 +15,25 @@ type FramesListResponse = {
 
 let inFlightFrameResolution: Promise<string> | undefined;
 
+export async function listCalendarFrames(ctx: {
+  fetch: typeof globalThis.fetch;
+}): Promise<FramesListResponse> {
+  try {
+    return await requestJson<FramesListResponse>({
+      fetch: ctx.fetch,
+      method: "GET",
+      path: "/api/frames/calendar",
+    });
+  } catch (error) {
+    if (!(error instanceof SkylightRequestError) || error.status !== 404) throw error;
+    return requestJson<FramesListResponse>({
+      fetch: ctx.fetch,
+      method: "GET",
+      path: "/api/frames",
+    });
+  }
+}
+
 async function discoverFrameId(
   ctx: { fetch: typeof globalThis.fetch },
   calendarShareId: string | null
@@ -36,11 +55,7 @@ async function discoverFrameId(
     }
   }
 
-  const frames = await requestJson<FramesListResponse>({
-    fetch: ctx.fetch,
-    method: "GET",
-    path: "/api/frames",
-  });
+  const frames = await listCalendarFrames(ctx);
 
   const ids = (frames.data ?? [])
     .map((frame) => ({

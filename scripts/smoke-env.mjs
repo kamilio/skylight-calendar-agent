@@ -3,6 +3,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
+import { loadDotEnv } from "../dist/env.js";
 
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), "skylight-env-"));
 fs.writeFileSync(
@@ -54,6 +55,17 @@ try {
   if (authorization !== "Bearer from-dotenv") {
     throw new Error(`Exported dotenv value was not loaded: ${authorization}`);
   }
+
+  const escapedPath = path.join(directory, "escaped.env");
+  fs.writeFileSync(escapedPath, 'SKYLIGHT_PASSWORD="a\\"b"\n');
+  delete process.env.SKYLIGHT_PASSWORD;
+  loadDotEnv(escapedPath);
+  if (process.env.SKYLIGHT_PASSWORD !== 'a"b') {
+    throw new Error(
+      `Escaped quoted dotenv value was parsed incorrectly: ${JSON.stringify(process.env.SKYLIGHT_PASSWORD)}`
+    );
+  }
+  delete process.env.SKYLIGHT_PASSWORD;
 } finally {
   server.close();
   fs.rmSync(directory, { recursive: true, force: true });

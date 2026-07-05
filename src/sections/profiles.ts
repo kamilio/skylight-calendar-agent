@@ -1,5 +1,5 @@
 import { defineCommand, defineGroup, S } from "toolcraft";
-import { resolveFrameId } from "../skylight/frame.js";
+import { listCalendarFrames, resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import { getAuthorizationHeader } from "../skylight/auth.js";
 import {
@@ -7,9 +7,8 @@ import {
   emailParam,
   jsonParam,
   nonBlankParam,
+  parseJsonContainer,
   parseNonEmptyJsonObject,
-  parseJsonObject,
-  parseJsonValue,
   pathSegment,
 } from "../skylight/validation.js";
 
@@ -180,17 +179,25 @@ export const profilesGroup = defineGroup({
     }),
     defineCommand({
       name: "frames",
-      description: "List frames for this account",
+      description: "List frames for this account (defaults to calendar frames)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        type: S.Optional(S.String({ description: "Optional type (e.g. calendar, photo)" })),
+        type: S.Optional(
+          S.Enum(["calendar", "photo", "tv"] as const, {
+            description: "Frame type",
+          })
+        ),
       }),
-      handler: async (ctx) =>
-        requestJson({
+      handler: async (ctx) => {
+        if (ctx.params.type === undefined || ctx.params.type === "calendar") {
+          return listCalendarFrames(ctx);
+        }
+        return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: ctx.params.type ? `/api/frames/${pathSegment(ctx.params.type, "type")}` : "/api/frames",
-        }),
+          path: `/api/frames/${ctx.params.type}`,
+        });
+      },
     }),
     defineCommand({
       name: "frame",
@@ -352,7 +359,7 @@ export const profilesGroup = defineGroup({
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
-        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
+        const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -370,7 +377,7 @@ export const profilesGroup = defineGroup({
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
-        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
+        const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -432,7 +439,7 @@ export const profilesGroup = defineGroup({
         categorizationsJson: jsonParam({ description: "JSON payload", short: "j" }),
       }),
       handler: async (ctx) => {
-        const categorizations = parseJsonValue(
+        const categorizations = parseJsonContainer(
           ctx.params.categorizationsJson,
           "categorizationsJson"
         );
