@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { terminalSafeText, truncateText } from "./text.js";
@@ -27,12 +28,16 @@ const loginStates = new WeakMap<
 >();
 
 function loginKey(env: NodeJS.ProcessEnv, email: string, password: string): string {
-  return JSON.stringify([
-    env.SKYLIGHT_API_BASE,
-    env.SKYLIGHT_REQUEST_TIMEOUT_MS,
-    email,
-    password,
-  ]);
+  return createHash("sha256")
+    .update(
+      JSON.stringify([
+        env.SKYLIGHT_API_BASE,
+        env.SKYLIGHT_REQUEST_TIMEOUT_MS,
+        email,
+        password,
+      ])
+    )
+    .digest("hex");
 }
 
 function loginState(
