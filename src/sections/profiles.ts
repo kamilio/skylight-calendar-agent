@@ -322,12 +322,13 @@ export const profilesGroup = defineGroup({
         shareToken: nonBlankParam({ description: "Share token", short: "t" }),
       }),
       handler: async (ctx) => {
+        const shareToken = normalizeIdentifier(ctx.params.shareToken, "shareToken");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/share_token_redemptions`,
-          body: { share_token: ctx.params.shareToken },
+          body: { share_token: shareToken },
         });
       },
     }),

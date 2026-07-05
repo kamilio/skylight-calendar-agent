@@ -153,6 +153,13 @@ try {
     "--calendar-url",
     " https://example.com/family.ics ",
   ]);
+  await run(["photos", "list-paged", "--page-token", " page-2 "]);
+  await run([
+    "profiles",
+    "frame-share-token-redeem",
+    "--share-token",
+    " share-123 ",
+  ]);
   await run(["tasks", "taskbox-create", "--summary", "Pack lunch"]);
   await run([
     "tasks",
@@ -646,6 +653,20 @@ const webcalSync = requests.find(
 );
 if (webcalSync?.body?.sync_url !== "https://example.com/family.ics") {
   throw new Error(`Webcal URL was not normalized: ${JSON.stringify(webcalSync?.body)}`);
+}
+
+const pagedPhotos = requests.find((request) =>
+  request.url?.startsWith("/api/frames/42/messages?page_token=")
+);
+if (pagedPhotos?.url !== "/api/frames/42/messages?page_token=page-2") {
+  throw new Error(`Page token was not normalized: ${pagedPhotos?.url}`);
+}
+
+const shareRedemption = requests.find(
+  (request) => request.url === "/api/frames/42/share_token_redemptions"
+);
+if (shareRedemption?.body?.share_token !== "share-123") {
+  throw new Error(`Share token was not normalized: ${JSON.stringify(shareRedemption?.body)}`);
 }
 
 const taskBoxCreate = requests.find(

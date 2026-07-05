@@ -48,12 +48,13 @@ export const photosGroup = defineGroup({
         pageToken: nonBlankParam({ description: "page_token value", short: "p" }),
       }),
       handler: async (ctx) => {
+        const pageToken = normalizeIdentifier(ctx.params.pageToken, "pageToken");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/messages`,
-          query: { page_token: ctx.params.pageToken },
+          query: { page_token: pageToken },
         });
       },
     }),
@@ -65,12 +66,13 @@ export const photosGroup = defineGroup({
         syncToken: nonBlankParam({ description: "sync_token value", short: "s" }),
       }),
       handler: async (ctx) => {
+        const syncToken = normalizeIdentifier(ctx.params.syncToken, "syncToken");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/messages`,
-          query: { sync_token: ctx.params.syncToken },
+          query: { sync_token: syncToken },
         });
       },
     }),
