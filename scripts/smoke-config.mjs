@@ -12,6 +12,8 @@ for (const [key, value] of [
   ["SKYLIGHT_API_BASE", "not-a-url"],
   ["SKYLIGHT_API_BASE", "ftp://example.com"],
   ["SKYLIGHT_API_BASE", "https://example.com/unexpected/path"],
+  ["SKYLIGHT_API_VERSION", "bad"],
+  ["SKYLIGHT_API_VERSION", "2026-02-30"],
   ["SKYLIGHT_TIMEZONE", "Not/A_Timezone"],
   ["SKYLIGHT_REQUEST_TIMEOUT_MS", "0"],
   ["SKYLIGHT_REQUEST_TIMEOUT_MS", "1.5"],

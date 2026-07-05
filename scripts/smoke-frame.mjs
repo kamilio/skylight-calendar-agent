@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import http from "node:http";
+import { resolveFrameId } from "../dist/skylight/frame.js";
 
 async function runScenario(candidateStatus) {
   const paths = [];
@@ -44,4 +45,36 @@ if (
   missing.paths.join(",") !== "/api/frames/123,/api/frames,/api/frames/456/lists"
 ) {
   throw new Error(`Missing candidate did not fall back correctly: ${JSON.stringify(missing)}`);
+}
+
+const savedEnv = { ...process.env };
+try {
+  delete process.env.SKYLIGHT_FRAME_ID;
+  delete process.env.SKYLIGHT_CALENDAR_URL;
+  process.env.SKYLIGHT_API_BASE = "https://example.invalid";
+  process.env.SKYLIGHT_AUTH_HEADER = "Bearer test";
+  let calls = 0;
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const fetch = async () => {
+    calls += 1;
+    await gate;
+    return Response.json({ data: [{ id: "789" }] });
+  };
+  const first = resolveFrameId({ fetch });
+  const second = resolveFrameId({ fetch });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  if (calls !== 1) throw new Error(`Concurrent frame discovery made ${calls} requests`);
+  release();
+  const ids = await Promise.all([first, second]);
+  if (ids[0] !== "789" || ids[1] !== "789") {
+    throw new Error(`Concurrent frame discovery returned wrong ids: ${ids.join(",")}`);
+  }
+} finally {
+  for (const key of Object.keys(process.env)) {
+    if (!(key in savedEnv)) delete process.env[key];
+  }
+  Object.assign(process.env, savedEnv);
 }

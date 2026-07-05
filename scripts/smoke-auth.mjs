@@ -65,6 +65,19 @@ try {
   if (!message.includes("Login response was not valid JSON")) throw error;
 }
 
+try {
+  await getAuthorizationHeader({
+    fetch: async () => new Response("\u001b[31mbad\u001b[0m\rreplace", { status: 401 }),
+    env: { ...credentials, SKYLIGHT_BASIC_TOKEN: undefined },
+  });
+  throw new Error("Control-character login error unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("\u001b") || message.includes("\r")) {
+    throw new Error(`Login error retained terminal control characters: ${JSON.stringify(message)}`);
+  }
+}
+
 const authorization = await getAuthorizationHeader({
   fetch: async () =>
     Response.json({
@@ -110,3 +123,27 @@ await getAuthorizationHeader({
 if (submittedPassword !== " secret ") {
   throw new Error(`Password whitespace was altered: ${JSON.stringify(submittedPassword)}`);
 }
+
+const concurrentEnv = {
+  SKYLIGHT_API_BASE: "https://example.invalid",
+  SKYLIGHT_EMAIL: "concurrent@example.com",
+  SKYLIGHT_PASSWORD: "secret",
+};
+let concurrentCalls = 0;
+let releaseLogin;
+const loginGate = new Promise((resolve) => {
+  releaseLogin = resolve;
+});
+const concurrentFetch = async () => {
+  concurrentCalls += 1;
+  await loginGate;
+  return Response.json({ data: { id: "999", attributes: { token: "xyz" } } });
+};
+const firstLogin = getAuthorizationHeader({ fetch: concurrentFetch, env: concurrentEnv });
+const secondLogin = getAuthorizationHeader({ fetch: concurrentFetch, env: concurrentEnv });
+await new Promise((resolve) => setTimeout(resolve, 0));
+if (concurrentCalls !== 1) {
+  throw new Error(`Concurrent login was not deduplicated: ${concurrentCalls} calls`);
+}
+releaseLogin();
+await Promise.all([firstLogin, secondLogin]);

@@ -228,4 +228,10 @@ export function assertValidAbsoluteUrl(
       `${label} must use ${allowedProtocols.map((protocol) => protocol.slice(0, -1)).join(" or ")}.`
     );
   }
+  if (
+    allowedProtocols === undefined &&
+    ["data:", "file:", "javascript:"].includes(url.protocol)
+  ) {
+    throw new UserError(`${label} must not use the ${url.protocol.slice(0, -1)} scheme.`);
+  }
 }

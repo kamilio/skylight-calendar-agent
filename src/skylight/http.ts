@@ -18,8 +18,9 @@ export class SkylightRequestError extends UserError {
 }
 
 function errorBodyExcerpt(value: string): string {
-  if (value.length <= MAX_ERROR_BODY_LENGTH) return value;
-  return `${value.slice(0, MAX_ERROR_BODY_LENGTH)}… [truncated ${value.length - MAX_ERROR_BODY_LENGTH} characters]`;
+  const sanitized = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
+  if (sanitized.length <= MAX_ERROR_BODY_LENGTH) return sanitized;
+  return `${sanitized.slice(0, MAX_ERROR_BODY_LENGTH)}… [truncated ${sanitized.length - MAX_ERROR_BODY_LENGTH} characters]`;
 }
 
 export async function requestJson<TResponse>(opts: {
@@ -27,6 +28,7 @@ export async function requestJson<TResponse>(opts: {
   env?: NodeJS.ProcessEnv;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   path: string;
+  authenticated?: boolean;
   query?: Record<
     string,
     | string
@@ -65,12 +67,13 @@ export async function requestJson<TResponse>(opts: {
     url.searchParams.set(key, String(value));
   }
 
-  const auth = await getAuthorizationHeader({ fetch: opts.fetch, env });
   const headers: Record<string, string> = {
     accept: "application/json",
-    authorization: auth,
     "Skylight-Api-Version": config.apiVersion,
   };
+  if (opts.authenticated !== false) {
+    headers.authorization = await getAuthorizationHeader({ fetch: opts.fetch, env });
+  }
 
   const init: RequestInit = {
     method: opts.method,

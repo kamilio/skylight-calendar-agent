@@ -191,6 +191,16 @@ try {
     "not-an-email",
   ]);
   await runExpectingFailure([
+    "calendar",
+    "sync-oauth-url",
+    "--provider",
+    "google",
+    "--redirect-url",
+    "javascript:alert(1)",
+    "--failure-redirect-url",
+    "https://example.com/failure",
+  ]);
+  await runExpectingFailure([
     "rewards",
     "list",
     "--redeemed-at-min",

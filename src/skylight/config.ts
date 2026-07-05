@@ -1,4 +1,5 @@
 import { UserError } from "toolcraft";
+import { assertValidDate } from "./validation.js";
 
 export interface SkylightConfig {
   apiBaseUrl: string;
@@ -45,6 +46,12 @@ function normalizeTimezone(value: string): string {
   return timezone;
 }
 
+function normalizeApiVersion(value: string): string {
+  const version = value.trim();
+  assertValidDate(version, "SKYLIGHT_API_VERSION");
+  return version;
+}
+
 function parseRequestTimeout(value: string | null): number {
   if (value === null) return 30_000;
   const timeout = Number(value);
@@ -82,7 +89,9 @@ export function getSkylightConfig(env: NodeJS.ProcessEnv = process.env): Skyligh
 
   return {
     apiBaseUrl: normalizeApiBaseUrl(rawApiBaseUrl),
-    apiVersion: firstNonEmpty(env.SKYLIGHT_API_VERSION) ?? "2026-03-01",
+    apiVersion: normalizeApiVersion(
+      firstNonEmpty(env.SKYLIGHT_API_VERSION) ?? "2026-03-01"
+    ),
     calendarUrl,
     calendarShareId,
     frameId: firstNonEmpty(env.SKYLIGHT_FRAME_ID),

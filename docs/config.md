@@ -9,7 +9,7 @@ Set either `SKYLIGHT_FRAME_ID` or an optional public `SKYLIGHT_CALENDAR_URL`.
 - `SKYLIGHT_BEARER_TOKEN` — optional `Authorization: Bearer <token>` value (matches the web app’s accessToken).
 - `SKYLIGHT_AUTH_HEADER` — optional full `Authorization` header value (wins over BASIC/BEARER).
 - `SKYLIGHT_API_BASE` — defaults to `https://app.ourskylight.com`.
-- `SKYLIGHT_API_VERSION` — sent as `Skylight-Api-Version` header (default `2026-03-01`).
+- `SKYLIGHT_API_VERSION` — valid `YYYY-MM-DD` value sent as `Skylight-Api-Version` (default `2026-03-01`).
 - `SKYLIGHT_FRAME_ID` — required for most OpenAPI-documented endpoints (`/api/frames/{frameId}/...`).
 - `SKYLIGHT_CALENDAR_URL` — optional absolute HTTP(S) share URL containing `/calendar/<numeric-id>`.
 - `SKYLIGHT_TIMEZONE` — defaults to `America/Chicago`.

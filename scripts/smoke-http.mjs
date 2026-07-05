@@ -25,6 +25,21 @@ try {
 
 try {
   await requestJson({
+    fetch: async () => new Response("\u001b[31mred\u001b[0m\rreplace", { status: 500 }),
+    env,
+    method: "GET",
+    path: "/api/test",
+  });
+  throw new Error("Control-character error response unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("\u001b") || message.includes("\r")) {
+    throw new Error(`Error response retained terminal control characters: ${JSON.stringify(message)}`);
+  }
+}
+
+try {
+  await requestJson({
     fetch: async (_url, init) =>
       new Response(
         new ReadableStream({

@@ -89,7 +89,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "forgot-password",
       description: "Request password reset email",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         email: emailParam({ description: "Email address", short: "e" }),
       }),
@@ -98,6 +98,7 @@ export const profilesGroup = defineGroup({
           fetch: ctx.fetch,
           method: "POST",
           path: "/api/password_resets",
+          authenticated: false,
           body: { email: ctx.params.email, on_mobile: true },
         }),
     }),

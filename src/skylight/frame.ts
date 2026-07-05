@@ -13,12 +13,13 @@ type FramesListResponse = {
   }>;
 };
 
-export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): Promise<string> {
-  const config = getSkylightConfig();
-  const fromEnv = config.frameId?.trim();
-  if (fromEnv) return pathSegment(fromEnv, "SKYLIGHT_FRAME_ID");
+let inFlightFrameResolution: Promise<string> | undefined;
 
-  const fromUrl = config.calendarShareId?.trim();
+async function discoverFrameId(
+  ctx: { fetch: typeof globalThis.fetch },
+  calendarShareId: string | null
+): Promise<string> {
+  const fromUrl = calendarShareId?.trim();
   if (fromUrl) {
     try {
       await requestJson({
@@ -65,4 +66,19 @@ export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): P
   throw new UserError(
     `Multiple frames found. Set SKYLIGHT_FRAME_ID.\n${lines.join("\n")}`
   );
+}
+
+export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): Promise<string> {
+  const config = getSkylightConfig();
+  const fromEnv = config.frameId?.trim();
+  if (fromEnv) return pathSegment(fromEnv, "SKYLIGHT_FRAME_ID");
+  if (inFlightFrameResolution !== undefined) return inFlightFrameResolution;
+
+  const resolution = discoverFrameId(ctx, config.calendarShareId);
+  inFlightFrameResolution = resolution;
+  try {
+    return await resolution;
+  } finally {
+    if (inFlightFrameResolution === resolution) inFlightFrameResolution = undefined;
+  }
 }

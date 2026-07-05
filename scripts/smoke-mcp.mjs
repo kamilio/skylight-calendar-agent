@@ -38,6 +38,7 @@ child.stdout.on("data", (chunk) => {
 
     const forbiddenTools = [
       "skylight__profiles__token",
+      "skylight__profiles__forgot_password",
       "skylight__profiles__update_email",
       "skylight__profiles__user_delete",
       "skylight__profiles__frame_transfer",

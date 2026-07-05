@@ -101,7 +101,7 @@ If the package is globally installed, set `command` directly to `skylight-calend
 
 ### MCP safety
 
-Commands that reveal credentials, accept account passwords or share tokens, delete the user account, or transfer frame ownership are intentionally limited to the CLI and SDK. They are not advertised as MCP tools.
+Commands that reveal credentials, send account-recovery email, accept account passwords or share tokens, delete the user account, or transfer frame ownership are intentionally limited to the CLI and SDK. They are not advertised as MCP tools.
 
 Dynamic IDs are encoded as individual URL path segments, and typed commands reject blank names, impossible dates, reversed date ranges, invalid page numbers, empty bulk operations, and non-object payloads where a JSON object is required.
 
