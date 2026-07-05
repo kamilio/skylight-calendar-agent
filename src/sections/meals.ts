@@ -1,4 +1,4 @@
-import { defineCommand, defineGroup, S } from "toolcraft";
+import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
@@ -249,8 +249,13 @@ export const mealsGroup = defineGroup({
       name: "migrate",
       description: "Migrate dinner plans",
       scope: ["cli", "sdk"],
-      params: S.Object({}),
+      params: S.Object({
+        confirm: S.Boolean({ description: "Confirm dinner-plan migration" }),
+      }),
       handler: async (ctx) => {
+        if (ctx.params.confirm !== true) {
+          throw new UserError("Pass confirm=true to migrate dinner plans.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,

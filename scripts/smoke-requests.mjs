@@ -163,6 +163,12 @@ try {
     '{"id":null,"summary":"Pack lunch"}',
   ]);
   await runExpectingFailure([
+    "tasks",
+    "taskbox-save",
+    "--task-box-item-json",
+    '{"id":123}',
+  ]);
+  await runExpectingFailure([
     "profiles",
     "update-email",
     "--email",
@@ -170,6 +176,9 @@ try {
     "--password",
     "",
   ]);
+  await runExpectingFailure(["profiles", "user-delete", "--confirm=false"]);
+  await runExpectingFailure(["profiles", "frame-hide", "--confirm=false"]);
+  await runExpectingFailure(["meals", "migrate", "--confirm=false"]);
   await runExpectingFailure([
     "tasks",
     "chore-create-simple",
@@ -329,6 +338,14 @@ try {
     "FREQ=DAILY",
   ]);
   await runExpectingFailure(["calendar", "event-edit", "--event-id", "event-1"]);
+  await runExpectingFailure([
+    "calendar",
+    "event-edit",
+    "--event-id",
+    "event-1",
+    "--notification-setting-json",
+    "{}",
+  ]);
   await runExpectingFailure([
     "meals",
     "update",

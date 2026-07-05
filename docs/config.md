@@ -17,6 +17,8 @@ You may set `SKYLIGHT_FRAME_ID` directly or provide a public `SKYLIGHT_CALENDAR_
 
 Credential precedence is `SKYLIGHT_AUTH_HEADER`, then `SKYLIGHT_BASIC_TOKEN`, then `SKYLIGHT_BEARER_TOKEN`, then email/password login. Unset an expired higher-priority token if you want the agent to log in with email and password.
 
+In `.env`, quote values that contain `#` or intentional leading/trailing spaces. Double-quoted values support `\\`, `\\"`, `\\n`, `\\r`, and `\\t` escapes.
+
 ## Frame scoping
 
 If `SKYLIGHT_FRAME_ID` is not set, the agent will:

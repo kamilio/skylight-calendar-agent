@@ -1,4 +1,4 @@
-import { defineCommand, defineGroup, S } from "toolcraft";
+import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { listCalendarFrames, resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import { getAuthorizationHeader } from "../skylight/auth.js";
@@ -158,15 +158,21 @@ export const profilesGroup = defineGroup({
     }),
     defineCommand({
       name: "user-delete",
-      description: "Delete user account",
+      description: "Permanently delete the user account",
       scope: ["cli", "sdk"],
-      params: S.Object({}),
-      handler: async (ctx) =>
-        requestJson({
+      params: S.Object({
+        confirm: S.Boolean({ description: "Confirm permanent account deletion" }),
+      }),
+      handler: async (ctx) => {
+        if (ctx.params.confirm !== true) {
+          throw new UserError("Pass confirm=true to permanently delete the user account.");
+        }
+        return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
           path: "/api/user",
-        }),
+        });
+      },
     }),
     defineCommand({
       name: "user-export",
@@ -256,8 +262,13 @@ export const profilesGroup = defineGroup({
       name: "frame-hide",
       description: "Hide frame",
       scope: ["cli", "sdk"],
-      params: S.Object({}),
+      params: S.Object({
+        confirm: S.Boolean({ description: "Confirm hiding the configured frame" }),
+      }),
       handler: async (ctx) => {
+        if (ctx.params.confirm !== true) {
+          throw new UserError("Pass confirm=true to hide the configured frame.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,

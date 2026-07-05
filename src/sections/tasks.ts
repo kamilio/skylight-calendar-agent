@@ -276,6 +276,9 @@ export const tasksGroup = defineGroup({
             throw new UserError("id must be a non-blank string or number when provided.");
           }
           itemPath = pathSegment(id, "id");
+          if (Object.keys(taskBoxItem).every((key) => key === "id")) {
+            throw new UserError("taskBoxItemJson must include an update field besides id.");
+          }
         }
         const frameId = await resolveFrameId(ctx);
         if (itemPath !== undefined) {

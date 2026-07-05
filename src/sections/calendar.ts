@@ -16,7 +16,6 @@ import {
   nonBlankParam,
   normalizeRrule,
   parseJsonContainer,
-  parseJsonObject,
   parseNonEmptyJsonObject,
   pathSegment,
 } from "../skylight/validation.js";
@@ -235,7 +234,10 @@ export const calendarGroup = defineGroup({
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
-            : parseJsonObject(ctx.params.notificationSettingJson, "notificationSettingJson");
+            : parseNonEmptyJsonObject(
+                ctx.params.notificationSettingJson,
+                "notificationSettingJson"
+              );
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -349,7 +351,10 @@ export const calendarGroup = defineGroup({
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
-            : parseJsonObject(ctx.params.notificationSettingJson, "notificationSettingJson");
+            : parseNonEmptyJsonObject(
+                ctx.params.notificationSettingJson,
+                "notificationSettingJson"
+              );
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,

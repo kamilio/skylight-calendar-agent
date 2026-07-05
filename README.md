@@ -32,6 +32,8 @@ SKYLIGHT_PASSWORD=your-password
 SKYLIGHT_FRAME_ID=1234567
 ```
 
+Quote dotenv values that contain `#` or intentional leading/trailing spaces, for example `SKYLIGHT_PASSWORD=" secret#value "`.
+
 Instead of email and password, you may set one of:
 
 - `SKYLIGHT_AUTH_HEADER` — complete `Authorization` header value
@@ -104,6 +106,8 @@ If the package is globally installed, set `command` directly to `skylight-calend
 ### MCP safety
 
 Commands that reveal or mint credentials and signed upload URLs, trigger account emails, exports, migrations, or hidden-frame state, accept account passwords or share tokens, delete the user account, or transfer frame ownership are intentionally limited to the CLI and SDK. They are not advertised as MCP tools.
+
+The destructive CLI commands `profiles user-delete`, `profiles frame-hide`, and `meals migrate` also require `--confirm`.
 
 Dynamic IDs are encoded as individual URL path segments, and typed commands reject blank names, impossible dates, reversed date ranges, invalid page numbers, empty bulk operations, and non-object payloads where a JSON object is required.
 
