@@ -1,0 +1,59 @@
+{
+  "name": "skylight-calendar-agent",
+  "version": "0.1.0",
+  "description": "Unofficial Toolcraft CLI and MCP server for Skylight Calendar",
+  "keywords": [
+    "skylight",
+    "calendar",
+    "todo",
+    "mcp",
+    "toolcraft"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "skylight": "dist/cli.js",
+    "skylight-calendar-agent": "dist/cli.js",
+    "skylight-calendar-mcp": "dist/mcp.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "check": "npm run build && npm run smoke && npm pack --dry-run",
+    "smoke": "node dist/cli.js --help && node dist/cli.js lists --help && node scripts/smoke-mcp.mjs && node scripts/smoke-requests.mjs",
+    "prepublishOnly": "npm run check",
+    "cli": "node --enable-source-maps dist/cli.js",
+    "mcp": "node --enable-source-maps dist/mcp.js",
+    "dev:cli": "tsx src/cli.ts",
+    "dev:mcp": "tsx src/mcp.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "toolcraft": "0.0.93"
+  }
+}
