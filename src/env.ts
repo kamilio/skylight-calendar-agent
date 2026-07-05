@@ -5,9 +5,12 @@ function parseDotEnv(contents: string): Record<string, string> {
   const out: Record<string, string> = {};
 
   for (const rawLine of contents.split(/\r?\n/)) {
-    const line = rawLine.trim();
+    let line = rawLine.trim();
     if (line.length === 0 || line.startsWith("#")) {
       continue;
+    }
+    if (line.startsWith("export ")) {
+      line = line.slice("export ".length).trimStart();
     }
 
     const equalsIndex = line.indexOf("=");
@@ -16,13 +19,22 @@ function parseDotEnv(contents: string): Record<string, string> {
     }
 
     const key = line.slice(0, equalsIndex).trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+      continue;
+    }
     let value = line.slice(equalsIndex + 1).trim();
 
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
+    if (value.startsWith('"')) {
+      const closingQuote = value.indexOf('"', 1);
+      if (closingQuote < 0) continue;
+      value = value.slice(1, closingQuote);
+    } else if (value.startsWith("'")) {
+      const closingQuote = value.indexOf("'", 1);
+      if (closingQuote < 0) continue;
+      value = value.slice(1, closingQuote);
+    } else {
+      const commentIndex = value.indexOf("#");
+      if (commentIndex >= 0) value = value.slice(0, commentIndex).trimEnd();
     }
 
     out[key] = value;

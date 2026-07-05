@@ -5,6 +5,7 @@ import {
   assertAtLeastOneDefined,
   assertValidDateRange,
   dateParam,
+  jsonParam,
   parseNonEmptyJsonObject,
   parseJsonObject,
   pathSegment,
@@ -34,7 +35,7 @@ export const mealsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         categoryId: S.String({ description: "Meal category id", short: "i" }),
-        updatesJson: S.String({ description: "JSON object", short: "j" }),
+        updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
@@ -102,7 +103,9 @@ export const mealsGroup = defineGroup({
         recipeId: S.String({ description: "Meal recipe id", short: "r" }),
         categoryId: S.String({ description: "Meal category id", short: "c" }),
         addToGroceryList: S.Optional(S.Boolean({ description: "Add ingredients to grocery list" })),
-        extrasJson: S.Optional(S.String({ description: "Extra JSON fields to merge into body", short: "j" })),
+        extrasJson: S.Optional(
+          jsonParam({ description: "Extra JSON fields to merge into body", short: "j" })
+        ),
         dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "a" })),
         dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
       }),
@@ -136,7 +139,7 @@ export const mealsGroup = defineGroup({
       description: "Create a meal sitting (raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        bodyJson: S.String({ description: "Raw body JSON", short: "j" }),
+        bodyJson: jsonParam({ description: "Raw body JSON", short: "j" }),
         dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "a" })),
         dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
       }),
@@ -166,7 +169,9 @@ export const mealsGroup = defineGroup({
         instanceISO: S.String({ description: "Instance ISO (path segment)", short: "t" }),
         recipeId: S.Optional(S.String({ description: "Meal recipe id", short: "r" })),
         categoryId: S.Optional(S.String({ description: "Meal category id", short: "c" })),
-        updatesJson: S.Optional(S.String({ description: "Extra JSON updates to merge", short: "j" })),
+        updatesJson: S.Optional(
+          jsonParam({ description: "Extra JSON updates to merge", short: "j" })
+        ),
         applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
         dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "a" })),
         dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),

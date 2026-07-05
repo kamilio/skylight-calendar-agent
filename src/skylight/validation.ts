@@ -42,7 +42,12 @@ export function dateOrDateTimeParam(options: { description: string; short?: stri
   });
 }
 
-export function parseJsonValue(value: string, label: string): unknown {
+export function jsonParam(options: { description: string; short?: string }) {
+  return { ...S.Json(), ...options };
+}
+
+export function parseJsonValue(value: unknown, label: string): unknown {
+  if (typeof value !== "string") return value;
   try {
     return JSON.parse(value) as unknown;
   } catch (error) {
@@ -51,7 +56,7 @@ export function parseJsonValue(value: string, label: string): unknown {
   }
 }
 
-export function parseJsonObject(value: string, label: string): Record<string, unknown> {
+export function parseJsonObject(value: unknown, label: string): Record<string, unknown> {
   const parsed = parseJsonValue(value, label);
   if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object") {
     throw new UserError(`${label} must be a JSON object.`);
@@ -59,7 +64,7 @@ export function parseJsonObject(value: string, label: string): Record<string, un
   return parsed as Record<string, unknown>;
 }
 
-export function parseNonEmptyJsonObject(value: string, label: string): Record<string, unknown> {
+export function parseNonEmptyJsonObject(value: unknown, label: string): Record<string, unknown> {
   const parsed = parseJsonObject(value, label);
   if (Object.keys(parsed).length === 0) {
     throw new UserError(`${label} must contain at least one field.`);
@@ -180,5 +185,23 @@ export function assertValidTimezone(value: string, label = "timezone"): void {
     new Intl.DateTimeFormat("en-US", { timeZone: value }).format();
   } catch {
     throw new UserError(`${label} must be a valid IANA timezone.`);
+  }
+}
+
+export function assertValidAbsoluteUrl(
+  value: string,
+  label: string,
+  allowedProtocols?: ReadonlyArray<string>
+): void {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new UserError(`${label} must be a valid absolute URL.`);
+  }
+  if (allowedProtocols !== undefined && !allowedProtocols.includes(url.protocol)) {
+    throw new UserError(
+      `${label} must use ${allowedProtocols.map((protocol) => protocol.slice(0, -1)).join(" or ")}.`
+    );
   }
 }

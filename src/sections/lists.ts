@@ -2,6 +2,7 @@ import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
+  jsonParam,
   nonBlankParam,
   parseNonEmptyJsonObject,
   parseJsonObject,
@@ -58,9 +59,9 @@ export const listsGroup = defineGroup({
         ),
         color: S.Optional(
           S.String({
-            description: "Six-digit hex color, for example #A8D4D3",
+            description: "Six-digit hex color, for example A8D4D3 or #A8D4D3",
             short: "c",
-            pattern: "^#[0-9A-Fa-f]{6}$",
+            pattern: "^#?[0-9A-Fa-f]{6}$",
           })
         ),
         hideOnDevice: S.Optional(
@@ -76,7 +77,12 @@ export const listsGroup = defineGroup({
           body: {
             label: ctx.params.label,
             kind: ctx.params.kind ?? "to_do",
-            color: ctx.params.color ?? "#A8D4D3",
+            color:
+              ctx.params.color === undefined
+                ? "#A8D4D3"
+                : ctx.params.color.startsWith("#")
+                  ? ctx.params.color
+                  : `#${ctx.params.color}`,
             hide_on_device: ctx.params.hideOnDevice ?? false,
             default_grocery_list: false,
           },
@@ -88,7 +94,7 @@ export const listsGroup = defineGroup({
       description: "Create a list from a raw JSON object",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listJson: S.String({ description: "JSON object", short: "j" }),
+        listJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
         const list = parseJsonObject(ctx.params.listJson, "listJson");
@@ -107,7 +113,7 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
-        updatesJson: S.String({ description: "JSON object", short: "j" }),
+        updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
@@ -218,7 +224,7 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
-        itemJson: S.String({ description: "JSON object", short: "j" }),
+        itemJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
         const item = parseJsonObject(ctx.params.itemJson, "itemJson");
@@ -238,7 +244,7 @@ export const listsGroup = defineGroup({
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
         itemId: S.String({ description: "List item id" }),
-        updatesJson: S.String({ description: "JSON object", short: "j" }),
+        updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");

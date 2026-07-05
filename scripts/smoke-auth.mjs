@@ -75,3 +75,22 @@ const authorization = await getAuthorizationHeader({
 if (authorization !== `Basic ${Buffer.from("123:abc").toString("base64")}`) {
   throw new Error("Login response did not produce the expected authorization header");
 }
+
+delete process.env.SKYLIGHT_BASIC_TOKEN;
+const isolatedEnv = {
+  SKYLIGHT_API_BASE: "https://example.invalid",
+  SKYLIGHT_EMAIL: "isolated@example.com",
+  SKYLIGHT_PASSWORD: "secret",
+};
+let loginCalls = 0;
+const isolatedFetch = async () => {
+  loginCalls += 1;
+  return Response.json({ data: { id: "456", attributes: { token: "def" } } });
+};
+await getAuthorizationHeader({ fetch: isolatedFetch, env: isolatedEnv });
+await getAuthorizationHeader({ fetch: isolatedFetch, env: isolatedEnv });
+if (loginCalls !== 1) throw new Error(`Custom env token was not cached; login calls: ${loginCalls}`);
+if (!isolatedEnv.SKYLIGHT_BASIC_TOKEN) throw new Error("Custom env did not receive cached token");
+if (process.env.SKYLIGHT_BASIC_TOKEN !== undefined) {
+  throw new Error("Custom env login polluted process.env");
+}

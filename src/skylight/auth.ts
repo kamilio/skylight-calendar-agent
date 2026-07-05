@@ -87,7 +87,7 @@ export async function getAuthorizationHeader(opts: {
     }
 
     const computed = base64(`${id}:${token}`);
-    process.env.SKYLIGHT_BASIC_TOKEN = computed;
+    env.SKYLIGHT_BASIC_TOKEN = computed;
     return `Basic ${computed}`;
   } catch (error) {
     if (error instanceof UserError) throw error;

@@ -51,7 +51,7 @@ skylight lists create --label "Weekend"
 Create a shopping list:
 
 ```sh
-skylight lists create --label "Hardware Store" --kind shopping --color '#B6E085'
+skylight lists create --label "Hardware Store" --kind shopping --color B6E085
 ```
 
 Find the new list ID, then add one or many items:
@@ -69,6 +69,7 @@ skylight tasks chore-create-simple --summary "Replace air filter" --start 2026-0
 ```
 
 Raw list and item commands remain available as `lists create-raw` and `lists item-create-raw` for API fields not yet modeled by this package.
+Their `*Json` options accept JSON text in the CLI and native JSON values over MCP/SDK.
 
 ## MCP
 
@@ -112,7 +113,7 @@ npm run dev:mcp
 npm run check
 ```
 
-`npm run check` performs a clean TypeScript build, CLI smoke tests, and an npm package dry run.
+`npm run check` performs a clean TypeScript build, CLI/MCP/transport smoke tests, and an npm package dry run.
 
 ## Disclaimer
 

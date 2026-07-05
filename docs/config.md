@@ -11,16 +11,16 @@ Set either `SKYLIGHT_FRAME_ID` or an optional public `SKYLIGHT_CALENDAR_URL`.
 - `SKYLIGHT_API_BASE` — defaults to `https://app.ourskylight.com`.
 - `SKYLIGHT_API_VERSION` — sent as `Skylight-Api-Version` header (default `2026-03-01`).
 - `SKYLIGHT_FRAME_ID` — required for most OpenAPI-documented endpoints (`/api/frames/{frameId}/...`).
-- `SKYLIGHT_CALENDAR_URL` — optional public share URL used to infer a numeric frame id.
+- `SKYLIGHT_CALENDAR_URL` — optional absolute HTTP(S) share URL containing `/calendar/<numeric-id>`.
 - `SKYLIGHT_TIMEZONE` — defaults to `America/Chicago`.
-- `SKYLIGHT_REQUEST_TIMEOUT_MS` — positive request timeout in milliseconds (default `30000`).
+- `SKYLIGHT_REQUEST_TIMEOUT_MS` — request timeout from `1` to `2147483647` milliseconds (default `30000`).
 
 ## Frame scoping
 
 If `SKYLIGHT_FRAME_ID` is not set, the agent will:
 
 1. Try to parse the numeric id from `SKYLIGHT_CALENDAR_URL` (e.g. `/calendar/1234567` -> `1234567`).
-2. Try `GET /api/frames/{id}` with that id; if it fails, call `GET /api/frames` and use the only returned frame (or ask you to pick one).
+2. Try `GET /api/frames/{id}` with that id; only if it returns `404`, call `GET /api/frames` and use the only returned frame (or ask you to pick one).
 
 ## API base URL normalization
 

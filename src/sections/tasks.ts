@@ -5,6 +5,7 @@ import {
   assertValidDate,
   assertValidDateRange,
   dateParam,
+  jsonParam,
   nonBlankParam,
   parseNonEmptyJsonObject,
   parseJsonObject,
@@ -48,7 +49,7 @@ export const tasksGroup = defineGroup({
       description: "Create a chore via /chores/create_multiple (raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        choreJson: S.String({ description: "Raw chore JSON body", short: "j" }),
+        choreJson: jsonParam({ description: "Raw chore JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
         const chore = parseJsonObject(ctx.params.choreJson, "choreJson");
@@ -66,7 +67,7 @@ export const tasksGroup = defineGroup({
       description: "Create a chore via /chores (OpenAPI JSON:API shape; raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
+        bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
         const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
@@ -125,7 +126,7 @@ export const tasksGroup = defineGroup({
       params: S.Object({
         choreId: S.String({ description: "Chore id", short: "i" }),
         applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
-        updatesJson: S.String({ description: "JSON object of updates", short: "j" }),
+        updatesJson: jsonParam({ description: "JSON object of updates", short: "j" }),
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
@@ -210,7 +211,7 @@ export const tasksGroup = defineGroup({
       description: "Create a Task Box item (OpenAPI JSON:API shape; raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
+        bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
         const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
@@ -242,7 +243,7 @@ export const tasksGroup = defineGroup({
       description: "Create or update a Task Box item (raw JSON body; include id to update)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        taskBoxItemJson: S.String({ description: "Raw task box item JSON", short: "j" }),
+        taskBoxItemJson: jsonParam({ description: "Raw task box item JSON", short: "j" }),
       }),
       handler: async (ctx) => {
         const taskBoxItem = parseJsonObject(ctx.params.taskBoxItemJson, "taskBoxItemJson") as {

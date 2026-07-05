@@ -1,7 +1,12 @@
 import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
-import { nonBlankParam, parseJsonObject, pathSegment } from "../skylight/validation.js";
+import {
+  jsonParam,
+  nonBlankParam,
+  parseJsonObject,
+  pathSegment,
+} from "../skylight/validation.js";
 
 export const photosGroup = defineGroup({
   name: "photos",
@@ -279,7 +284,10 @@ export const photosGroup = defineGroup({
       description: "Register an uploaded message (raw fields JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        payloadJson: S.String({ description: "JSON for {file_upload, frame_ids, ext, ...}", short: "j" }),
+        payloadJson: jsonParam({
+          description: "JSON for {file_upload, frame_ids, ext, ...}",
+          short: "j",
+        }),
       }),
       handler: async (ctx) => {
         const payload = parseJsonObject(ctx.params.payloadJson, "payloadJson");
@@ -296,7 +304,7 @@ export const photosGroup = defineGroup({
       description: "Create a single upload URL (raw fields JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        payloadJson: S.String({ description: "JSON for {ext, frame_ids, ...}", short: "j" }),
+        payloadJson: jsonParam({ description: "JSON for {ext, frame_ids, ...}", short: "j" }),
       }),
       handler: async (ctx) => {
         const payload = parseJsonObject(ctx.params.payloadJson, "payloadJson");
@@ -313,7 +321,7 @@ export const photosGroup = defineGroup({
       description: "Create multiple upload URLs (raw fields JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        payloadJson: S.String({ description: "JSON for {frame_ids, messages}", short: "j" }),
+        payloadJson: jsonParam({ description: "JSON for {frame_ids, messages}", short: "j" }),
       }),
       handler: async (ctx) => {
         const payload = parseJsonObject(ctx.params.payloadJson, "payloadJson");

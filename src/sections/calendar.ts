@@ -4,6 +4,7 @@ import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
   assertAtLeastOneDefined,
+  assertValidAbsoluteUrl,
   assertValidDateOrDateTime,
   assertValidDateOrDateTimeRange,
   assertValidDateRange,
@@ -11,6 +12,7 @@ import {
   dateOrDateTimeParam,
   dateParam,
   emailParam,
+  jsonParam,
   nonBlankParam,
   parseJsonObject,
   parseJsonValue,
@@ -206,7 +208,7 @@ export const calendarGroup = defineGroup({
         description: S.Optional(S.String({ description: "Description" })),
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
         notificationSettingJson: S.Optional(
-          S.String({ description: "event_notification_setting_attributes JSON", short: "n" })
+          jsonParam({ description: "event_notification_setting_attributes JSON", short: "n" })
         ),
         countdownEnabled: S.Optional(S.Boolean({ description: "Enable countdown" })),
       }),
@@ -281,7 +283,7 @@ export const calendarGroup = defineGroup({
         applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
         notificationSettingJson: S.Optional(
-          S.String({ description: "event_notification_setting_attributes JSON", short: "n" })
+          jsonParam({ description: "event_notification_setting_attributes JSON", short: "n" })
         ),
         countdownEnabled: S.Optional(S.Boolean({ description: "Enable countdown" })),
       }),
@@ -429,9 +431,14 @@ export const calendarGroup = defineGroup({
       description: "Sync a public calendar URL (webcal)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        calendarUrl: S.String({ description: "Public share URL", short: "u" }),
+        calendarUrl: nonBlankParam({ description: "Public share URL", short: "u" }),
       }),
       handler: async (ctx) => {
+        assertValidAbsoluteUrl(ctx.params.calendarUrl, "calendarUrl", [
+          "http:",
+          "https:",
+          "webcal:",
+        ]);
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -460,13 +467,15 @@ export const calendarGroup = defineGroup({
       description: "Get OAuth authorization request URL for a provider",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        provider: S.String({ description: "Provider (server-defined)", short: "p" }),
-        redirectUrl: S.String({ description: "Redirect URL", short: "r" }),
-        failureRedirectUrl: S.String({ description: "Failure redirect URL", short: "f" }),
-        email: S.Optional(S.String({ description: "login_hint email", short: "e" })),
+        provider: nonBlankParam({ description: "Provider (server-defined)", short: "p" }),
+        redirectUrl: nonBlankParam({ description: "Redirect URL", short: "r" }),
+        failureRedirectUrl: nonBlankParam({ description: "Failure redirect URL", short: "f" }),
+        email: S.Optional(emailParam({ description: "login_hint email", short: "e" })),
         twoWaySync: S.Optional(S.Boolean({ description: "two_way_sync", default: true })),
       }),
       handler: async (ctx) => {
+        assertValidAbsoluteUrl(ctx.params.redirectUrl, "redirectUrl");
+        assertValidAbsoluteUrl(ctx.params.failureRedirectUrl, "failureRedirectUrl");
         const frameId = await resolveFrameId(ctx);
         const twoWaySync = ctx.params.twoWaySync ?? true;
         return requestJson({
@@ -519,7 +528,7 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         calendarId: S.Optional(S.String({ description: "If set, updates that calendar id" })),
-        attributesJson: S.String({ description: "JSON object of attributes", short: "j" }),
+        attributesJson: jsonParam({ description: "JSON object of attributes", short: "j" }),
       }),
       handler: async (ctx) => {
         const attributes = parseJsonObject(ctx.params.attributesJson, "attributesJson");
@@ -579,7 +588,10 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         calendarId: S.String({ description: "Source calendar id", short: "i" }),
-        categorizationsJson: S.String({ description: "JSON array/object payload", short: "j" }),
+        categorizationsJson: jsonParam({
+          description: "JSON array/object payload",
+          short: "j",
+        }),
       }),
       handler: async (ctx) => {
         const categorizations = parseJsonValue(

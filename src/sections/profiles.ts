@@ -5,6 +5,7 @@ import { getAuthorizationHeader } from "../skylight/auth.js";
 import {
   assertAtLeastOneDefined,
   emailParam,
+  jsonParam,
   nonBlankParam,
   parseNonEmptyJsonObject,
   parseJsonObject,
@@ -43,7 +44,7 @@ export const profilesGroup = defineGroup({
       description: "Update user profile (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        updatesJson: S.String({ description: "JSON object", short: "j" }),
+        updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
@@ -209,7 +210,7 @@ export const profilesGroup = defineGroup({
       description: "Update frame settings (raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
+        bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
         const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
@@ -347,7 +348,7 @@ export const profilesGroup = defineGroup({
       description: "Create a category (raw JSON body; selected_for_chore_chart may mirror linked_to_profile)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
+        bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
         const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
@@ -365,7 +366,7 @@ export const profilesGroup = defineGroup({
       description: "Find or create a category (raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
+        bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
         const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
@@ -384,7 +385,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         categoryId: S.String({ description: "Category id", short: "i" }),
-        updatesJson: S.String({ description: "Raw JSON updates", short: "j" }),
+        updatesJson: jsonParam({ description: "Raw JSON updates", short: "j" }),
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
@@ -425,7 +426,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         categoryId: S.String({ description: "Category id", short: "i" }),
-        categorizationsJson: S.String({ description: "JSON payload", short: "j" }),
+        categorizationsJson: jsonParam({ description: "JSON payload", short: "j" }),
       }),
       handler: async (ctx) => {
         const categorizations = parseJsonValue(
@@ -447,7 +448,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         categoryId: S.String({ description: "Category id", short: "i" }),
-        updatesJson: S.String({ description: "JSON object", short: "j" }),
+        updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
@@ -585,7 +586,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         deviceId: S.String({ description: "Device id", short: "i" }),
-        bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
+        bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
         const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");

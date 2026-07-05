@@ -40,6 +40,18 @@ export async function requestJson<TResponse>(opts: {
 }): Promise<TResponse> {
   const env = opts.env ?? process.env;
   const config = getSkylightConfig(env);
+  let serializedBody: string | undefined;
+  if (opts.body !== undefined) {
+    try {
+      serializedBody = JSON.stringify(opts.body);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new UserError(`Request body is not JSON-serializable for ${opts.method} ${opts.path}: ${detail}`);
+    }
+    if (serializedBody === undefined) {
+      throw new UserError(`Request body is not JSON-serializable for ${opts.method} ${opts.path}.`);
+    }
+  }
 
   const url = new URL(`${config.apiBaseUrl}${opts.path}`);
   for (const [key, value] of Object.entries(opts.query ?? {})) {
@@ -65,9 +77,9 @@ export async function requestJson<TResponse>(opts: {
     headers,
   };
 
-  if (opts.body !== undefined) {
+  if (serializedBody !== undefined) {
     headers["content-type"] = "application/json";
-    init.body = JSON.stringify(opts.body);
+    init.body = serializedBody;
   }
 
   const controller = new AbortController();

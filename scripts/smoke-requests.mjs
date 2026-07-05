@@ -66,7 +66,16 @@ async function runExpectingFailure(args) {
 }
 
 try {
-  await run(["lists", "create", "--label", "Weekend", "--kind", "to_do"]);
+  await run([
+    "lists",
+    "create",
+    "--label",
+    "Weekend",
+    "--kind",
+    "to_do",
+    "--color",
+    "A8D4D3",
+  ]);
   await run([
     "lists",
     "item-create",
@@ -147,6 +156,29 @@ try {
   await runExpectingFailure(["photos", "list", "--page", "1.5"]);
   await runExpectingFailure(["photos", "album-create", "--title", "   "]);
   await runExpectingFailure(["rewards", "list", "--redeemed-at-min", "not-a-date"]);
+  await runExpectingFailure(["calendar", "webcal-sync", "--calendar-url", "not-a-url"]);
+  await runExpectingFailure([
+    "calendar",
+    "sync-oauth-url",
+    "--provider",
+    "google",
+    "--redirect-url",
+    "not-a-url",
+    "--failure-redirect-url",
+    "https://example.com/failure",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "sync-oauth-url",
+    "--provider",
+    "google",
+    "--redirect-url",
+    "https://example.com/success",
+    "--failure-redirect-url",
+    "https://example.com/failure",
+    "--email",
+    "not-an-email",
+  ]);
   await runExpectingFailure([
     "rewards",
     "list",

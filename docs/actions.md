@@ -54,6 +54,6 @@ This agent implements the sections you asked for:
 
 ## Notes
 
-- Commands that accept `*Json` parameters pass raw JSON through to the API; this is intentional so we can match real request shapes from future HAR captures.
+- Commands that accept `*Json` parameters pass raw JSON through to the API. The CLI accepts JSON text; MCP and SDK callers can pass native JSON values.
 - Skylight list items do not expose a due-date field. Use `tasks chore-create-simple --start YYYY-MM-DD` for a dated task.
-- `SKYLIGHT_FRAME_ID` is optional; if unset, the agent tries to use the numeric id from `SKYLIGHT_CALENDAR_URL` (e.g. `1234567`).
+- `SKYLIGHT_FRAME_ID` is optional; if unset, the agent tries to use the numeric id from `SKYLIGHT_CALENDAR_URL` (e.g. `https://ourskylight.com/calendar/1234567`).

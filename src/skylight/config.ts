@@ -48,20 +48,30 @@ function normalizeTimezone(value: string): string {
 function parseRequestTimeout(value: string | null): number {
   if (value === null) return 30_000;
   const timeout = Number(value);
-  if (!Number.isInteger(timeout) || timeout <= 0) {
-    throw new UserError("SKYLIGHT_REQUEST_TIMEOUT_MS must be a positive integer.");
+  if (!Number.isSafeInteger(timeout) || timeout <= 0 || timeout > 2_147_483_647) {
+    throw new UserError(
+      "SKYLIGHT_REQUEST_TIMEOUT_MS must be an integer from 1 to 2147483647."
+    );
   }
   return timeout;
 }
 
 function parseCalendarShareId(calendarUrl: string): string | null {
+  if (calendarUrl.length === 0) return null;
+  let url: URL;
   try {
-    const url = new URL(calendarUrl);
-    const match = url.pathname.match(/\/calendar\/(\d+)/);
-    return match?.[1] ?? null;
+    url = new URL(calendarUrl);
   } catch {
-    return null;
+    throw new UserError("SKYLIGHT_CALENDAR_URL must be a valid absolute URL.");
   }
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new UserError("SKYLIGHT_CALENDAR_URL must use http or https.");
+  }
+  const match = url.pathname.match(/\/calendar\/(\d+)(?:\/|$)/);
+  if (!match) {
+    throw new UserError("SKYLIGHT_CALENDAR_URL must contain a numeric /calendar/<id> path.");
+  }
+  return match[1] ?? null;
 }
 
 export function getSkylightConfig(env: NodeJS.ProcessEnv = process.env): SkylightConfig {

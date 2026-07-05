@@ -31,7 +31,7 @@ const code = await new Promise((resolve, reject) => {
 });
 
 if (code === 0) throw new Error("Invalid local input unexpectedly succeeded");
-if (!output.includes("listJson must be valid JSON")) {
+if (!output.includes('Invalid value for "listJson". Expected valid JSON')) {
   throw new Error(`Local validation error was not reported: ${output}`);
 }
 if (output.includes("Missing credentials")) {

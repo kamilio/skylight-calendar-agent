@@ -5,6 +5,7 @@ import {
   assertValidDateOrDateTime,
   assertValidDateOrDateTimeRange,
   dateOrDateTimeParam,
+  jsonParam,
   parseJsonObject,
   parseNonEmptyJsonObject,
   pathSegment,
@@ -72,7 +73,7 @@ export const rewardsGroup = defineGroup({
       description: "Create a reward (reward JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        rewardJson: S.String({ description: "JSON object", short: "j" }),
+        rewardJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
         const reward = parseJsonObject(ctx.params.rewardJson, "rewardJson");
@@ -91,7 +92,7 @@ export const rewardsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         rewardId: S.String({ description: "Reward id", short: "i" }),
-        rewardJson: S.String({ description: "JSON object", short: "j" }),
+        rewardJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
         const reward = parseNonEmptyJsonObject(ctx.params.rewardJson, "rewardJson");

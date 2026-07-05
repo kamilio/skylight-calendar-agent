@@ -88,6 +88,22 @@ if (emptyResponse !== null) {
 
 try {
   await requestJson({
+    fetch: async () => Response.json({ ok: true }),
+    env,
+    method: "POST",
+    path: "/api/test",
+    body: { value: 1n },
+  });
+  throw new Error("Unserializable request body unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("not JSON-serializable") || !message.includes("POST /api/test")) {
+    throw error;
+  }
+}
+
+try {
+  await requestJson({
     fetch: async () => new Response("not json", { status: 200 }),
     env,
     method: "GET",
