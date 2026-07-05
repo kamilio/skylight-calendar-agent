@@ -123,7 +123,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "discount-code",
       description: "Request referral/discount code",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
         requestJson({
@@ -147,7 +147,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "plus-resend-entitlement-email",
       description: "Resend Plus entitlement email",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
         requestJson({
@@ -171,7 +171,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "user-export",
       description: "Request user data export",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
         requestJson({
@@ -255,7 +255,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "frame-hide",
       description: "Hide frame",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

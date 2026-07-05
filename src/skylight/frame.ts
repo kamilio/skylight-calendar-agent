@@ -15,22 +15,33 @@ type FramesListResponse = {
 
 let inFlightFrameResolution: Promise<string> | undefined;
 
+function validateFramesListResponse(value: unknown): FramesListResponse {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    !Array.isArray((value as { data?: unknown }).data)
+  ) {
+    throw new UserError("Frame list response is missing a data array.");
+  }
+  return value as FramesListResponse;
+}
+
 export async function listCalendarFrames(ctx: {
   fetch: typeof globalThis.fetch;
 }): Promise<FramesListResponse> {
   try {
-    return await requestJson<FramesListResponse>({
+    return validateFramesListResponse(await requestJson<unknown>({
       fetch: ctx.fetch,
       method: "GET",
       path: "/api/frames/calendar",
-    });
+    }));
   } catch (error) {
     if (!(error instanceof SkylightRequestError) || error.status !== 404) throw error;
-    return requestJson<FramesListResponse>({
+    return validateFramesListResponse(await requestJson<unknown>({
       fetch: ctx.fetch,
       method: "GET",
       path: "/api/frames",
-    });
+    }));
   }
 }
 

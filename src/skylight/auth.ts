@@ -62,11 +62,16 @@ async function login(opts: {
     }
     const id = json.data?.id;
     const token = json.data?.attributes?.token;
-    if (!id || !token) {
-      throw new UserError("Login response missing id/token.");
+    if (
+      typeof id !== "string" ||
+      id.trim().length === 0 ||
+      typeof token !== "string" ||
+      token.trim().length === 0
+    ) {
+      throw new UserError("Login response missing valid string id/token values.");
     }
 
-    const computed = base64(`${id}:${token}`);
+    const computed = base64(`${id.trim()}:${token.trim()}`);
     opts.env.SKYLIGHT_BASIC_TOKEN = computed;
     return `Basic ${computed}`;
   } catch (error) {

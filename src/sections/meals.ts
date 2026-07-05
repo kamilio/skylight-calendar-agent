@@ -248,7 +248,7 @@ export const mealsGroup = defineGroup({
     defineCommand({
       name: "migrate",
       description: "Migrate dinner plans",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

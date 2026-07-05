@@ -195,6 +195,12 @@ try {
   await runExpectingFailure(["photos", "album-create", "--title", "   "]);
   await runExpectingFailure(["rewards", "list", "--redeemed-at-min", "not-a-date"]);
   await runExpectingFailure(["rewards", "list", "--redeemed-at-min", "2026-07-10"]);
+  await runExpectingFailure([
+    "rewards",
+    "list",
+    "--redeemed-at-min",
+    "2026-07-10T12:00",
+  ]);
   await runExpectingFailure(["calendar", "webcal-sync", "--calendar-url", "not-a-url"]);
   await runExpectingFailure([
     "calendar",

@@ -67,6 +67,17 @@ try {
 
 try {
   await getAuthorizationHeader({
+    fetch: async () => Response.json({ data: { id: 123, attributes: { token: {} } } }),
+    env: credentials,
+  });
+  throw new Error("Malformed login credentials unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("missing valid string id/token values")) throw error;
+}
+
+try {
+  await getAuthorizationHeader({
     fetch: async () => new Response("\u001b[31mbad\u001b[0m\rreplace", { status: 401 }),
     env: { ...credentials, SKYLIGHT_BASIC_TOKEN: undefined },
   });

@@ -1,6 +1,23 @@
 import { spawn } from "node:child_process";
 import http from "node:http";
-import { resolveFrameId } from "../dist/skylight/frame.js";
+import { listCalendarFrames, resolveFrameId } from "../dist/skylight/frame.js";
+
+const originalAuthHeader = process.env.SKYLIGHT_AUTH_HEADER;
+process.env.SKYLIGHT_AUTH_HEADER = "Bearer test";
+try {
+  try {
+    await listCalendarFrames({
+      fetch: async () => Response.json({ data: {} }),
+    });
+    throw new Error("Malformed frame list unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Frame list response is missing a data array")) throw error;
+  }
+} finally {
+  if (originalAuthHeader === undefined) delete process.env.SKYLIGHT_AUTH_HEADER;
+  else process.env.SKYLIGHT_AUTH_HEADER = originalAuthHeader;
+}
 
 async function runScenario(candidateStatus) {
   const paths = [];

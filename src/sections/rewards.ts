@@ -20,10 +20,10 @@ export const rewardsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         redeemedAtMin: S.Optional(
-          dateTimeParam({ description: "ISO datetime", short: "m" })
+          dateTimeParam({ description: "RFC3339 datetime with Z or UTC offset", short: "m" })
         ),
         redeemedAtMax: S.Optional(
-          dateTimeParam({ description: "ISO datetime", short: "x" })
+          dateTimeParam({ description: "RFC3339 datetime with Z or UTC offset", short: "x" })
         ),
       }),
       handler: async (ctx) => {
