@@ -1,6 +1,8 @@
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { getAuthorizationHeader } from "./auth.js";
+import { terminalSafeText } from "./text.js";
+import { assertWellFormedUnicode } from "./validation.js";
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
 const MAX_RESPONSE_JSON_DEPTH = 100;
@@ -19,17 +21,13 @@ export class SkylightRequestError extends UserError {
 }
 
 function errorBodyExcerpt(value: string): string {
-  const sanitized = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
+  const sanitized = terminalSafeText(value);
   if (sanitized.length <= MAX_ERROR_BODY_LENGTH) return sanitized;
   return `${sanitized.slice(0, MAX_ERROR_BODY_LENGTH)}… [truncated ${sanitized.length - MAX_ERROR_BODY_LENGTH} characters]`;
 }
 
 function safeOutputText(value: string): string {
-  return value
-    .replace(/\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)/g, "")
-    .replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, "")
-    .replace(/\u009B[0-?]*[ -/]*m/g, "")
-    .replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, " ");
+  return terminalSafeText(value, true);
 }
 
 function sanitizeJsonValue(value: unknown, depth = 0): unknown {
@@ -92,14 +90,19 @@ export async function requestJson<TResponse>(opts: {
 
   const url = new URL(`${config.apiBaseUrl}${opts.path}`);
   for (const [key, value] of Object.entries(opts.query ?? {})) {
+    assertWellFormedUnicode(key, "Query parameter name");
     if (value === undefined || value === null) continue;
     if (Array.isArray(value)) {
       for (const item of value) {
-        url.searchParams.append(key, String(item));
+        const text = String(item);
+        assertWellFormedUnicode(text, `Query parameter ${JSON.stringify(key)}`);
+        url.searchParams.append(key, text);
       }
       continue;
     }
-    url.searchParams.set(key, String(value));
+    const text = String(value);
+    assertWellFormedUnicode(text, `Query parameter ${JSON.stringify(key)}`);
+    url.searchParams.set(key, text);
   }
 
   const headers: Record<string, string> = {

@@ -77,6 +77,7 @@ try {
   if (
     !message.includes("Login request failed") ||
     !message.includes("socket closed") ||
+    message.includes("[31m") ||
     message.includes("\u001b") ||
     message.includes("\r")
   ) {
@@ -114,7 +115,7 @@ try {
   throw new Error("Control-character login error unexpectedly succeeded");
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  if (message.includes("\u001b") || message.includes("\r")) {
+  if (message.includes("[31m") || message.includes("\u001b") || message.includes("\r")) {
     throw new Error(`Login error retained terminal control characters: ${JSON.stringify(message)}`);
   }
 }

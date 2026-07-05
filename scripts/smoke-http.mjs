@@ -146,6 +146,7 @@ try {
   if (
     !message.includes("GET /api/frames/42/lists") ||
     !message.includes("socket closed") ||
+    message.includes("[31m") ||
     message.includes("\u001b") ||
     message.includes("\r")
   ) {
@@ -194,6 +195,27 @@ if (
   new URL(arrayQueryUrl).searchParams.getAll("message_ids[]").join(",") !== "1,2"
 ) {
   throw new Error(`Array query values were not repeated: ${arrayQueryUrl}`);
+}
+
+let malformedQueryCalls = 0;
+try {
+  await requestJson({
+    fetch: async () => {
+      malformedQueryCalls += 1;
+      return Response.json({ ok: true });
+    },
+    env,
+    method: "GET",
+    path: "/api/test",
+    query: { search: "\uD800" },
+  });
+  throw new Error("Malformed Unicode query unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes('Query parameter "search" contains invalid Unicode')) throw error;
+}
+if (malformedQueryCalls !== 0) {
+  throw new Error(`Malformed Unicode query reached fetch ${malformedQueryCalls} times`);
 }
 
 try {

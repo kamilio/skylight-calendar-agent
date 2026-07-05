@@ -1,5 +1,26 @@
 import { spawn } from "node:child_process";
-import { pathSegment } from "../dist/skylight/validation.js";
+import {
+  assertValidDate,
+  assertValidDateOrDateTimeRange,
+  pathSegment,
+} from "../dist/skylight/validation.js";
+
+assertValidDate("0099-01-01", "date");
+assertValidDate("0000-02-29", "date");
+
+const originalTimezone = process.env.TZ;
+try {
+  process.env.TZ = "Asia/Tokyo";
+  assertValidDateOrDateTimeRange(
+    "2026-01-01",
+    "2026-01-01T00:00",
+    "startsAt",
+    "endsAt"
+  );
+} finally {
+  if (originalTimezone === undefined) delete process.env.TZ;
+  else process.env.TZ = originalTimezone;
+}
 
 try {
   pathSegment("\uD800", "id");

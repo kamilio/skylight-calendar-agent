@@ -49,6 +49,16 @@ for (const [key, value] of [
   }
 }
 
+try {
+  getSkylightConfig({ SKYLIGHT_TIMEZONE: "Bad\u001b[31mZone" });
+  throw new Error("Control-character timezone unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("\u001b") || message.includes("[31m")) {
+    throw new Error(`Timezone error retained terminal controls: ${JSON.stringify(message)}`);
+  }
+}
+
 const calendarUrl = getSkylightConfig({
   SKYLIGHT_CALENDAR_URL: "https://ourskylight.com/calendar/1234567/",
 });

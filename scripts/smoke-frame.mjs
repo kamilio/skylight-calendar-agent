@@ -94,8 +94,25 @@ try {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes("Multiple frames found")) throw error;
-    if (message.includes("\u001b") || message.includes("\nFrame")) {
+    if (message.includes("[31m") || message.includes("\u001b") || message.includes("\nFrame")) {
       throw new Error(`Frame selection error retained control characters: ${JSON.stringify(message)}`);
+    }
+  }
+  try {
+    await resolveFrameId({
+      fetch: async () =>
+        Response.json({
+          data: [
+            { id: "3", attributes: { name: 123 } },
+            { id: "4", attributes: { household_name: {} } },
+          ],
+        }),
+    });
+    throw new Error("Ambiguous frames with malformed names unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Multiple frames found") || !message.includes("- 3") || !message.includes("- 4")) {
+      throw error;
     }
   }
   let calls = 0;

@@ -91,16 +91,28 @@ export function parseNonEmptyJsonObject(value: unknown, label: string): Record<s
   return parsed;
 }
 
+export function assertWellFormedUnicode(value: string, label: string): void {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = value.charCodeAt(index + 1);
+      if (!(next >= 0xdc00 && next <= 0xdfff)) {
+        throw new UserError(`${label} contains invalid Unicode.`);
+      }
+      index += 1;
+    } else if (code >= 0xdc00 && code <= 0xdfff) {
+      throw new UserError(`${label} contains invalid Unicode.`);
+    }
+  }
+}
+
 export function pathSegment(value: string | number, label: string): string {
   const normalized = String(value).trim();
   if (normalized.length === 0) {
     throw new UserError(`${label} must not be blank.`);
   }
-  try {
-    return encodeURIComponent(normalized);
-  } catch {
-    throw new UserError(`${label} contains invalid Unicode.`);
-  }
+  assertWellFormedUnicode(normalized, label);
+  return encodeURIComponent(normalized);
 }
 
 export function assertAtLeastOneDefined(
@@ -145,14 +157,21 @@ export function assertValidDate(value: string, label: string): void {
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day
-  ) {
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (month < 1 || month > 12 || day < 1 || day > (daysInMonth[month - 1] ?? 0)) {
     throw new UserError(`${label} must be a valid calendar date.`);
   }
+}
+
+function dateOrDateTimeTimestamp(value: string): number {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return Date.parse(`${value}T00:00:00Z`);
+  }
+  if (!/(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    return Date.parse(`${value}Z`);
+  }
+  return Date.parse(value);
 }
 
 export function assertValidDateRange(
@@ -192,7 +211,7 @@ export function assertValidDateOrDateTime(value: string, label: string): void {
     second > 59 ||
     offsetHour > 23 ||
     offsetMinute > 59 ||
-    !Number.isFinite(Date.parse(value))
+    !Number.isFinite(dateOrDateTimeTimestamp(value))
   ) {
     throw new UserError(`${label} must be a valid ISO datetime or YYYY-MM-DD date.`);
   }
@@ -217,7 +236,7 @@ export function assertValidDateOrDateTimeRange(
   assertValidDateOrDateTime(start, startLabel);
   if (end === undefined) return;
   assertValidDateOrDateTime(end, endLabel);
-  if (Date.parse(start) > Date.parse(end)) {
+  if (dateOrDateTimeTimestamp(start) > dateOrDateTimeTimestamp(end)) {
     throw new UserError(`${startLabel} must not be after ${endLabel}.`);
   }
 }

@@ -41,7 +41,7 @@ function normalizeTimezone(value: string): string {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(0);
   } catch {
-    throw new UserError(`SKYLIGHT_TIMEZONE is not a valid IANA timezone: ${timezone}`);
+    throw new UserError("SKYLIGHT_TIMEZONE is not a valid IANA timezone.");
   }
   return timezone;
 }

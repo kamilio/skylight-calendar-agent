@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { requestJson, SkylightRequestError } from "./http.js";
+import { terminalSafeText } from "./text.js";
 import { pathSegment } from "./validation.js";
 
 type FramesListResponse = {
@@ -37,7 +38,7 @@ function frameResolutionKey(config: ReturnType<typeof getSkylightConfig>): strin
 }
 
 function displayValue(value: string): string {
-  const sanitized = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
+  const sanitized = terminalSafeText(value);
   return sanitized.length <= 200 ? sanitized : `${sanitized.slice(0, 200)}…`;
 }
 
@@ -105,10 +106,19 @@ async function discoverFrameId(
   const frames = await listCalendarFrames(ctx);
 
   const ids = (frames.data ?? [])
-    .map((frame) => ({
-      id: frame.id,
-      name: frame.attributes?.household_name ?? frame.attributes?.name ?? "",
-    }));
+    .map((frame) => {
+      const householdName = frame.attributes?.household_name;
+      const name = frame.attributes?.name;
+      return {
+        id: frame.id,
+        name:
+          typeof householdName === "string"
+            ? householdName
+            : typeof name === "string"
+              ? name
+              : "",
+      };
+    });
 
   if (ids.length === 1) {
     const [frame] = ids;
