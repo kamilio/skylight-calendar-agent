@@ -37,7 +37,7 @@ export const photosGroup = defineGroup({
       description: "List messages using page_token",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        pageToken: S.String({ description: "page_token value", short: "p" }),
+        pageToken: nonBlankParam({ description: "page_token value", short: "p" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -54,7 +54,7 @@ export const photosGroup = defineGroup({
       description: "List messages using sync_token",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        syncToken: S.String({ description: "sync_token value", short: "s" }),
+        syncToken: nonBlankParam({ description: "sync_token value", short: "s" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -71,7 +71,7 @@ export const photosGroup = defineGroup({
       description: "Bulk delete messages",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageIds: S.Array(S.String({ description: "Message id", minLength: 1 }), {
+        messageIds: S.Array(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
           minItems: 1,
         }),
@@ -91,11 +91,11 @@ export const photosGroup = defineGroup({
       description: "Copy messages to other frames",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageIds: S.Array(S.String({ description: "Message id", minLength: 1 }), {
+        messageIds: S.Array(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
           minItems: 1,
         }),
-        newFrameIds: S.Array(S.String({ description: "New frame id", minLength: 1 }), {
+        newFrameIds: S.Array(nonBlankParam({ description: "New frame id" }), {
           description: "Target frame ids",
           minItems: 1,
         }),
@@ -440,11 +440,11 @@ export const photosGroup = defineGroup({
       description: "Add messages to album(s)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        albumIds: S.Array(S.String({ description: "Album id", minLength: 1 }), {
+        albumIds: S.Array(nonBlankParam({ description: "Album id" }), {
           description: "Album ids",
           minItems: 1,
         }),
-        messageIds: S.Array(S.String({ description: "Message id", minLength: 1 }), {
+        messageIds: S.Array(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
           minItems: 1,
         }),
@@ -468,7 +468,7 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         albumId: S.String({ description: "Album id", short: "i" }),
-        messageIds: S.Array(S.String({ description: "Message id", minLength: 1 }), {
+        messageIds: S.Array(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
           minItems: 1,
         }),

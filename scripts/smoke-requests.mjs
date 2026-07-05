@@ -102,6 +102,8 @@ try {
     "Replace filter",
     "--start",
     "2026-07-12",
+    "--recurrence-rrule",
+    "RRULE:FREQ=DAILY",
   ]);
   await run(["lists", "delete", "--list-id", "7"]);
   await run(["lists", "get", "--list-id", "../../user"]);
@@ -122,6 +124,13 @@ try {
     "event-1",
     "--summary",
     "Updated title",
+  ]);
+  await run(["tasks", "taskbox-create", "--summary", "Pack lunch"]);
+  await run([
+    "calendar",
+    "notification-settings-update",
+    "--on-time",
+    "--early=false",
   ]);
   await runExpectingFailure(["lists", "create", "--label", ""]);
   await runExpectingFailure(["lists", "create", "--label", "   "]);
@@ -154,8 +163,10 @@ try {
   await runExpectingFailure(["meals", "list", "--date-min", "2026-13-01"]);
   await runExpectingFailure(["photos", "list", "--page", "0"]);
   await runExpectingFailure(["photos", "list", "--page", "1.5"]);
+  await runExpectingFailure(["photos", "list-paged", "--page-token", "   "]);
   await runExpectingFailure(["photos", "album-create", "--title", "   "]);
   await runExpectingFailure(["rewards", "list", "--redeemed-at-min", "not-a-date"]);
+  await runExpectingFailure(["rewards", "list", "--redeemed-at-min", "2026-07-10"]);
   await runExpectingFailure(["calendar", "webcal-sync", "--calendar-url", "not-a-url"]);
   await runExpectingFailure([
     "calendar",
@@ -267,6 +278,14 @@ try {
   ]);
   await runExpectingFailure([
     "meals",
+    "delete",
+    "--meal-id",
+    "meal-1",
+    "--instance-iso",
+    "not-a-date",
+  ]);
+  await runExpectingFailure([
+    "meals",
     "update",
     "--meal-id",
     "meal-1",
@@ -276,7 +295,44 @@ try {
     "{}",
   ]);
   await runExpectingFailure(["recipes", "update", "--recipe-id", "recipe-1"]);
+  await runExpectingFailure([
+    "recipes",
+    "create",
+    "--category-id",
+    "   ",
+    "--summary",
+    "Dinner",
+  ]);
+  await runExpectingFailure([
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Fractional points",
+    "--start",
+    "2026-07-10",
+    "--reward-points",
+    "1.5",
+  ]);
+  await runExpectingFailure([
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Empty rule",
+    "--start",
+    "2026-07-10",
+    "--recurrence-rrule",
+    "RRULE:",
+  ]);
+  await runExpectingFailure([
+    "rewards",
+    "points-add",
+    "--category-ids",
+    "1",
+    "--points",
+    "1.5",
+  ]);
   await runExpectingFailure(["profiles", "owner-profile-update"]);
+  await runExpectingFailure(["calendar", "notification-settings-update"]);
   await runExpectingFailure([
     "calendar",
     "notification-settings-update",
@@ -353,7 +409,8 @@ for (const [index, expectedRequest] of expected.entries()) {
 
 if (
   requests[4]?.url !== "/api/frames/42/chores/create_multiple" ||
-  requests[4]?.body?.start !== "2026-07-12"
+  requests[4]?.body?.start !== "2026-07-12" ||
+  requests[4]?.body?.recurrence_set?.[0] !== "RRULE:FREQ=DAILY"
 ) {
   throw new Error("Dated chore request did not match the expected payload");
 }
@@ -379,4 +436,25 @@ if (
   Object.hasOwn(requests[8]?.body ?? {}, "timezone")
 ) {
   throw new Error("Event edit changed unspecified fields");
+}
+
+const taskBoxCreate = requests.find(
+  (request) => request.url === "/api/frames/42/task_box/items"
+);
+if (
+  taskBoxCreate?.body?.data?.type !== "task_box_item" ||
+  taskBoxCreate?.body?.data?.attributes?.summary !== "Pack lunch"
+) {
+  throw new Error("Task Box convenience command did not send the documented JSON:API shape");
+}
+
+const notificationUpdate = requests.find(
+  (request) => request.url === "/api/frames/42/event_notification_settings"
+);
+if (
+  notificationUpdate?.body?.on_time !== true ||
+  notificationUpdate?.body?.early !== false ||
+  notificationUpdate?.body?.early_minutes_before !== null
+) {
+  throw new Error("Notification settings update did not preserve explicit boolean values");
 }

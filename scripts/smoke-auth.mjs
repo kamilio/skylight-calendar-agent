@@ -94,3 +94,19 @@ if (!isolatedEnv.SKYLIGHT_BASIC_TOKEN) throw new Error("Custom env did not recei
 if (process.env.SKYLIGHT_BASIC_TOKEN !== undefined) {
   throw new Error("Custom env login polluted process.env");
 }
+
+let submittedPassword;
+await getAuthorizationHeader({
+  fetch: async (_url, init) => {
+    submittedPassword = JSON.parse(String(init?.body)).password;
+    return Response.json({ data: { id: "789", attributes: { token: "ghi" } } });
+  },
+  env: {
+    SKYLIGHT_API_BASE: "https://example.invalid",
+    SKYLIGHT_EMAIL: "person@example.com",
+    SKYLIGHT_PASSWORD: " secret ",
+  },
+});
+if (submittedPassword !== " secret ") {
+  throw new Error(`Password whitespace was altered: ${JSON.stringify(submittedPassword)}`);
+}

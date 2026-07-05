@@ -306,7 +306,7 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
-        itemIds: S.Array(S.String({ description: "List item id", minLength: 1 }), {
+        itemIds: S.Array(nonBlankParam({ description: "List item id" }), {
           description: "Item ids",
           minItems: 1,
         }),
@@ -331,7 +331,7 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
-        itemIds: S.Array(S.String({ description: "List item id", minLength: 1 }), {
+        itemIds: S.Array(nonBlankParam({ description: "List item id" }), {
           description: "Item ids",
           minItems: 1,
         }),

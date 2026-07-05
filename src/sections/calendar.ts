@@ -14,6 +14,7 @@ import {
   emailParam,
   jsonParam,
   nonBlankParam,
+  normalizeRrule,
   parseJsonObject,
   parseJsonValue,
   pathSegment,
@@ -42,8 +43,8 @@ export const calendarGroup = defineGroup({
       description: "Update event notification settings",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        onTime: S.Boolean({ description: "Notify on time", default: false }),
-        early: S.Boolean({ description: "Notify early", default: false }),
+        onTime: S.Boolean({ description: "Notify on time" }),
+        early: S.Boolean({ description: "Notify early" }),
         earlyMinutesBefore: S.Optional(
           S.Number({
             description: "Minutes before event when early=true",
@@ -189,15 +190,15 @@ export const calendarGroup = defineGroup({
           dateOrDateTimeParam({ description: "ISO datetime or YYYY-MM-DD", short: "b" })
         ),
         allDay: S.Optional(S.Boolean({ description: "All day event" })),
-        kind: S.Optional(S.String({ description: "Event kind (e.g., event)", short: "k" })),
+        kind: S.Optional(nonBlankParam({ description: "Event kind (e.g., event)", short: "k" })),
         recurring: S.Optional(S.Boolean({ description: "Recurring?" })),
         rrule: S.Optional(
           nonBlankParam({ description: "RRULE string (without 'RRULE:' prefix)" })
         ),
-        calendarId: S.Optional(S.String({ description: "calendar_id" })),
-        calendarAccountId: S.Optional(S.String({ description: "calendar_account_id" })),
+        calendarId: S.Optional(nonBlankParam({ description: "calendar_id" })),
+        calendarAccountId: S.Optional(nonBlankParam({ description: "calendar_account_id" })),
         categoryIds: S.Optional(
-          S.Array(S.String({ description: "Category id" }), { description: "Category ids" })
+          S.Array(nonBlankParam({ description: "Category id" }), { description: "Category ids" })
         ),
         invitedEmails: S.Optional(
           S.Array(emailParam({ description: "Invite email" }), { description: "Invited emails" })
@@ -242,7 +243,8 @@ export const calendarGroup = defineGroup({
             starts_at: ctx.params.startsAt,
             ends_at: ctx.params.endsAt ?? null,
             all_day: ctx.params.allDay ?? false,
-            rrule: ctx.params.rrule ? [`RRULE:${ctx.params.rrule}`] : null,
+            rrule:
+              ctx.params.rrule === undefined ? null : [normalizeRrule(ctx.params.rrule)],
             invited_emails: ctx.params.invitedEmails ?? [],
             location: ctx.params.location ?? null,
             lat: ctx.params.lat ?? null,
@@ -274,13 +276,13 @@ export const calendarGroup = defineGroup({
         ),
         allDay: S.Optional(S.Boolean({ description: "All day event" })),
         rrule: S.Optional(S.String({ description: "RRULE string (server format)" })),
-        categoryIds: S.Optional(S.Array(S.String({ description: "Category id" }))),
+        categoryIds: S.Optional(S.Array(nonBlankParam({ description: "Category id" }))),
         invitedEmails: S.Optional(S.Array(emailParam({ description: "Invite email" }))),
         location: S.Optional(S.String({ description: "Location" })),
         lat: S.Optional(S.Number({ description: "Latitude", minimum: -90, maximum: 90 })),
         lng: S.Optional(S.Number({ description: "Longitude", minimum: -180, maximum: 180 })),
         description: S.Optional(S.String({ description: "Description" })),
-        applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
+        applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
         notificationSettingJson: S.Optional(
           jsonParam({ description: "event_notification_setting_attributes JSON", short: "n" })
@@ -364,7 +366,7 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         eventId: S.String({ description: "Event id", short: "i" }),
-        applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
+        applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -414,7 +416,9 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         accountId: S.String({ description: "Calendar account id", short: "i" }),
-        activeCalendars: S.Array(S.String({ description: "Calendar id" }), { description: "Active calendars" }),
+        activeCalendars: S.Array(nonBlankParam({ description: "Calendar id" }), {
+          description: "Active calendars",
+        }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

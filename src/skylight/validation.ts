@@ -42,6 +42,14 @@ export function dateOrDateTimeParam(options: { description: string; short?: stri
   });
 }
 
+export function dateTimeParam(options: { description: string; short?: string }) {
+  return S.String({
+    ...options,
+    pattern:
+      "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?(?:Z|[+-]\\d{2}:\\d{2})?$",
+  });
+}
+
 export function jsonParam(options: { description: string; short?: string }) {
   return { ...S.Json(), ...options };
 }
@@ -104,6 +112,15 @@ export function parsePositiveSafeInteger(value: string, label: string): number {
   return number;
 }
 
+export function normalizeRrule(value: string, label = "rrule"): string {
+  const trimmed = value.trim();
+  const rule = trimmed.replace(/^RRULE:/i, "").trim();
+  if (rule.length === 0) {
+    throw new UserError(`${label} must contain a recurrence rule.`);
+  }
+  return `RRULE:${rule}`;
+}
+
 export function assertValidDate(value: string, label: string): void {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) {
@@ -164,6 +181,13 @@ export function assertValidDateOrDateTime(value: string, label: string): void {
   ) {
     throw new UserError(`${label} must be a valid ISO datetime or YYYY-MM-DD date.`);
   }
+}
+
+export function assertValidDateTime(value: string, label: string): void {
+  if (!value.includes("T")) {
+    throw new UserError(`${label} must be a valid ISO datetime.`);
+  }
+  assertValidDateOrDateTime(value, label);
 }
 
 export function assertValidDateOrDateTimeRange(

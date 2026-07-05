@@ -3,9 +3,12 @@ import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
   assertAtLeastOneDefined,
+  assertValidDateOrDateTime,
   assertValidDateRange,
+  dateOrDateTimeParam,
   dateParam,
   jsonParam,
+  nonBlankParam,
   parseNonEmptyJsonObject,
   parseJsonObject,
   pathSegment,
@@ -100,8 +103,8 @@ export const mealsGroup = defineGroup({
       description: "Create a meal sitting",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        recipeId: S.String({ description: "Meal recipe id", short: "r" }),
-        categoryId: S.String({ description: "Meal category id", short: "c" }),
+        recipeId: nonBlankParam({ description: "Meal recipe id", short: "r" }),
+        categoryId: nonBlankParam({ description: "Meal category id", short: "c" }),
         addToGroceryList: S.Optional(S.Boolean({ description: "Add ingredients to grocery list" })),
         extrasJson: S.Optional(
           jsonParam({ description: "Extra JSON fields to merge into body", short: "j" })
@@ -166,13 +169,16 @@ export const mealsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         mealId: S.String({ description: "Meal sitting id", short: "i" }),
-        instanceISO: S.String({ description: "Instance ISO (path segment)", short: "t" }),
-        recipeId: S.Optional(S.String({ description: "Meal recipe id", short: "r" })),
-        categoryId: S.Optional(S.String({ description: "Meal category id", short: "c" })),
+        instanceISO: dateOrDateTimeParam({
+          description: "Instance date or ISO datetime (path segment)",
+          short: "t",
+        }),
+        recipeId: S.Optional(nonBlankParam({ description: "Meal recipe id", short: "r" })),
+        categoryId: S.Optional(nonBlankParam({ description: "Meal category id", short: "c" })),
         updatesJson: S.Optional(
           jsonParam({ description: "Extra JSON updates to merge", short: "j" })
         ),
-        applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
+        applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
         dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "a" })),
         dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
       }),
@@ -181,6 +187,7 @@ export const mealsGroup = defineGroup({
           [ctx.params.recipeId, ctx.params.categoryId, ctx.params.updatesJson],
           "Specify recipeId, categoryId, or updatesJson to update the meal."
         );
+        assertValidDateOrDateTime(ctx.params.instanceISO, "instanceISO");
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
         const updates =
           ctx.params.updatesJson === undefined
@@ -213,12 +220,16 @@ export const mealsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         mealId: S.String({ description: "Meal sitting id", short: "i" }),
-        instanceISO: S.String({ description: "Instance ISO (path segment)", short: "t" }),
-        applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
+        instanceISO: dateOrDateTimeParam({
+          description: "Instance date or ISO datetime (path segment)",
+          short: "t",
+        }),
+        applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
         dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "a" })),
         dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
       }),
       handler: async (ctx) => {
+        assertValidDateOrDateTime(ctx.params.instanceISO, "instanceISO");
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
         const frameId = await resolveFrameId(ctx);
         return requestJson({

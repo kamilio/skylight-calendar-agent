@@ -7,6 +7,7 @@ import {
   dateParam,
   jsonParam,
   nonBlankParam,
+  normalizeRrule,
   parseNonEmptyJsonObject,
   parseJsonObject,
   pathSegment,
@@ -87,8 +88,10 @@ export const tasksGroup = defineGroup({
       params: S.Object({
         summary: nonBlankParam({ description: "Title", short: "s" }),
         start: dateParam({ description: "YYYY-MM-DD", short: "d" }),
-        categoryId: S.Optional(S.String({ description: "Category id" })),
-        rewardPoints: S.Optional(S.Number({ description: "Reward points" })),
+        categoryId: S.Optional(nonBlankParam({ description: "Category id" })),
+        rewardPoints: S.Optional(
+          S.Number({ description: "Reward points", jsonType: "integer" })
+        ),
         emojiIcon: S.Optional(S.String({ description: "Emoji icon" })),
         recurrenceRrule: S.Optional(
           nonBlankParam({
@@ -109,7 +112,10 @@ export const tasksGroup = defineGroup({
             up_for_grabs: false,
             routine: false,
             start_time: null,
-            recurrence_set: ctx.params.recurrenceRrule ? [`RRULE:${ctx.params.recurrenceRrule}`] : null,
+            recurrence_set:
+              ctx.params.recurrenceRrule === undefined
+                ? null
+                : [normalizeRrule(ctx.params.recurrenceRrule, "recurrenceRrule")],
             summary: ctx.params.summary,
             recurring_until: null,
             category_ids: ctx.params.categoryId ? [ctx.params.categoryId] : [],
@@ -125,7 +131,7 @@ export const tasksGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         choreId: S.String({ description: "Chore id", short: "i" }),
-        applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
+        applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
         updatesJson: jsonParam({ description: "JSON object of updates", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -148,7 +154,7 @@ export const tasksGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         choreId: S.String({ description: "Chore id", short: "i" }),
-        applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
+        applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -168,10 +174,10 @@ export const tasksGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         seriesId: S.String({ description: "Chore series id", short: "i" }),
-        status: S.String({ description: "Status (server-defined)", short: "s" }),
+        status: nonBlankParam({ description: "Status (server-defined)", short: "s" }),
         instanceDate: dateParam({ description: "YYYY-MM-DD", short: "d" }),
         instanceTime: S.Optional(timeParam({ description: "HH:mm", short: "t" })),
-        categoryId: S.Optional(S.String({ description: "Category id" })),
+        categoryId: S.Optional(nonBlankParam({ description: "Category id" })),
       }),
       handler: async (ctx) => {
         assertValidDate(ctx.params.instanceDate, "instanceDate");
@@ -202,7 +208,12 @@ export const tasksGroup = defineGroup({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/task_box/items`,
-          body: { summary: ctx.params.summary },
+          body: {
+            data: {
+              type: "task_box_item",
+              attributes: { summary: ctx.params.summary },
+            },
+          },
         });
       },
     }),

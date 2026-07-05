@@ -61,7 +61,7 @@ export const profilesGroup = defineGroup({
       description: "Update user notification preference",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        preference: S.String({ description: "Preference string (server-defined)", short: "p" }),
+        preference: nonBlankParam({ description: "Preference string (server-defined)", short: "p" }),
       }),
       handler: async (ctx) =>
         requestJson({
@@ -276,7 +276,7 @@ export const profilesGroup = defineGroup({
       description: "Redeem a share token for this frame",
       scope: ["cli", "sdk"],
       params: S.Object({
-        shareToken: S.String({ description: "Share token", short: "t" }),
+        shareToken: nonBlankParam({ description: "Share token", short: "t" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -404,7 +404,9 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         categoryId: S.String({ description: "Category id", short: "i" }),
-        reassignToCategoryId: S.Optional(S.String({ description: "Reassign items to this category id" })),
+        reassignToCategoryId: S.Optional(
+          nonBlankParam({ description: "Reassign items to this category id" })
+        ),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -497,8 +499,8 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         name: nonBlankParam({ description: "Device name", short: "n" }),
-        categoryId: S.String({ description: "Category id", short: "c" }),
-        role: S.Optional(S.String({ description: "Role (server-defined)" })),
+        categoryId: nonBlankParam({ description: "Category id", short: "c" }),
+        role: S.Optional(nonBlankParam({ description: "Role (server-defined)" })),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

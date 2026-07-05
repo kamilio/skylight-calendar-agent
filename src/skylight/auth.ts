@@ -45,8 +45,8 @@ export async function getAuthorizationHeader(opts: {
   }
 
   const email = env.SKYLIGHT_EMAIL?.trim();
-  const password = env.SKYLIGHT_PASSWORD?.trim();
-  if (!email || !password) {
+  const password = env.SKYLIGHT_PASSWORD;
+  if (!email || password === undefined || password.length === 0) {
     throw new UserError(
       "Missing credentials. Set SKYLIGHT_EMAIL and SKYLIGHT_PASSWORD (or SKYLIGHT_BASIC_TOKEN / SKYLIGHT_BEARER_TOKEN / SKYLIGHT_AUTH_HEADER)."
     );

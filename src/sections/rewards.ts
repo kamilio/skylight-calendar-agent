@@ -1,11 +1,11 @@
-import { defineCommand, defineGroup, S } from "toolcraft";
+import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
-  assertValidDateOrDateTime,
-  assertValidDateOrDateTimeRange,
-  dateOrDateTimeParam,
+  assertValidDateTime,
+  dateTimeParam,
   jsonParam,
+  nonBlankParam,
   parseJsonObject,
   parseNonEmptyJsonObject,
   pathSegment,
@@ -21,24 +21,23 @@ export const rewardsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         redeemedAtMin: S.Optional(
-          dateOrDateTimeParam({ description: "ISO datetime", short: "m" })
+          dateTimeParam({ description: "ISO datetime", short: "m" })
         ),
         redeemedAtMax: S.Optional(
-          dateOrDateTimeParam({ description: "ISO datetime", short: "x" })
+          dateTimeParam({ description: "ISO datetime", short: "x" })
         ),
       }),
       handler: async (ctx) => {
         if (ctx.params.redeemedAtMin !== undefined && ctx.params.redeemedAtMax !== undefined) {
-          assertValidDateOrDateTimeRange(
-            ctx.params.redeemedAtMin,
-            ctx.params.redeemedAtMax,
-            "redeemedAtMin",
-            "redeemedAtMax"
-          );
+          assertValidDateTime(ctx.params.redeemedAtMin, "redeemedAtMin");
+          assertValidDateTime(ctx.params.redeemedAtMax, "redeemedAtMax");
+          if (Date.parse(ctx.params.redeemedAtMin) > Date.parse(ctx.params.redeemedAtMax)) {
+            throw new UserError("redeemedAtMin must not be after redeemedAtMax.");
+          }
         } else if (ctx.params.redeemedAtMin !== undefined) {
-          assertValidDateOrDateTime(ctx.params.redeemedAtMin, "redeemedAtMin");
+          assertValidDateTime(ctx.params.redeemedAtMin, "redeemedAtMin");
         } else if (ctx.params.redeemedAtMax !== undefined) {
-          assertValidDateOrDateTime(ctx.params.redeemedAtMax, "redeemedAtMax");
+          assertValidDateTime(ctx.params.redeemedAtMax, "redeemedAtMax");
         }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
@@ -172,11 +171,11 @@ export const rewardsGroup = defineGroup({
       description: "Add reward points to categories",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryIds: S.Array(S.String({ description: "Category id", minLength: 1 }), {
+        categoryIds: S.Array(nonBlankParam({ description: "Category id" }), {
           description: "Category ids",
           minItems: 1,
         }),
-        points: S.Number({ description: "Points to add" }),
+        points: S.Number({ description: "Points to add", jsonType: "integer" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

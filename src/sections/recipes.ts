@@ -48,7 +48,7 @@ export const recipesGroup = defineGroup({
       description: "Create a meal recipe",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryId: S.String({ description: "Meal category id", short: "c" }),
+        categoryId: nonBlankParam({ description: "Meal category id", short: "c" }),
         summary: nonBlankParam({ description: "Recipe title", short: "s" }),
         description: S.Optional(S.String({ description: "Recipe description" })),
       }),
@@ -73,7 +73,7 @@ export const recipesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         recipeId: S.String({ description: "Recipe id", short: "i" }),
-        categoryId: S.Optional(S.String({ description: "Meal category id", short: "c" })),
+        categoryId: S.Optional(nonBlankParam({ description: "Meal category id", short: "c" })),
         summary: S.Optional(nonBlankParam({ description: "Recipe title", short: "s" })),
         description: S.Optional(S.String({ description: "Recipe description" })),
       }),
