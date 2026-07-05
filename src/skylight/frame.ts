@@ -3,7 +3,7 @@ import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { requestJson, SkylightRequestError } from "./http.js";
 import { terminalSafeText, truncateText } from "./text.js";
-import { pathSegment } from "./validation.js";
+import { normalizeIdentifier, pathSegment } from "./validation.js";
 
 type FramesListResponse = {
   data: Array<{
@@ -40,6 +40,24 @@ function frameResolutionKey(config: ReturnType<typeof getSkylightConfig>): strin
 function displayValue(value: string): string {
   const sanitized = terminalSafeText(value);
   return sanitized.length <= 200 ? sanitized : `${truncateText(sanitized, 200)}…`;
+}
+
+function validateIdentifierParams(params: unknown): void {
+  if (params === null || typeof params !== "object" || Array.isArray(params)) return;
+  for (const [name, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue;
+    if (name.endsWith("Ids") && Array.isArray(value)) {
+      for (const item of value) {
+        if (typeof item === "string" || typeof item === "number") {
+          normalizeIdentifier(item, `${name} item`);
+        }
+      }
+      continue;
+    }
+    if (name.endsWith("Id") && (typeof value === "string" || typeof value === "number")) {
+      normalizeIdentifier(value, name);
+    }
+  }
 }
 
 function validateFramesListResponse(value: unknown): FramesListResponse {
@@ -142,7 +160,11 @@ async function discoverFrameId(
   );
 }
 
-export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): Promise<string> {
+export async function resolveFrameId(ctx: {
+  fetch: typeof globalThis.fetch;
+  params?: unknown;
+}): Promise<string> {
+  validateIdentifierParams(ctx.params);
   const config = getSkylightConfig();
   const fromEnv = config.frameId?.trim();
   if (fromEnv) return pathSegment(fromEnv, "SKYLIGHT_FRAME_ID");

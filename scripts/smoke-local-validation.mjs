@@ -103,6 +103,10 @@ await expectLocalError(
   'Invalid value for "listId": " " does not match pattern "\\S"'
 );
 await expectLocalError(
+  ["lists", "get", "--list-id", "\u001b"],
+  "listId must not contain control characters"
+);
+await expectLocalError(
   [
     "tasks",
     "chore-create-simple",
