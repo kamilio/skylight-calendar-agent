@@ -200,6 +200,7 @@ export async function getAuthorizationHeader(opts: {
 export async function refreshAuthorizationHeader(opts: {
   fetch: typeof globalThis.fetch;
   env?: NodeJS.ProcessEnv;
+  rejectedAuthorization?: string;
 }): Promise<string | null> {
   const env = opts.env ?? process.env;
   if (
@@ -213,6 +214,15 @@ export async function refreshAuthorizationHeader(opts: {
   const password = env.SKYLIGHT_PASSWORD;
   if (!email || password === undefined || password.length === 0) return null;
   const state = loginState(env, opts.fetch);
-  state.authorizations.delete(loginKey(env, email, password));
+  const key = loginKey(env, email, password);
+  const currentAuthorization = state.authorizations.get(key);
+  if (
+    opts.rejectedAuthorization !== undefined &&
+    currentAuthorization !== undefined &&
+    currentAuthorization !== opts.rejectedAuthorization
+  ) {
+    return currentAuthorization;
+  }
+  state.authorizations.delete(key);
   return getAuthorizationHeader({ fetch: opts.fetch, env });
 }

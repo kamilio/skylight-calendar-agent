@@ -33,6 +33,61 @@ if (sessionCalls !== 2 || resourceCalls !== 3) {
   throw new Error(`Expired session was not refreshed once: ${sessionCalls} logins, ${resourceCalls} requests`);
 }
 
+const concurrentRefreshEnv = {
+  SKYLIGHT_API_BASE: "https://example.invalid",
+  SKYLIGHT_EMAIL: "concurrent-refresh@example.com",
+  SKYLIGHT_PASSWORD: "secret",
+};
+let concurrentSessionCalls = 0;
+let concurrentResourceCalls = 0;
+let releaseDelayedUnauthorized;
+const delayedUnauthorized = new Promise((resolve) => {
+  releaseDelayedUnauthorized = resolve;
+});
+let firstOldRequestSeen = false;
+const concurrentRefreshFetch = async (url, init) => {
+  if (new URL(url).pathname === "/api/sessions") {
+    concurrentSessionCalls += 1;
+    const token = concurrentSessionCalls === 1 ? "old" : `new-${concurrentSessionCalls - 1}`;
+    return Response.json({ data: { id: "user", attributes: { token } } });
+  }
+  concurrentResourceCalls += 1;
+  const oldAuthorization = `Basic ${Buffer.from("user:old").toString("base64")}`;
+  const newAuthorization = `Basic ${Buffer.from("user:new-1").toString("base64")}`;
+  if (init?.headers?.authorization === oldAuthorization) {
+    if (!firstOldRequestSeen) {
+      firstOldRequestSeen = true;
+      return new Response("expired", { status: 401 });
+    }
+    await delayedUnauthorized;
+    return new Response("expired", { status: 401 });
+  }
+  if (init?.headers?.authorization === newAuthorization) {
+    releaseDelayedUnauthorized();
+    return Response.json({ ok: true });
+  }
+  return new Response("unexpected token", { status: 401 });
+};
+await Promise.all([
+  requestJson({
+    fetch: concurrentRefreshFetch,
+    env: concurrentRefreshEnv,
+    method: "GET",
+    path: "/api/first",
+  }),
+  requestJson({
+    fetch: concurrentRefreshFetch,
+    env: concurrentRefreshEnv,
+    method: "GET",
+    path: "/api/second",
+  }),
+]);
+if (concurrentSessionCalls !== 2 || concurrentResourceCalls !== 4) {
+  throw new Error(
+    `Concurrent refresh discarded a newer session: ${concurrentSessionCalls} logins, ${concurrentResourceCalls} requests`
+  );
+}
+
 try {
   await requestJson({
     fetch: async (_url, init) =>

@@ -165,7 +165,13 @@ export async function requestJson<TResponse>(opts: {
     let text = await response.text();
 
     if (response.status === 401 && opts.authenticated !== false) {
-      const refreshedAuthorization = await refreshAuthorizationHeader({ fetch: opts.fetch, env });
+      const refreshedAuthorization = await refreshAuthorizationHeader({
+        fetch: opts.fetch,
+        env,
+        ...(headers.authorization === undefined
+          ? {}
+          : { rejectedAuthorization: headers.authorization }),
+      });
       if (refreshedAuthorization !== null) {
         headers.authorization = refreshedAuthorization;
         response = await opts.fetch(url.toString(), init);
