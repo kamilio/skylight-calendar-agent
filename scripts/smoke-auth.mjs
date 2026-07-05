@@ -142,6 +142,20 @@ try {
 
 try {
   await getAuthorizationHeader({
+    fetch: async () =>
+      new Response('{"data":{"id":"user","attributes":{"token":"\\ud800"}}}', {
+        status: 200,
+      }),
+    env: credentials,
+  });
+  throw new Error("Malformed Unicode login token unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("Login response token contains invalid Unicode")) throw error;
+}
+
+try {
+  await getAuthorizationHeader({
     fetch: async () => new Response("\u001b[31mbad\u001b[0m\rreplace", { status: 401 }),
     env: { ...credentials, SKYLIGHT_BASIC_TOKEN: undefined },
   });
