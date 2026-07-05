@@ -178,6 +178,20 @@ try {
   ]);
   await runExpectingFailure(["profiles", "user-delete", "--confirm=false"]);
   await runExpectingFailure(["profiles", "frame-hide", "--confirm=false"]);
+  await runExpectingFailure([
+    "profiles",
+    "device-delete",
+    "--device-id",
+    "device-1",
+    "--confirm=false",
+  ]);
+  await runExpectingFailure([
+    "profiles",
+    "device-reset",
+    "--device-id",
+    "device-1",
+    "--confirm=false",
+  ]);
   await runExpectingFailure(["meals", "migrate", "--confirm=false"]);
   await runExpectingFailure([
     "tasks",

@@ -73,6 +73,10 @@ try {
   if (process.env.SKYLIGHT_PASSWORD !== undefined) {
     throw new Error("Malformed quoted dotenv value was silently truncated");
   }
+
+  const directoryPath = path.join(directory, "directory.env");
+  fs.mkdirSync(directoryPath);
+  loadDotEnv(directoryPath);
 } finally {
   server.close();
   fs.rmSync(directory, { recursive: true, force: true });

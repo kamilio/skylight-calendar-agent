@@ -560,11 +560,15 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "device-delete",
       description: "Delete a device",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         deviceId: nonBlankParam({ description: "Device id", short: "i" }),
+        confirm: S.Boolean({ description: "Confirm deleting the device" }),
       }),
       handler: async (ctx) => {
+        if (ctx.params.confirm !== true) {
+          throw new UserError("Pass confirm=true to delete the device.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -576,11 +580,15 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "device-reset",
       description: "Reset a device",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         deviceId: nonBlankParam({ description: "Device id", short: "i" }),
+        confirm: S.Boolean({ description: "Confirm resetting the device" }),
       }),
       handler: async (ctx) => {
+        if (ctx.params.confirm !== true) {
+          throw new UserError("Pass confirm=true to reset the device.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -592,7 +600,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "device-activation-code",
       description: "Get a device activation code",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         deviceId: nonBlankParam({ description: "Device id", short: "i" }),
       }),

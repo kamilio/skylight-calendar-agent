@@ -14,6 +14,15 @@ try {
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes("Frame list response is missing a data array")) throw error;
   }
+  try {
+    await listCalendarFrames({
+      fetch: async () => Response.json({ data: [null] }),
+    });
+    throw new Error("Malformed frame record unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Frame list response contains an invalid frame id")) throw error;
+  }
 } finally {
   if (originalAuthHeader === undefined) delete process.env.SKYLIGHT_AUTH_HEADER;
   else process.env.SKYLIGHT_AUTH_HEADER = originalAuthHeader;

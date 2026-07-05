@@ -4,8 +4,8 @@ import { requestJson, SkylightRequestError } from "./http.js";
 import { pathSegment } from "./validation.js";
 
 type FramesListResponse = {
-  data?: Array<{
-    id?: string;
+  data: Array<{
+    id: string;
     attributes?: {
       name?: string;
       household_name?: string;
@@ -22,6 +22,17 @@ function validateFramesListResponse(value: unknown): FramesListResponse {
     !Array.isArray((value as { data?: unknown }).data)
   ) {
     throw new UserError("Frame list response is missing a data array.");
+  }
+  const data = (value as { data: unknown[] }).data;
+  for (const frame of data) {
+    if (
+      frame === null ||
+      typeof frame !== "object" ||
+      typeof (frame as { id?: unknown }).id !== "string" ||
+      (frame as { id: string }).id.trim().length === 0
+    ) {
+      throw new UserError("Frame list response contains an invalid frame id.");
+    }
   }
   return value as FramesListResponse;
 }
@@ -70,10 +81,9 @@ async function discoverFrameId(
 
   const ids = (frames.data ?? [])
     .map((frame) => ({
-      id: frame.id ?? "",
+      id: frame.id,
       name: frame.attributes?.household_name ?? frame.attributes?.name ?? "",
-    }))
-    .filter((frame) => frame.id.length > 0);
+    }));
 
   if (ids.length === 1) {
     const [frame] = ids;

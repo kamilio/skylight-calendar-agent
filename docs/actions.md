@@ -2,7 +2,7 @@
 
 This agent implements the sections you asked for:
 
-All listed actions are available to the CLI and SDK. For safety, these are not advertised as MCP tools: `meals migrate`; `photos upload-credentials`, `photos upload-url`, `photos upload-urls`; and `profiles token`, `profiles forgot-password`, `profiles update-email`, `profiles discount-code`, `profiles plus-resend-entitlement-email`, `profiles user-export`, `profiles user-delete`, `profiles frame-hide`, `profiles frame-transfer`, and `profiles frame-share-token-redeem`.
+All listed actions are available to the CLI and SDK. For safety, these are not advertised as MCP tools: `meals migrate`; `photos upload-credentials`, `photos upload-url`, `photos upload-urls`; and `profiles token`, `profiles forgot-password`, `profiles update-email`, `profiles discount-code`, `profiles plus-resend-entitlement-email`, `profiles user-export`, `profiles user-delete`, `profiles frame-hide`, `profiles frame-transfer`, `profiles frame-share-token-redeem`, `profiles device-delete`, `profiles device-reset`, and `profiles device-activation-code`.
 
 ## Calendar
 
@@ -57,7 +57,7 @@ All listed actions are available to the CLI and SDK. For safety, these are not a
 
 ## Notes
 
-- `profiles user-delete`, `profiles frame-hide`, and `meals migrate` require `--confirm` in the CLI or `confirm: true` in the SDK.
+- `profiles user-delete`, `profiles frame-hide`, `profiles device-delete`, `profiles device-reset`, and `meals migrate` require `--confirm` in the CLI or `confirm: true` in the SDK.
 - Commands that accept `*Json` parameters pass raw JSON through to the API. The CLI accepts JSON text; MCP and SDK callers can pass native JSON values.
 - Skylight list items do not expose a due-date field. Use `tasks chore-create-simple --start YYYY-MM-DD` for a dated task.
 - `SKYLIGHT_FRAME_ID` is optional; if unset, the agent first tries the numeric id from `SKYLIGHT_CALENDAR_URL`, then discovers calendar frames from the account and uses the result when exactly one frame is returned.

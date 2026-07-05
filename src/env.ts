@@ -77,11 +77,13 @@ function parseDotEnv(contents: string): Record<string, string> {
 }
 
 export function loadDotEnv(envPath = path.resolve(process.cwd(), ".env")): void {
-  if (!fs.existsSync(envPath)) {
+  let contents: string;
+  try {
+    if (!fs.statSync(envPath).isFile()) return;
+    contents = fs.readFileSync(envPath, "utf8");
+  } catch {
     return;
   }
-
-  const contents = fs.readFileSync(envPath, "utf8");
   const parsed = parseDotEnv(contents);
 
   for (const [key, value] of Object.entries(parsed)) {
