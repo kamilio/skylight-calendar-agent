@@ -204,6 +204,10 @@ export const mealsGroup = defineGroup({
           ctx.params.categoryId === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.categoryId, "categoryId");
+        const applyTo =
+          ctx.params.applyTo === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.applyTo, "applyTo");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -212,7 +216,7 @@ export const mealsGroup = defineGroup({
           query: {
             ...(ctx.params.dateMin === undefined ? {} : { date_min: ctx.params.dateMin }),
             ...(ctx.params.dateMax === undefined ? {} : { date_max: ctx.params.dateMax }),
-            ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
+            ...(applyTo === undefined ? {} : { apply_to: applyTo }),
             include: "meal_category,meal_recipe",
           },
           body: {
@@ -240,6 +244,10 @@ export const mealsGroup = defineGroup({
       handler: async (ctx) => {
         assertValidDateOrDateTime(ctx.params.instanceIso, "instanceIso");
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
+        const applyTo =
+          ctx.params.applyTo === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.applyTo, "applyTo");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -248,7 +256,7 @@ export const mealsGroup = defineGroup({
           query: {
             ...(ctx.params.dateMin === undefined ? {} : { date_min: ctx.params.dateMin }),
             ...(ctx.params.dateMax === undefined ? {} : { date_max: ctx.params.dateMax }),
-            ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
+            ...(applyTo === undefined ? {} : { apply_to: applyTo }),
             include: "meal_category,meal_recipe",
           },
         });

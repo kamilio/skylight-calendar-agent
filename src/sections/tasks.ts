@@ -152,6 +152,10 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
+        const applyTo =
+          ctx.params.applyTo === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.applyTo, "applyTo");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -159,7 +163,7 @@ export const tasksGroup = defineGroup({
           path: `/api/frames/${frameId}/chores/${pathSegment(ctx.params.choreId, "choreId")}`,
           body: {
             ...updates,
-            ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
+            ...(applyTo === undefined ? {} : { apply_to: applyTo }),
           },
         });
       },
@@ -173,13 +177,17 @@ export const tasksGroup = defineGroup({
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
       }),
       handler: async (ctx) => {
+        const applyTo =
+          ctx.params.applyTo === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.applyTo, "applyTo");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/chores/${pathSegment(ctx.params.choreId, "choreId")}`,
           query: {
-            ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
+            ...(applyTo === undefined ? {} : { apply_to: applyTo }),
           },
         });
       },
@@ -197,6 +205,7 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDate(ctx.params.instanceDate, "instanceDate");
+        const status = normalizeIdentifier(ctx.params.status, "status");
         const categoryId =
           ctx.params.categoryId === undefined
             ? undefined
@@ -207,7 +216,7 @@ export const tasksGroup = defineGroup({
           method: "PUT",
           path: `/api/frames/${frameId}/chores/${pathSegment(ctx.params.seriesId, "seriesId")}/completions`,
           body: {
-            status: ctx.params.status,
+            status,
             instance_date: ctx.params.instanceDate,
             instance_time: ctx.params.instanceTime ?? null,
             category_id: categoryId ?? null,

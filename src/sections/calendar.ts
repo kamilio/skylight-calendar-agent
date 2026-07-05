@@ -256,6 +256,10 @@ export const calendarGroup = defineGroup({
           ctx.params.calendarId === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.calendarId, "calendarId");
+        const kind =
+          ctx.params.kind === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.kind, "kind");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -263,7 +267,7 @@ export const calendarGroup = defineGroup({
           path: `/api/frames/${frameId}/calendar_events`,
           body: {
             summary: ctx.params.summary,
-            kind: ctx.params.kind ?? "event",
+            kind: kind ?? "event",
             category_ids: categoryIds,
             starts_at: ctx.params.startsAt,
             ends_at: ctx.params.endsAt ?? null,
@@ -389,6 +393,10 @@ export const calendarGroup = defineGroup({
           ctx.params.timezone === undefined
             ? undefined
             : normalizeTimezone(ctx.params.timezone);
+        const applyTo =
+          ctx.params.applyTo === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.applyTo, "applyTo");
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
@@ -413,7 +421,7 @@ export const calendarGroup = defineGroup({
             ...(ctx.params.lat === undefined ? {} : { lat: ctx.params.lat }),
             ...(ctx.params.lng === undefined ? {} : { lng: ctx.params.lng }),
             ...(ctx.params.description === undefined ? {} : { description: ctx.params.description }),
-            ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
+            ...(applyTo === undefined ? {} : { apply_to: applyTo }),
             ...(timezone === undefined ? {} : { timezone }),
             ...(eventNotificationSettingAttributes === undefined
               ? {}
@@ -434,13 +442,17 @@ export const calendarGroup = defineGroup({
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
       }),
       handler: async (ctx) => {
+        const applyTo =
+          ctx.params.applyTo === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.applyTo, "applyTo");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/calendar_events/${pathSegment(ctx.params.eventId, "eventId")}`,
           query: {
-            ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
+            ...(applyTo === undefined ? {} : { apply_to: applyTo }),
           },
         });
       },
@@ -564,6 +576,7 @@ export const calendarGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
+        const provider = normalizeIdentifier(ctx.params.provider, "provider");
         const redirectUrl = normalizeAbsoluteUrl(ctx.params.redirectUrl, "redirectUrl");
         const failureRedirectUrl = normalizeAbsoluteUrl(
           ctx.params.failureRedirectUrl,
@@ -579,7 +592,7 @@ export const calendarGroup = defineGroup({
             redirect_url: redirectUrl,
             failure_redirect_url: failureRedirectUrl,
             two_way_sync: twoWaySync,
-            provider: ctx.params.provider,
+            provider,
             ...(ctx.params.email === undefined ? {} : { login_hint: ctx.params.email }),
           },
         });

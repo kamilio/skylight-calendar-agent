@@ -137,6 +137,8 @@ try {
     "--clear-invited-emails",
     "--timezone",
     " UTC ",
+    "--apply-to",
+    " future ",
   ]);
   await run([
     "calendar",
@@ -624,6 +626,9 @@ if (
 }
 if (clearedEvent.body.timezone !== "UTC") {
   throw new Error(`Event timezone was not normalized: ${JSON.stringify(clearedEvent.body)}`);
+}
+if (clearedEvent.body.apply_to !== "future") {
+  throw new Error(`Event scope was not normalized: ${JSON.stringify(clearedEvent.body)}`);
 }
 
 const clearedCalendars = requests.find(

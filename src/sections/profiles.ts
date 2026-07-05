@@ -65,13 +65,15 @@ export const profilesGroup = defineGroup({
       params: S.Object({
         preference: nonBlankParam({ description: "Preference string (server-defined)", short: "p" }),
       }),
-      handler: async (ctx) =>
-        requestJson({
+      handler: async (ctx) => {
+        const preference = normalizeIdentifier(ctx.params.preference, "preference");
+        return requestJson({
           fetch: ctx.fetch,
           method: "PATCH",
           path: "/api/user/push_toggler",
-          body: { notification_preference: ctx.params.preference },
-        }),
+          body: { notification_preference: preference },
+        });
+      },
     }),
     defineCommand({
       name: "marketing-preference",
@@ -556,6 +558,10 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const categoryId = normalizeIdentifier(ctx.params.categoryId, "categoryId");
+        const role =
+          ctx.params.role === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.role, "role");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -564,7 +570,7 @@ export const profilesGroup = defineGroup({
           body: {
             name: ctx.params.name,
             category_id: categoryId,
-            ...(ctx.params.role === undefined ? {} : { role: ctx.params.role }),
+            ...(role === undefined ? {} : { role }),
           },
         });
       },
