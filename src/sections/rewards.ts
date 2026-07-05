@@ -182,13 +182,17 @@ export const rewardsGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
+        const categoryIds = ctx.params.categoryIds.map((categoryId) => categoryId.trim());
+        if (new Set(categoryIds).size !== categoryIds.length) {
+          throw new UserError("categoryIds must not contain duplicates.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/reward_points`,
           body: {
-            category_ids: ctx.params.categoryIds,
+            category_ids: categoryIds,
             points: ctx.params.points,
           },
         });

@@ -285,6 +285,9 @@ export const listsGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
+        if (ctx.params.afterItemId?.trim() === ctx.params.itemId.trim()) {
+          throw new UserError("afterItemId must differ from itemId.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,

@@ -69,6 +69,18 @@ try {
       () => sdk.profiles.forgotPassword({ email: "a\u0000@b.com" }),
       'Invalid value for "email"',
     ],
+    [
+      () => sdk.profiles.categoryDelete({ categoryId: "7", reassignToCategoryId: " 7 " }),
+      "reassignToCategoryId must differ from categoryId",
+    ],
+    [
+      () => sdk.lists.itemMove({ listId: "1", itemId: "7", afterItemId: "7" }),
+      "afterItemId must differ from itemId",
+    ],
+    [
+      () => sdk.rewards.pointsAdd({ categoryIds: ["7", " 7 "], points: 10 }),
+      "categoryIds must not contain duplicates",
+    ],
   ]) {
     try {
       await invoke();

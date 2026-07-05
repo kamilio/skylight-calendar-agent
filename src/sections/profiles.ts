@@ -452,15 +452,20 @@ export const profilesGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
+        const categoryId = ctx.params.categoryId.trim();
+        const reassignToCategoryId = ctx.params.reassignToCategoryId?.trim();
+        if (reassignToCategoryId === categoryId) {
+          throw new UserError("reassignToCategoryId must differ from categoryId.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}`,
+          path: `/api/frames/${frameId}/categories/${pathSegment(categoryId, "categoryId")}`,
           query: {
-            ...(ctx.params.reassignToCategoryId === undefined
+            ...(reassignToCategoryId === undefined
               ? {}
-              : { reassign_to_category_id: ctx.params.reassignToCategoryId }),
+              : { reassign_to_category_id: reassignToCategoryId }),
           },
         });
       },
