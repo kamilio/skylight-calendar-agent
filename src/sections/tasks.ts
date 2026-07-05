@@ -118,6 +118,10 @@ export const tasksGroup = defineGroup({
           ctx.params.categoryId === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.categoryId, "categoryId");
+        const recurrenceSet =
+          ctx.params.recurrenceRrule === undefined
+            ? null
+            : [normalizeRrule(ctx.params.recurrenceRrule, "recurrenceRrule")];
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -128,10 +132,7 @@ export const tasksGroup = defineGroup({
             up_for_grabs: false,
             routine: false,
             start_time: null,
-            recurrence_set:
-              ctx.params.recurrenceRrule === undefined
-                ? null
-                : [normalizeRrule(ctx.params.recurrenceRrule, "recurrenceRrule")],
+            recurrence_set: recurrenceSet,
             summary: ctx.params.summary,
             recurring_until: null,
             category_ids: categoryId === undefined ? [] : [categoryId],

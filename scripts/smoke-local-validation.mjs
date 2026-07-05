@@ -102,3 +102,29 @@ await expectLocalError(
   ["lists", "get", "--list-id", " "],
   'Invalid value for "listId": " " does not match pattern "\\S"'
 );
+await expectLocalError(
+  [
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Test",
+    "--start",
+    "2026-07-05",
+    "--recurrence-rrule",
+    "RRULE:",
+  ],
+  "recurrenceRrule must contain a recurrence rule"
+);
+await expectLocalError(
+  [
+    "lists",
+    "item-move",
+    "--list-id",
+    "1",
+    "--item-id",
+    "2",
+    "--after-item-id",
+    "999999999999999999999",
+  ],
+  "afterItemId must be a positive safe integer"
+);

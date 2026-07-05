@@ -289,16 +289,17 @@ export const listsGroup = defineGroup({
         if (ctx.params.afterItemId?.trim() === ctx.params.itemId.trim()) {
           throw new UserError("afterItemId must differ from itemId.");
         }
+        const afterItemId =
+          ctx.params.afterItemId === undefined
+            ? null
+            : parsePositiveSafeInteger(ctx.params.afterItemId, "afterItemId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/${pathSegment(ctx.params.itemId, "itemId")}/move`,
           body: {
-            after_item_id:
-              ctx.params.afterItemId === undefined
-                ? null
-                : parsePositiveSafeInteger(ctx.params.afterItemId, "afterItemId"),
+            after_item_id: afterItemId,
           },
         });
       },

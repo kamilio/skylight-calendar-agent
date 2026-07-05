@@ -260,6 +260,8 @@ export const calendarGroup = defineGroup({
           ctx.params.kind === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.kind, "kind");
+        const recurrenceRule =
+          ctx.params.rrule === undefined ? null : [normalizeRrule(ctx.params.rrule)];
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -272,8 +274,7 @@ export const calendarGroup = defineGroup({
             starts_at: ctx.params.startsAt,
             ends_at: ctx.params.endsAt ?? null,
             all_day: ctx.params.allDay ?? false,
-            rrule:
-              ctx.params.rrule === undefined ? null : [normalizeRrule(ctx.params.rrule)],
+            rrule: recurrenceRule,
             invited_emails: invitedEmails ?? [],
             location: ctx.params.location ?? null,
             lat: ctx.params.lat ?? null,
