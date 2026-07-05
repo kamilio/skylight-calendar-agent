@@ -184,6 +184,11 @@ try {
 
   await sdk.meals.delete({ mealId: "meal-1", instanceIso: "2026-07-05" });
   if (calls !== 3) throw new Error("SDK meal instance parameter was not accepted");
+
+  await sdk.profiles.deviceCreate({ name: "Kitchen", categoryId: " 7 " });
+  if (calls !== 4 || requestBody?.category_id !== "7") {
+    throw new Error(`Typed body identifier was not normalized: ${JSON.stringify(requestBody)}`);
+  }
 } finally {
   for (const key of Object.keys(process.env)) {
     if (!(key in savedEnv)) delete process.env[key];

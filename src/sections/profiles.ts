@@ -9,6 +9,7 @@ import {
   jsonParam,
   monthDayParam,
   nonBlankParam,
+  normalizeIdentifier,
   parseJsonContainer,
   parseNonEmptyJsonObject,
   pathSegment,
@@ -452,8 +453,11 @@ export const profilesGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const categoryId = ctx.params.categoryId.trim();
-        const reassignToCategoryId = ctx.params.reassignToCategoryId?.trim();
+        const categoryId = normalizeIdentifier(ctx.params.categoryId, "categoryId");
+        const reassignToCategoryId =
+          ctx.params.reassignToCategoryId === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.reassignToCategoryId, "reassignToCategoryId");
         if (reassignToCategoryId === categoryId) {
           throw new UserError("reassignToCategoryId must differ from categoryId.");
         }
@@ -551,6 +555,7 @@ export const profilesGroup = defineGroup({
         role: S.Optional(nonBlankParam({ description: "Role (server-defined)" })),
       }),
       handler: async (ctx) => {
+        const categoryId = normalizeIdentifier(ctx.params.categoryId, "categoryId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -558,7 +563,7 @@ export const profilesGroup = defineGroup({
           path: `/api/frames/${frameId}/devices`,
           body: {
             name: ctx.params.name,
-            category_id: ctx.params.categoryId,
+            category_id: categoryId,
             ...(ctx.params.role === undefined ? {} : { role: ctx.params.role }),
           },
         });

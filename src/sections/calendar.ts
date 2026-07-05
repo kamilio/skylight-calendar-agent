@@ -14,6 +14,7 @@ import {
   emailParam,
   jsonParam,
   nonBlankParam,
+  normalizeIdentifier,
   normalizeRrule,
   parseJsonContainer,
   parseNonEmptyJsonObject,
@@ -251,6 +252,14 @@ export const calendarGroup = defineGroup({
               );
         const invitedEmails = uniqueInvitedEmails(ctx.params.invitedEmails);
         const categoryIds = uniqueIdentifiers(ctx.params.categoryIds ?? [], "categoryIds");
+        const calendarAccountId =
+          ctx.params.calendarAccountId === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.calendarAccountId, "calendarAccountId");
+        const calendarId =
+          ctx.params.calendarId === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.calendarId, "calendarId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -270,8 +279,8 @@ export const calendarGroup = defineGroup({
             lat: ctx.params.lat ?? null,
             lng: ctx.params.lng ?? null,
             description: ctx.params.description ?? null,
-            calendar_account_id: ctx.params.calendarAccountId ?? null,
-            calendar_id: ctx.params.calendarId ?? null,
+            calendar_account_id: calendarAccountId ?? null,
+            calendar_id: calendarId ?? null,
             timezone,
             ...(eventNotificationSettingAttributes === undefined
               ? {}
@@ -659,12 +668,13 @@ export const calendarGroup = defineGroup({
         calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
       }),
       handler: async (ctx) => {
+        const calendarId = normalizeIdentifier(ctx.params.calendarId, "calendarId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/source_calendars/set_default_for_new_events`,
-          body: { id: ctx.params.calendarId },
+          body: { id: calendarId },
         });
       },
     }),

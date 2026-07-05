@@ -7,6 +7,7 @@ import {
   dateParam,
   jsonParam,
   nonBlankParam,
+  normalizeIdentifier,
   normalizeRrule,
   parseNonEmptyJsonObject,
   pathSegment,
@@ -113,6 +114,10 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDate(ctx.params.start, "start");
+        const categoryId =
+          ctx.params.categoryId === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.categoryId, "categoryId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -129,7 +134,7 @@ export const tasksGroup = defineGroup({
                 : [normalizeRrule(ctx.params.recurrenceRrule, "recurrenceRrule")],
             summary: ctx.params.summary,
             recurring_until: null,
-            category_ids: ctx.params.categoryId ? [ctx.params.categoryId] : [],
+            category_ids: categoryId === undefined ? [] : [categoryId],
             reward_points: ctx.params.rewardPoints ?? null,
             emoji_icon: ctx.params.emojiIcon ?? null,
           },
@@ -192,6 +197,10 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDate(ctx.params.instanceDate, "instanceDate");
+        const categoryId =
+          ctx.params.categoryId === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.categoryId, "categoryId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -201,7 +210,7 @@ export const tasksGroup = defineGroup({
             status: ctx.params.status,
             instance_date: ctx.params.instanceDate,
             instance_time: ctx.params.instanceTime ?? null,
-            category_id: ctx.params.categoryId ?? null,
+            category_id: categoryId ?? null,
           },
         });
       },

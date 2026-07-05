@@ -9,6 +9,7 @@ import {
   dateParam,
   jsonParam,
   nonBlankParam,
+  normalizeIdentifier,
   parseNonEmptyJsonObject,
   parseJsonObject,
   pathSegment,
@@ -118,6 +119,8 @@ export const mealsGroup = defineGroup({
           ctx.params.extrasJson === undefined
             ? {}
             : parseJsonObject(ctx.params.extrasJson, "extrasJson");
+        const recipeId = normalizeIdentifier(ctx.params.recipeId, "recipeId");
+        const categoryId = normalizeIdentifier(ctx.params.categoryId, "categoryId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -130,8 +133,8 @@ export const mealsGroup = defineGroup({
           },
           body: {
             ...extras,
-            meal_recipe_id: ctx.params.recipeId,
-            meal_category_id: ctx.params.categoryId,
+            meal_recipe_id: recipeId,
+            meal_category_id: categoryId,
             add_to_grocery_list: ctx.params.addToGroceryList ?? false,
           },
         });
@@ -193,6 +196,14 @@ export const mealsGroup = defineGroup({
           ctx.params.updatesJson === undefined
             ? {}
             : parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
+        const recipeId =
+          ctx.params.recipeId === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.recipeId, "recipeId");
+        const categoryId =
+          ctx.params.categoryId === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.categoryId, "categoryId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -206,10 +217,8 @@ export const mealsGroup = defineGroup({
           },
           body: {
             ...updates,
-            ...(ctx.params.recipeId === undefined ? {} : { meal_recipe_id: ctx.params.recipeId }),
-            ...(ctx.params.categoryId === undefined
-              ? {}
-              : { meal_category_id: ctx.params.categoryId }),
+            ...(recipeId === undefined ? {} : { meal_recipe_id: recipeId }),
+            ...(categoryId === undefined ? {} : { meal_category_id: categoryId }),
           },
         });
       },

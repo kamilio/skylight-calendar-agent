@@ -103,6 +103,8 @@ try {
     "Replace filter",
     "--start",
     "2026-07-12",
+    "--category-id",
+    " category-1 ",
     "--recurrence-rrule",
     "RRULE:FREQ=DAILY",
   ]);
@@ -112,9 +114,9 @@ try {
     "meals",
     "create",
     "--recipe-id",
-    "recipe-1",
+    " recipe-1 ",
     "--category-id",
-    "category-1",
+    " category-1 ",
     "--extras-json",
     '{"meal_recipe_id":"wrong","meal_category_id":"wrong"}',
   ]);
@@ -572,6 +574,7 @@ for (const [index, expectedRequest] of expected.entries()) {
 if (
   requests[4]?.url !== "/api/frames/42/chores/create_multiple" ||
   requests[4]?.body?.start !== "2026-07-12" ||
+  requests[4]?.body?.category_ids?.[0] !== "category-1" ||
   requests[4]?.body?.recurrence_set?.[0] !== "RRULE:FREQ=DAILY"
 ) {
   throw new Error("Dated chore request did not match the expected payload");

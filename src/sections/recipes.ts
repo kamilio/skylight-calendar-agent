@@ -4,6 +4,7 @@ import { requestJson } from "../skylight/http.js";
 import {
   assertAtLeastOneDefined,
   nonBlankParam,
+  normalizeIdentifier,
   pathSegment,
 } from "../skylight/validation.js";
 
@@ -53,6 +54,7 @@ export const recipesGroup = defineGroup({
         description: S.Optional(S.String({ description: "Recipe description" })),
       }),
       handler: async (ctx) => {
+        const categoryId = normalizeIdentifier(ctx.params.categoryId, "categoryId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -60,7 +62,7 @@ export const recipesGroup = defineGroup({
           path: `/api/frames/${frameId}/meals/recipes`,
           query: { include: "meal_category" },
           body: {
-            meal_category_id: ctx.params.categoryId,
+            meal_category_id: categoryId,
             summary: ctx.params.summary,
             description: ctx.params.description ?? null,
           },
@@ -82,6 +84,10 @@ export const recipesGroup = defineGroup({
           [ctx.params.categoryId, ctx.params.summary, ctx.params.description],
           "Specify categoryId, summary, or description to update the recipe."
         );
+        const categoryId =
+          ctx.params.categoryId === undefined
+            ? undefined
+            : normalizeIdentifier(ctx.params.categoryId, "categoryId");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -89,9 +95,7 @@ export const recipesGroup = defineGroup({
           path: `/api/frames/${frameId}/meals/recipes/${pathSegment(ctx.params.recipeId, "recipeId")}`,
           query: { include: "meal_category" },
           body: {
-            ...(ctx.params.categoryId === undefined
-              ? {}
-              : { meal_category_id: ctx.params.categoryId }),
+            ...(categoryId === undefined ? {} : { meal_category_id: categoryId }),
             ...(ctx.params.summary === undefined ? {} : { summary: ctx.params.summary }),
             ...(ctx.params.description === undefined ? {} : { description: ctx.params.description }),
           },
