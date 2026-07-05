@@ -94,6 +94,39 @@ try {
       "newFrameIds must not include the source frame",
     ],
     [
+      () => sdk.photos.deleteMany({ messageIds: ["1", " 1 "] }),
+      "messageIds must not contain duplicates",
+    ],
+    [
+      () => sdk.photos.albumAdd({ albumIds: ["2", " 2 "], messageIds: ["1"] }),
+      "albumIds must not contain duplicates",
+    ],
+    [
+      () => sdk.photos.albumRemove({ albumId: "2", messageIds: ["1", " 1 "] }),
+      "messageIds must not contain duplicates",
+    ],
+    [
+      () => sdk.lists.itemsMoveSection({ listId: "1", itemIds: ["3", " 3 "] }),
+      "itemIds must not contain duplicates",
+    ],
+    [
+      () => sdk.lists.itemsDelete({ listId: "1", itemIds: ["3", " 3 "] }),
+      "itemIds must not contain duplicates",
+    ],
+    [
+      () => sdk.calendar.calendarAccountUpdate({ accountId: "a", activeCalendars: ["c", " c "] }),
+      "activeCalendars must not contain duplicates",
+    ],
+    [
+      () =>
+        sdk.calendar.eventCreate({
+          summary: "Event",
+          startsAt: "2026-07-05",
+          categoryIds: ["4", " 4 "],
+        }),
+      "categoryIds must not contain duplicates",
+    ],
+    [
       () =>
         sdk.calendar.eventCreate({
           summary: "Event",

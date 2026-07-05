@@ -125,6 +125,25 @@ try {
 
 try {
   await requestJson({
+    fetch: async () =>
+      new Response("rate limited", {
+        status: 429,
+        headers: { "retry-after": "\u001b[31m120\u001b[0m" },
+      }),
+    env,
+    method: "GET",
+    path: "/api/test",
+  });
+  throw new Error("Rate-limited request unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("Retry after 120.") || message.includes("\u001b")) {
+    throw new Error(`Rate-limit error lacked safe retry guidance: ${JSON.stringify(message)}`);
+  }
+}
+
+try {
+  await requestJson({
     fetch: async () => new Response("\u001b[31mred\u001b[0m\rreplace", { status: 500 }),
     env,
     method: "GET",

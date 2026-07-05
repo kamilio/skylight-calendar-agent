@@ -8,6 +8,7 @@ import {
   parsePositiveSafeInteger,
   pathSegment,
   positiveIntegerStringParam,
+  uniqueIdentifiers,
 } from "../skylight/validation.js";
 
 export const listsGroup = defineGroup({
@@ -315,13 +316,14 @@ export const listsGroup = defineGroup({
         section: S.Optional(S.String({ description: "Section name (omit to clear)" })),
       }),
       handler: async (ctx) => {
+        const itemIds = uniqueIdentifiers(ctx.params.itemIds, "itemIds");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/bulk_update_section`,
           body: {
-            item_ids: ctx.params.itemIds,
+            item_ids: itemIds,
             section: ctx.params.section?.trim() || null,
           },
         });
@@ -339,12 +341,13 @@ export const listsGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
+        const itemIds = uniqueIdentifiers(ctx.params.itemIds, "itemIds");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/bulk_destroy`,
-          body: { ids: ctx.params.itemIds },
+          body: { ids: itemIds },
         });
       },
     }),

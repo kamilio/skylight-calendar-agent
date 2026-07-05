@@ -113,7 +113,7 @@ export function assertWellFormedUnicode(value: string, label: string): void {
   }
 }
 
-export function pathSegment(value: string | number, label: string): string {
+export function normalizeIdentifier(value: string | number, label: string): string {
   const normalized = String(value).trim();
   if (normalized.length === 0) {
     throw new UserError(`${label} must not be blank.`);
@@ -122,7 +122,19 @@ export function pathSegment(value: string | number, label: string): string {
   if (/[\u0000-\u001F\u007F-\u009F]/.test(normalized)) {
     throw new UserError(`${label} must not contain control characters.`);
   }
-  return encodeURIComponent(normalized);
+  return normalized;
+}
+
+export function uniqueIdentifiers(values: readonly string[], label: string): string[] {
+  const normalized = values.map((value) => normalizeIdentifier(value, `${label} item`));
+  if (new Set(normalized).size !== normalized.length) {
+    throw new UserError(`${label} must not contain duplicates.`);
+  }
+  return normalized;
+}
+
+export function pathSegment(value: string | number, label: string): string {
+  return encodeURIComponent(normalizeIdentifier(value, label));
 }
 
 export function assertAtLeastOneDefined(

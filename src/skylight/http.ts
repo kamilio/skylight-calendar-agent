@@ -31,6 +31,14 @@ function safeOutputText(value: string): string {
   return terminalSafeText(value, true);
 }
 
+function retryAfterHint(response: Response): string {
+  if (response.status !== 429 && response.status !== 503) return "";
+  const retryAfter = response.headers.get("retry-after");
+  if (retryAfter === null || retryAfter.trim().length === 0) return "";
+  const safeRetryAfter = terminalSafeText(retryAfter).trim();
+  return safeRetryAfter.length === 0 ? "" : ` Retry after ${safeRetryAfter}.`;
+}
+
 function sanitizeJsonValue(value: unknown, depth = 0): unknown {
   if (depth > MAX_RESPONSE_JSON_DEPTH) {
     throw new UserError(
@@ -171,13 +179,14 @@ export async function requestJson<TResponse>(opts: {
         response.status === 401 && opts.authenticated !== false
           ? " Authentication was rejected; check the configured Skylight credentials or token. Explicit auth header and token variables take precedence over email/password login."
           : "";
+      const retryHint = retryAfterHint(response);
       throw new SkylightRequestError(
         response.status,
         opts.method,
         opts.path,
         `Request failed (${response.status}) ${opts.method} ${opts.path}${
           excerpt.length > 0 ? `: ${excerpt}` : ""
-        }.${authenticationHint}`
+        }.${authenticationHint}${retryHint}`
       );
     }
 

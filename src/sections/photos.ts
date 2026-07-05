@@ -4,8 +4,10 @@ import { requestJson } from "../skylight/http.js";
 import {
   jsonParam,
   nonBlankParam,
+  normalizeIdentifier,
   parseNonEmptyJsonObject,
   pathSegment,
+  uniqueIdentifiers,
 } from "../skylight/validation.js";
 
 export const photosGroup = defineGroup({
@@ -83,12 +85,13 @@ export const photosGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
+        const messageIds = uniqueIdentifiers(ctx.params.messageIds, "messageIds");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/messages/destroy_multiple`,
-          query: { "message_ids[]": ctx.params.messageIds },
+          query: { "message_ids[]": messageIds },
         });
       },
     }),
@@ -107,15 +110,8 @@ export const photosGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
-        const messageIds = ctx.params.messageIds.map((messageId) => messageId.trim());
-        const newFrameIds = ctx.params.newFrameIds.map((newFrameId) => newFrameId.trim());
-        if (new Set(messageIds).size !== messageIds.length) {
-          throw new UserError("messageIds must not contain duplicates.");
-        }
-        if (new Set(newFrameIds).size !== newFrameIds.length) {
-          throw new UserError("newFrameIds must not contain duplicates.");
-        }
-        messageIds.forEach((messageId) => pathSegment(messageId, "messageId"));
+        const messageIds = uniqueIdentifiers(ctx.params.messageIds, "messageIds");
+        const newFrameIds = uniqueIdentifiers(ctx.params.newFrameIds, "newFrameIds");
         const encodedNewFrameIds = newFrameIds.map((newFrameId) =>
           pathSegment(newFrameId, "newFrameId")
         );
@@ -483,14 +479,16 @@ export const photosGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
+        const albumIds = uniqueIdentifiers(ctx.params.albumIds, "albumIds");
+        const messageIds = uniqueIdentifiers(ctx.params.messageIds, "messageIds");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/albums/add_to`,
           body: {
-            album_ids: ctx.params.albumIds,
-            message_ids: ctx.params.messageIds,
+            album_ids: albumIds,
+            message_ids: messageIds,
           },
         });
       },
@@ -507,14 +505,16 @@ export const photosGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
+        const albumId = normalizeIdentifier(ctx.params.albumId, "albumId");
+        const messageIds = uniqueIdentifiers(ctx.params.messageIds, "messageIds");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/albums/remove_from`,
           body: {
-            album_ids: [ctx.params.albumId],
-            message_ids: ctx.params.messageIds,
+            album_ids: [albumId],
+            message_ids: messageIds,
           },
         });
       },

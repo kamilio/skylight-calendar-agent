@@ -18,6 +18,7 @@ import {
   parseJsonContainer,
   parseNonEmptyJsonObject,
   pathSegment,
+  uniqueIdentifiers,
 } from "../skylight/validation.js";
 
 function uniqueInvitedEmails(emails: readonly string[] | undefined): string[] | undefined {
@@ -249,6 +250,7 @@ export const calendarGroup = defineGroup({
                 "notificationSettingJson"
               );
         const invitedEmails = uniqueInvitedEmails(ctx.params.invitedEmails);
+        const categoryIds = uniqueIdentifiers(ctx.params.categoryIds ?? [], "categoryIds");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -257,7 +259,7 @@ export const calendarGroup = defineGroup({
           body: {
             summary: ctx.params.summary,
             kind: ctx.params.kind ?? "event",
-            category_ids: ctx.params.categoryIds ?? [],
+            category_ids: categoryIds,
             starts_at: ctx.params.startsAt,
             ends_at: ctx.params.endsAt ?? null,
             all_day: ctx.params.allDay ?? false,
@@ -367,6 +369,10 @@ export const calendarGroup = defineGroup({
                 "notificationSettingJson"
               );
         const invitedEmails = uniqueInvitedEmails(ctx.params.invitedEmails);
+        const categoryIds =
+          ctx.params.categoryIds === undefined
+            ? undefined
+            : uniqueIdentifiers(ctx.params.categoryIds, "categoryIds");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -378,7 +384,7 @@ export const calendarGroup = defineGroup({
             ...(ctx.params.endsAt === undefined ? {} : { ends_at: ctx.params.endsAt }),
             ...(ctx.params.allDay === undefined ? {} : { all_day: ctx.params.allDay }),
             ...(ctx.params.rrule === undefined ? {} : { rrule: ctx.params.rrule }),
-            ...(ctx.params.categoryIds === undefined ? {} : { category_ids: ctx.params.categoryIds }),
+            ...(categoryIds === undefined ? {} : { category_ids: categoryIds }),
             ...(invitedEmails === undefined ? {} : { invited_emails: invitedEmails }),
             ...(ctx.params.location === undefined ? {} : { location: ctx.params.location }),
             ...(ctx.params.lat === undefined ? {} : { lat: ctx.params.lat }),
@@ -457,12 +463,13 @@ export const calendarGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
+        const activeCalendars = uniqueIdentifiers(ctx.params.activeCalendars, "activeCalendars");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/calendars/${pathSegment(ctx.params.accountId, "accountId")}`,
-          body: { active_calendars: ctx.params.activeCalendars },
+          body: { active_calendars: activeCalendars },
         });
       },
     }),

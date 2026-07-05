@@ -8,6 +8,7 @@ import {
   nonBlankParam,
   parseNonEmptyJsonObject,
   pathSegment,
+  uniqueIdentifiers,
 } from "../skylight/validation.js";
 
 export const rewardsGroup = defineGroup({
@@ -182,10 +183,7 @@ export const rewardsGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
-        const categoryIds = ctx.params.categoryIds.map((categoryId) => categoryId.trim());
-        if (new Set(categoryIds).size !== categoryIds.length) {
-          throw new UserError("categoryIds must not contain duplicates.");
-        }
+        const categoryIds = uniqueIdentifiers(ctx.params.categoryIds, "categoryIds");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
