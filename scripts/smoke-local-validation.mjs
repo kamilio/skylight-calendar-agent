@@ -89,6 +89,9 @@ async function expectLocalError(args, expected) {
   if (!output.includes(expected)) {
     throw new Error(`Local validation error was not reported: ${output}`);
   }
+  if (output.includes("\u001b")) {
+    throw new Error(`Local validation error retained terminal escapes: ${JSON.stringify(output)}`);
+  }
   if (output.includes("Missing credentials")) {
     throw new Error(`Credential validation ran before local validation: ${output}`);
   }
@@ -104,7 +107,11 @@ await expectLocalError(
 );
 await expectLocalError(
   ["lists", "get", "--list-id", "\u001b"],
-  "listId must not contain control characters"
+  "Command arguments must not contain terminal control characters"
+);
+await expectLocalError(
+  ["profiles", "forgot-password", "--email", "x\u001b[31m@example.com"],
+  "Command arguments must not contain terminal control characters"
 );
 await expectLocalError(
   [
