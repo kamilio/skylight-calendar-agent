@@ -6,8 +6,10 @@ import {
   assertValidDateRange,
   dateParam,
   nonBlankParam,
+  parseNonEmptyJsonObject,
   parseJsonObject,
   pathSegment,
+  timeParam,
 } from "../skylight/validation.js";
 
 export const tasksGroup = defineGroup({
@@ -49,12 +51,13 @@ export const tasksGroup = defineGroup({
         choreJson: S.String({ description: "Raw chore JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
+        const chore = parseJsonObject(ctx.params.choreJson, "choreJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/chores/create_multiple`,
-          body: parseJsonObject(ctx.params.choreJson, "choreJson"),
+          body: chore,
         });
       },
     }),
@@ -66,12 +69,13 @@ export const tasksGroup = defineGroup({
         bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
+        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/chores`,
-          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
+          body,
         });
       },
     }),
@@ -86,7 +90,10 @@ export const tasksGroup = defineGroup({
         rewardPoints: S.Optional(S.Number({ description: "Reward points" })),
         emojiIcon: S.Optional(S.String({ description: "Emoji icon" })),
         recurrenceRrule: S.Optional(
-          S.String({ description: "RRULE string (e.g. FREQ=DAILY;INTERVAL=1)", short: "r" })
+          nonBlankParam({
+            description: "RRULE string (e.g. FREQ=DAILY;INTERVAL=1)",
+            short: "r",
+          })
         ),
       }),
       handler: async (ctx) => {
@@ -121,8 +128,8 @@ export const tasksGroup = defineGroup({
         updatesJson: S.String({ description: "JSON object of updates", short: "j" }),
       }),
       handler: async (ctx) => {
+        const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
         const frameId = await resolveFrameId(ctx);
-        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
@@ -162,7 +169,7 @@ export const tasksGroup = defineGroup({
         seriesId: S.String({ description: "Chore series id", short: "i" }),
         status: S.String({ description: "Status (server-defined)", short: "s" }),
         instanceDate: dateParam({ description: "YYYY-MM-DD", short: "d" }),
-        instanceTime: S.Optional(S.String({ description: "HH:mm", short: "t" })),
+        instanceTime: S.Optional(timeParam({ description: "HH:mm", short: "t" })),
         categoryId: S.Optional(S.String({ description: "Category id" })),
       }),
       handler: async (ctx) => {
@@ -206,12 +213,13 @@ export const tasksGroup = defineGroup({
         bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
+        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/task_box/items`,
-          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
+          body,
         });
       },
     }),
@@ -237,10 +245,10 @@ export const tasksGroup = defineGroup({
         taskBoxItemJson: S.String({ description: "Raw task box item JSON", short: "j" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
         const taskBoxItem = parseJsonObject(ctx.params.taskBoxItemJson, "taskBoxItemJson") as {
           id?: string | number;
         };
+        const frameId = await resolveFrameId(ctx);
         const id = taskBoxItem.id;
         if (id !== undefined && String(id).length > 0) {
           return requestJson({

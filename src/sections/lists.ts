@@ -1,7 +1,14 @@
-import { defineCommand, defineGroup, S } from "toolcraft";
+import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
-import { nonBlankParam, parseJsonObject, pathSegment } from "../skylight/validation.js";
+import {
+  nonBlankParam,
+  parseNonEmptyJsonObject,
+  parseJsonObject,
+  parsePositiveSafeInteger,
+  pathSegment,
+  positiveIntegerStringParam,
+} from "../skylight/validation.js";
 
 export const listsGroup = defineGroup({
   name: "lists",
@@ -50,7 +57,11 @@ export const listsGroup = defineGroup({
           })
         ),
         color: S.Optional(
-          S.String({ description: "Hex color, for example #A8D4D3", short: "c" })
+          S.String({
+            description: "Six-digit hex color, for example #A8D4D3",
+            short: "c",
+            pattern: "^#[0-9A-Fa-f]{6}$",
+          })
         ),
         hideOnDevice: S.Optional(
           S.Boolean({ description: "Hide the list on Skylight devices" })
@@ -80,12 +91,13 @@ export const listsGroup = defineGroup({
         listJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
+        const list = parseJsonObject(ctx.params.listJson, "listJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/lists`,
-          body: parseJsonObject(ctx.params.listJson, "listJson"),
+          body: list,
         });
       },
     }),
@@ -98,8 +110,8 @@ export const listsGroup = defineGroup({
         updatesJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
+        const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
         const frameId = await resolveFrameId(ctx);
-        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
@@ -177,18 +189,25 @@ export const listsGroup = defineGroup({
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
         const items: unknown[] = [];
-        for (const label of ctx.params.labels) {
-          items.push(
-            await requestJson({
-              fetch: ctx.fetch,
-              method: "POST",
-              path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
-              body: {
-                label,
-                section: ctx.params.section?.trim() || null,
-              },
-            })
-          );
+        for (const [index, label] of ctx.params.labels.entries()) {
+          try {
+            items.push(
+              await requestJson({
+                fetch: ctx.fetch,
+                method: "POST",
+                path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
+                body: {
+                  label,
+                  section: ctx.params.section?.trim() || null,
+                },
+              })
+            );
+          } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            throw new UserError(
+              `Created ${index} of ${ctx.params.labels.length} items. Failed on item ${index + 1} (${JSON.stringify(label)}): ${detail}`
+            );
+          }
         }
         return { items };
       },
@@ -202,12 +221,13 @@ export const listsGroup = defineGroup({
         itemJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
+        const item = parseJsonObject(ctx.params.itemJson, "itemJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
-          body: parseJsonObject(ctx.params.itemJson, "itemJson"),
+          body: item,
         });
       },
     }),
@@ -221,8 +241,8 @@ export const listsGroup = defineGroup({
         updatesJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
+        const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
         const frameId = await resolveFrameId(ctx);
-        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
@@ -255,7 +275,9 @@ export const listsGroup = defineGroup({
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
         itemId: S.String({ description: "List item id" }),
-        afterItemId: S.Optional(S.String({ description: "After item id (omit to move to top)" })),
+        afterItemId: S.Optional(
+          positiveIntegerStringParam({ description: "After item id (omit to move to top)" })
+        ),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -264,7 +286,10 @@ export const listsGroup = defineGroup({
           method: "POST",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/${pathSegment(ctx.params.itemId, "itemId")}/move`,
           body: {
-            after_item_id: ctx.params.afterItemId ? Number(ctx.params.afterItemId) : null,
+            after_item_id:
+              ctx.params.afterItemId === undefined
+                ? null
+                : parsePositiveSafeInteger(ctx.params.afterItemId, "afterItemId"),
           },
         });
       },

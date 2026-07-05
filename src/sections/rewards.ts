@@ -1,7 +1,14 @@
 import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
-import { parseJsonObject, pathSegment } from "../skylight/validation.js";
+import {
+  assertValidDateOrDateTime,
+  assertValidDateOrDateTimeRange,
+  dateOrDateTimeParam,
+  parseJsonObject,
+  parseNonEmptyJsonObject,
+  pathSegment,
+} from "../skylight/validation.js";
 
 export const rewardsGroup = defineGroup({
   name: "rewards",
@@ -12,10 +19,26 @@ export const rewardsGroup = defineGroup({
       description: "List rewards",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        redeemedAtMin: S.Optional(S.String({ description: "ISO datetime", short: "m" })),
-        redeemedAtMax: S.Optional(S.String({ description: "ISO datetime", short: "x" })),
+        redeemedAtMin: S.Optional(
+          dateOrDateTimeParam({ description: "ISO datetime", short: "m" })
+        ),
+        redeemedAtMax: S.Optional(
+          dateOrDateTimeParam({ description: "ISO datetime", short: "x" })
+        ),
       }),
       handler: async (ctx) => {
+        if (ctx.params.redeemedAtMin !== undefined && ctx.params.redeemedAtMax !== undefined) {
+          assertValidDateOrDateTimeRange(
+            ctx.params.redeemedAtMin,
+            ctx.params.redeemedAtMax,
+            "redeemedAtMin",
+            "redeemedAtMax"
+          );
+        } else if (ctx.params.redeemedAtMin !== undefined) {
+          assertValidDateOrDateTime(ctx.params.redeemedAtMin, "redeemedAtMin");
+        } else if (ctx.params.redeemedAtMax !== undefined) {
+          assertValidDateOrDateTime(ctx.params.redeemedAtMax, "redeemedAtMax");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -52,8 +75,8 @@ export const rewardsGroup = defineGroup({
         rewardJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
         const reward = parseJsonObject(ctx.params.rewardJson, "rewardJson");
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -71,8 +94,8 @@ export const rewardsGroup = defineGroup({
         rewardJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
+        const reward = parseNonEmptyJsonObject(ctx.params.rewardJson, "rewardJson");
         const frameId = await resolveFrameId(ctx);
-        const reward = parseJsonObject(ctx.params.rewardJson, "rewardJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PATCH",

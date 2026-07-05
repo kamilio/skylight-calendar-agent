@@ -1,7 +1,11 @@
 import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
-import { nonBlankParam, pathSegment } from "../skylight/validation.js";
+import {
+  assertAtLeastOneDefined,
+  nonBlankParam,
+  pathSegment,
+} from "../skylight/validation.js";
 
 export const recipesGroup = defineGroup({
   name: "recipes",
@@ -70,10 +74,14 @@ export const recipesGroup = defineGroup({
       params: S.Object({
         recipeId: S.String({ description: "Recipe id", short: "i" }),
         categoryId: S.Optional(S.String({ description: "Meal category id", short: "c" })),
-        summary: S.Optional(S.String({ description: "Recipe title", short: "s" })),
+        summary: S.Optional(nonBlankParam({ description: "Recipe title", short: "s" })),
         description: S.Optional(S.String({ description: "Recipe description" })),
       }),
       handler: async (ctx) => {
+        assertAtLeastOneDefined(
+          [ctx.params.categoryId, ctx.params.summary, ctx.params.description],
+          "Specify categoryId, summary, or description to update the recipe."
+        );
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,

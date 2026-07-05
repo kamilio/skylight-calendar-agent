@@ -2,8 +2,10 @@ import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
+  assertAtLeastOneDefined,
   assertValidDateRange,
   dateParam,
+  parseNonEmptyJsonObject,
   parseJsonObject,
   pathSegment,
 } from "../skylight/validation.js";
@@ -35,8 +37,8 @@ export const mealsGroup = defineGroup({
         updatesJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
+        const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
         const frameId = await resolveFrameId(ctx);
-        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PATCH",
@@ -106,11 +108,11 @@ export const mealsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
-        const frameId = await resolveFrameId(ctx);
         const extras =
           ctx.params.extrasJson === undefined
             ? {}
             : parseJsonObject(ctx.params.extrasJson, "extrasJson");
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -121,10 +123,10 @@ export const mealsGroup = defineGroup({
             include: "meal_category,meal_recipe",
           },
           body: {
+            ...extras,
             meal_recipe_id: ctx.params.recipeId,
             meal_category_id: ctx.params.categoryId,
             add_to_grocery_list: ctx.params.addToGroceryList ?? false,
-            ...extras,
           },
         });
       },
@@ -140,6 +142,7 @@ export const mealsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
+        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -150,7 +153,7 @@ export const mealsGroup = defineGroup({
             ...(ctx.params.dateMax === undefined ? {} : { date_max: ctx.params.dateMax }),
             include: "meal_category,meal_recipe",
           },
-          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
+          body,
         });
       },
     }),
@@ -169,12 +172,16 @@ export const mealsGroup = defineGroup({
         dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
       }),
       handler: async (ctx) => {
+        assertAtLeastOneDefined(
+          [ctx.params.recipeId, ctx.params.categoryId, ctx.params.updatesJson],
+          "Specify recipeId, categoryId, or updatesJson to update the meal."
+        );
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
-        const frameId = await resolveFrameId(ctx);
         const updates =
           ctx.params.updatesJson === undefined
             ? {}
-            : parseJsonObject(ctx.params.updatesJson, "updatesJson");
+            : parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PATCH",

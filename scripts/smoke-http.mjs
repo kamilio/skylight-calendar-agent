@@ -7,6 +7,45 @@ const env = {
 
 try {
   await requestJson({
+    fetch: async (_url, init) =>
+      await new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+      }),
+    env: { ...env, SKYLIGHT_REQUEST_TIMEOUT_MS: "10" },
+    method: "GET",
+    path: "/api/frames/42/lists",
+  });
+  throw new Error("Timed-out request unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("timed out after 10ms") || !message.includes("GET /api/frames/42/lists")) {
+    throw error;
+  }
+}
+
+try {
+  await requestJson({
+    fetch: async (_url, init) =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            init?.signal?.addEventListener("abort", () => controller.error(new Error("aborted")));
+          },
+        }),
+        { status: 200 }
+      ),
+    env: { ...env, SKYLIGHT_REQUEST_TIMEOUT_MS: "10" },
+    method: "GET",
+    path: "/api/frames/42/lists",
+  });
+  throw new Error("Timed-out response body unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("timed out after 10ms")) throw error;
+}
+
+try {
+  await requestJson({
     fetch: async () => {
       throw new Error("socket closed");
     },

@@ -96,6 +96,24 @@ try {
   ]);
   await run(["lists", "delete", "--list-id", "7"]);
   await run(["lists", "get", "--list-id", "../../user"]);
+  await run([
+    "meals",
+    "create",
+    "--recipe-id",
+    "recipe-1",
+    "--category-id",
+    "category-1",
+    "--extras-json",
+    '{"meal_recipe_id":"wrong","meal_category_id":"wrong"}',
+  ]);
+  await run([
+    "calendar",
+    "event-edit",
+    "--event-id",
+    "event-1",
+    "--summary",
+    "Updated title",
+  ]);
   await runExpectingFailure(["lists", "create", "--label", ""]);
   await runExpectingFailure(["lists", "create", "--label", "   "]);
   await runExpectingFailure([
@@ -114,12 +132,154 @@ try {
     "--date-max",
     "2026-07-10",
   ]);
+  await runExpectingFailure([
+    "calendar",
+    "events",
+    "--date-min",
+    "2026-07-10",
+    "--date-max",
+    "2026-07-20",
+    "--timezone",
+    "Definitely/Invalid",
+  ]);
   await runExpectingFailure(["meals", "list", "--date-min", "2026-13-01"]);
   await runExpectingFailure(["photos", "list", "--page", "0"]);
   await runExpectingFailure(["photos", "list", "--page", "1.5"]);
   await runExpectingFailure(["photos", "album-create", "--title", "   "]);
+  await runExpectingFailure(["rewards", "list", "--redeemed-at-min", "not-a-date"]);
+  await runExpectingFailure([
+    "rewards",
+    "list",
+    "--redeemed-at-min",
+    "2026-07-20T12:00:00Z",
+    "--redeemed-at-max",
+    "2026-07-10T12:00:00Z",
+  ]);
   await runExpectingFailure(["lists", "create-raw", "--list-json", "null"]);
   await runExpectingFailure(["lists", "create-raw", "--list-json", "[]"]);
+  await runExpectingFailure([
+    "lists",
+    "update",
+    "--list-id",
+    "7",
+    "--updates-json",
+    "{}",
+  ]);
+  await runExpectingFailure(["profiles", "forgot-password", "--email", "not-an-email"]);
+  await runExpectingFailure([
+    "tasks",
+    "chore-status",
+    "--series-id",
+    "7",
+    "--status",
+    "completed",
+    "--instance-date",
+    "2026-07-05",
+    "--instance-time",
+    "29:90",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "event-create",
+    "--summary",
+    "Bad date",
+    "--starts-at",
+    "whenever",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "event-create",
+    "--summary",
+    "Impossible date",
+    "--starts-at",
+    "2026-02-30T10:00:00Z",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "event-create",
+    "--summary",
+    "Reversed",
+    "--starts-at",
+    "2026-07-20",
+    "--ends-at",
+    "2026-07-10",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "event-create",
+    "--summary",
+    "Missing rule",
+    "--starts-at",
+    "2026-07-10",
+    "--recurring",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "event-create",
+    "--summary",
+    "Contradictory rule",
+    "--starts-at",
+    "2026-07-10",
+    "--recurring=false",
+    "--rrule",
+    "FREQ=DAILY",
+  ]);
+  await runExpectingFailure(["calendar", "event-edit", "--event-id", "event-1"]);
+  await runExpectingFailure([
+    "meals",
+    "update",
+    "--meal-id",
+    "meal-1",
+    "--instance-iso",
+    "2026-07-05T12:00:00Z",
+  ]);
+  await runExpectingFailure([
+    "meals",
+    "update",
+    "--meal-id",
+    "meal-1",
+    "--instance-iso",
+    "2026-07-05T12:00:00Z",
+    "--updates-json",
+    "{}",
+  ]);
+  await runExpectingFailure(["recipes", "update", "--recipe-id", "recipe-1"]);
+  await runExpectingFailure(["profiles", "owner-profile-update"]);
+  await runExpectingFailure([
+    "calendar",
+    "notification-settings-update",
+    "--on-time=false",
+    "--early",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "notification-settings-update",
+    "--on-time=false",
+    "--early=false",
+    "--early-minutes-before",
+    "10",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "event-create",
+    "--summary",
+    "Missing longitude",
+    "--starts-at",
+    "2026-07-10",
+    "--lat",
+    "40",
+  ]);
+  await runExpectingFailure(["lists", "create", "--label", "Bad color", "--color", "blue"]);
+  await runExpectingFailure([
+    "lists",
+    "item-move",
+    "--list-id",
+    "7",
+    "--item-id",
+    "8",
+    "--after-item-id",
+    "not-a-number",
+  ]);
 } finally {
   server.close();
 }
@@ -172,4 +332,19 @@ if (requests[5]?.method !== "DELETE" || requests[5]?.url !== "/api/frames/42/lis
 
 if (requests[6]?.url !== "/api/frames/42/lists/..%2F..%2Fuser") {
   throw new Error(`Path parameter was not safely encoded: ${requests[6]?.url}`);
+}
+
+if (
+  requests[7]?.body?.meal_recipe_id !== "recipe-1" ||
+  requests[7]?.body?.meal_category_id !== "category-1"
+) {
+  throw new Error("Explicit meal fields were overwritten by extrasJson");
+}
+
+if (
+  requests[8]?.url !== "/api/frames/42/calendar_events/event-1" ||
+  requests[8]?.body?.summary !== "Updated title" ||
+  Object.hasOwn(requests[8]?.body ?? {}, "timezone")
+) {
+  throw new Error("Event edit changed unspecified fields");
 }

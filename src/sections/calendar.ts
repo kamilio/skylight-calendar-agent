@@ -1,10 +1,16 @@
-import { defineCommand, defineGroup, S } from "toolcraft";
+import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { getSkylightConfig } from "../skylight/config.js";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
+  assertAtLeastOneDefined,
+  assertValidDateOrDateTime,
+  assertValidDateOrDateTimeRange,
   assertValidDateRange,
+  assertValidTimezone,
+  dateOrDateTimeParam,
   dateParam,
+  emailParam,
   nonBlankParam,
   parseJsonObject,
   parseJsonValue,
@@ -37,10 +43,20 @@ export const calendarGroup = defineGroup({
         onTime: S.Boolean({ description: "Notify on time", default: false }),
         early: S.Boolean({ description: "Notify early", default: false }),
         earlyMinutesBefore: S.Optional(
-          S.Number({ description: "Minutes before event when early=true" })
+          S.Number({
+            description: "Minutes before event when early=true",
+            minimum: 0,
+            jsonType: "integer",
+          })
         ),
       }),
       handler: async (ctx) => {
+        if (ctx.params.early && ctx.params.earlyMinutesBefore === undefined) {
+          throw new UserError("earlyMinutesBefore is required when early is true.");
+        }
+        if (!ctx.params.early && ctx.params.earlyMinutesBefore !== undefined) {
+          throw new UserError("earlyMinutesBefore cannot be set when early is false.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -70,8 +86,10 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
-        const frameId = await resolveFrameId(ctx);
         const config = getSkylightConfig();
+        const timezone = ctx.params.timezone ?? config.timezone;
+        assertValidTimezone(timezone);
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
@@ -79,7 +97,7 @@ export const calendarGroup = defineGroup({
           query: {
             date_min: ctx.params.dateMin,
             date_max: ctx.params.dateMax,
-            timezone: ctx.params.timezone ?? config.timezone,
+            timezone,
             include:
               ctx.params.include ?? "categories,calendar_account,event_notification_setting",
           },
@@ -100,15 +118,17 @@ export const calendarGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
         const config = getSkylightConfig();
+        const timezone = ctx.params.timezone ?? config.timezone;
+        assertValidTimezone(timezone);
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/calendar_events/search`,
           query: {
             search_query: ctx.params.searchQuery,
-            timezone: ctx.params.timezone ?? config.timezone,
+            timezone,
             include:
               ctx.params.include ?? "categories,calendar_account,event_notification_setting",
           },
@@ -124,14 +144,16 @@ export const calendarGroup = defineGroup({
         include: S.Optional(S.String({ description: "include= CSV" })),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
         const config = getSkylightConfig();
+        const timezone = ctx.params.timezone ?? config.timezone;
+        assertValidTimezone(timezone);
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/calendar_events/countdowns`,
           query: {
-            timezone: ctx.params.timezone ?? config.timezone,
+            timezone,
             ...(ctx.params.include === undefined ? {} : { include: ctx.params.include }),
           },
         });
@@ -157,23 +179,30 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         summary: nonBlankParam({ description: "Event title", short: "s" }),
-        startsAt: S.String({ description: "ISO datetime or YYYY-MM-DD", short: "a" }),
-        endsAt: S.Optional(S.String({ description: "ISO datetime or YYYY-MM-DD", short: "b" })),
+        startsAt: dateOrDateTimeParam({
+          description: "ISO datetime or YYYY-MM-DD",
+          short: "a",
+        }),
+        endsAt: S.Optional(
+          dateOrDateTimeParam({ description: "ISO datetime or YYYY-MM-DD", short: "b" })
+        ),
         allDay: S.Optional(S.Boolean({ description: "All day event" })),
         kind: S.Optional(S.String({ description: "Event kind (e.g., event)", short: "k" })),
         recurring: S.Optional(S.Boolean({ description: "Recurring?" })),
-        rrule: S.Optional(S.String({ description: "RRULE string (without 'RRULE:' prefix)" })),
+        rrule: S.Optional(
+          nonBlankParam({ description: "RRULE string (without 'RRULE:' prefix)" })
+        ),
         calendarId: S.Optional(S.String({ description: "calendar_id" })),
         calendarAccountId: S.Optional(S.String({ description: "calendar_account_id" })),
         categoryIds: S.Optional(
           S.Array(S.String({ description: "Category id" }), { description: "Category ids" })
         ),
         invitedEmails: S.Optional(
-          S.Array(S.String({ description: "Invite email" }), { description: "Invited emails" })
+          S.Array(emailParam({ description: "Invite email" }), { description: "Invited emails" })
         ),
         location: S.Optional(S.String({ description: "Location" })),
-        lat: S.Optional(S.Number({ description: "Latitude" })),
-        lng: S.Optional(S.Number({ description: "Longitude" })),
+        lat: S.Optional(S.Number({ description: "Latitude", minimum: -90, maximum: 90 })),
+        lng: S.Optional(S.Number({ description: "Longitude", minimum: -180, maximum: 180 })),
         description: S.Optional(S.String({ description: "Description" })),
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
         notificationSettingJson: S.Optional(
@@ -182,12 +211,24 @@ export const calendarGroup = defineGroup({
         countdownEnabled: S.Optional(S.Boolean({ description: "Enable countdown" })),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
+        assertValidDateOrDateTimeRange(ctx.params.startsAt, ctx.params.endsAt, "startsAt", "endsAt");
+        if (ctx.params.recurring === true && ctx.params.rrule === undefined) {
+          throw new UserError("rrule is required when recurring is true.");
+        }
+        if (ctx.params.recurring === false && ctx.params.rrule !== undefined) {
+          throw new UserError("rrule cannot be set when recurring is false.");
+        }
+        if ((ctx.params.lat === undefined) !== (ctx.params.lng === undefined)) {
+          throw new UserError("lat and lng must be provided together.");
+        }
         const config = getSkylightConfig();
+        const timezone = ctx.params.timezone ?? config.timezone;
+        assertValidTimezone(timezone);
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
             : parseJsonObject(ctx.params.notificationSettingJson, "notificationSettingJson");
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -199,10 +240,7 @@ export const calendarGroup = defineGroup({
             starts_at: ctx.params.startsAt,
             ends_at: ctx.params.endsAt ?? null,
             all_day: ctx.params.allDay ?? false,
-            rrule:
-              ctx.params.recurring === true && ctx.params.rrule
-                ? [`RRULE:${ctx.params.rrule}`]
-                : null,
+            rrule: ctx.params.rrule ? [`RRULE:${ctx.params.rrule}`] : null,
             invited_emails: ctx.params.invitedEmails ?? [],
             location: ctx.params.location ?? null,
             lat: ctx.params.lat ?? null,
@@ -210,7 +248,7 @@ export const calendarGroup = defineGroup({
             description: ctx.params.description ?? null,
             calendar_account_id: ctx.params.calendarAccountId ?? null,
             calendar_id: ctx.params.calendarId ?? null,
-            timezone: ctx.params.timezone ?? config.timezone,
+            timezone,
             ...(eventNotificationSettingAttributes === undefined
               ? {}
               : { event_notification_setting_attributes: eventNotificationSettingAttributes }),
@@ -225,16 +263,20 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         eventId: S.String({ description: "Event id", short: "i" }),
-        summary: S.Optional(S.String({ description: "Event title", short: "s" })),
-        startsAt: S.Optional(S.String({ description: "ISO datetime or YYYY-MM-DD", short: "a" })),
-        endsAt: S.Optional(S.String({ description: "ISO datetime or YYYY-MM-DD", short: "b" })),
+        summary: S.Optional(nonBlankParam({ description: "Event title", short: "s" })),
+        startsAt: S.Optional(
+          dateOrDateTimeParam({ description: "ISO datetime or YYYY-MM-DD", short: "a" })
+        ),
+        endsAt: S.Optional(
+          dateOrDateTimeParam({ description: "ISO datetime or YYYY-MM-DD", short: "b" })
+        ),
         allDay: S.Optional(S.Boolean({ description: "All day event" })),
         rrule: S.Optional(S.String({ description: "RRULE string (server format)" })),
         categoryIds: S.Optional(S.Array(S.String({ description: "Category id" }))),
-        invitedEmails: S.Optional(S.Array(S.String({ description: "Invite email" }))),
+        invitedEmails: S.Optional(S.Array(emailParam({ description: "Invite email" }))),
         location: S.Optional(S.String({ description: "Location" })),
-        lat: S.Optional(S.Number({ description: "Latitude" })),
-        lng: S.Optional(S.Number({ description: "Longitude" })),
+        lat: S.Optional(S.Number({ description: "Latitude", minimum: -90, maximum: 90 })),
+        lng: S.Optional(S.Number({ description: "Longitude", minimum: -180, maximum: 180 })),
         description: S.Optional(S.String({ description: "Description" })),
         applyTo: S.Optional(S.String({ description: "Apply-to scope (server-defined)" })),
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
@@ -244,12 +286,48 @@ export const calendarGroup = defineGroup({
         countdownEnabled: S.Optional(S.Boolean({ description: "Enable countdown" })),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        const config = getSkylightConfig();
+        assertAtLeastOneDefined(
+          [
+            ctx.params.summary,
+            ctx.params.startsAt,
+            ctx.params.endsAt,
+            ctx.params.allDay,
+            ctx.params.rrule,
+            ctx.params.categoryIds,
+            ctx.params.invitedEmails,
+            ctx.params.location,
+            ctx.params.lat,
+            ctx.params.lng,
+            ctx.params.description,
+            ctx.params.timezone,
+            ctx.params.notificationSettingJson,
+            ctx.params.countdownEnabled,
+          ],
+          "Specify at least one event field to update."
+        );
+        if (ctx.params.startsAt !== undefined && ctx.params.endsAt !== undefined) {
+          assertValidDateOrDateTimeRange(
+            ctx.params.startsAt,
+            ctx.params.endsAt,
+            "startsAt",
+            "endsAt"
+          );
+        } else if (ctx.params.startsAt !== undefined) {
+          assertValidDateOrDateTime(ctx.params.startsAt, "startsAt");
+        } else if (ctx.params.endsAt !== undefined) {
+          assertValidDateOrDateTime(ctx.params.endsAt, "endsAt");
+        }
+        if ((ctx.params.lat === undefined) !== (ctx.params.lng === undefined)) {
+          throw new UserError("lat and lng must be provided together.");
+        }
+        if (ctx.params.timezone !== undefined) {
+          assertValidTimezone(ctx.params.timezone);
+        }
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
             : parseJsonObject(ctx.params.notificationSettingJson, "notificationSettingJson");
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
@@ -267,7 +345,7 @@ export const calendarGroup = defineGroup({
             ...(ctx.params.lng === undefined ? {} : { lng: ctx.params.lng }),
             ...(ctx.params.description === undefined ? {} : { description: ctx.params.description }),
             ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
-            timezone: ctx.params.timezone ?? config.timezone,
+            ...(ctx.params.timezone === undefined ? {} : { timezone: ctx.params.timezone }),
             ...(eventNotificationSettingAttributes === undefined
               ? {}
               : { event_notification_setting_attributes: eventNotificationSettingAttributes }),
@@ -444,8 +522,8 @@ export const calendarGroup = defineGroup({
         attributesJson: S.String({ description: "JSON object of attributes", short: "j" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
         const attributes = parseJsonObject(ctx.params.attributesJson, "attributesJson");
+        const frameId = await resolveFrameId(ctx);
         if (ctx.params.calendarId) {
           return requestJson({
             fetch: ctx.fetch,
@@ -504,11 +582,11 @@ export const calendarGroup = defineGroup({
         categorizationsJson: S.String({ description: "JSON array/object payload", short: "j" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
         const categorizations = parseJsonValue(
           ctx.params.categorizationsJson,
           "categorizationsJson"
         );
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",

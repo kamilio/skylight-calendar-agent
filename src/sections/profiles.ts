@@ -3,7 +3,10 @@ import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import { getAuthorizationHeader } from "../skylight/auth.js";
 import {
+  assertAtLeastOneDefined,
+  emailParam,
   nonBlankParam,
+  parseNonEmptyJsonObject,
   parseJsonObject,
   parseJsonValue,
   pathSegment,
@@ -43,7 +46,7 @@ export const profilesGroup = defineGroup({
         updatesJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
-        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
+        const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PATCH",
@@ -87,7 +90,7 @@ export const profilesGroup = defineGroup({
       description: "Request password reset email",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        email: S.String({ description: "Email address", short: "e" }),
+        email: emailParam({ description: "Email address", short: "e" }),
       }),
       handler: async (ctx) =>
         requestJson({
@@ -102,7 +105,7 @@ export const profilesGroup = defineGroup({
       description: "Update user email (requires password)",
       scope: ["cli", "sdk"],
       params: S.Object({
-        email: S.String({ description: "New email", short: "e" }),
+        email: emailParam({ description: "New email", short: "e" }),
         password: S.String({ description: "Current password", short: "p" }),
       }),
       handler: async (ctx) =>
@@ -209,12 +212,13 @@ export const profilesGroup = defineGroup({
         bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
+        const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}`,
-          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
+          body,
         });
       },
     }),
@@ -254,7 +258,7 @@ export const profilesGroup = defineGroup({
       description: "Transfer frame ownership to a new user email",
       scope: ["cli", "sdk"],
       params: S.Object({
-        email: S.String({ description: "New owner email", short: "e" }),
+        email: emailParam({ description: "New owner email", short: "e" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -288,10 +292,14 @@ export const profilesGroup = defineGroup({
       description: "Update household owner profile",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        name: S.Optional(S.String({ description: "Owner name" })),
+        name: S.Optional(nonBlankParam({ description: "Owner name" })),
         birthday: S.Optional(S.String({ description: "Birthday (server format)" })),
       }),
       handler: async (ctx) => {
+        assertAtLeastOneDefined(
+          [ctx.params.name, ctx.params.birthday],
+          "Specify name or birthday to update the owner profile."
+        );
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -342,12 +350,13 @@ export const profilesGroup = defineGroup({
         bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
+        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/categories`,
-          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
+          body,
         });
       },
     }),
@@ -359,12 +368,13 @@ export const profilesGroup = defineGroup({
         bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
+        const body = parseJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/categories/find_or_create`,
-          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
+          body,
         });
       },
     }),
@@ -377,12 +387,13 @@ export const profilesGroup = defineGroup({
         updatesJson: S.String({ description: "Raw JSON updates", short: "j" }),
       }),
       handler: async (ctx) => {
+        const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}`,
-          body: parseJsonObject(ctx.params.updatesJson, "updatesJson"),
+          body: updates,
         });
       },
     }),
@@ -417,11 +428,11 @@ export const profilesGroup = defineGroup({
         categorizationsJson: S.String({ description: "JSON payload", short: "j" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
         const categorizations = parseJsonValue(
           ctx.params.categorizationsJson,
           "categorizationsJson"
         );
+        const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
@@ -439,8 +450,8 @@ export const profilesGroup = defineGroup({
         updatesJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
+        const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
         const frameId = await resolveFrameId(ctx);
-        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
@@ -577,12 +588,13 @@ export const profilesGroup = defineGroup({
         bodyJson: S.String({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {
+        const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}`,
-          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
+          body,
         });
       },
     }),

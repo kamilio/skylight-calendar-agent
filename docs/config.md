@@ -13,6 +13,7 @@ Set either `SKYLIGHT_FRAME_ID` or an optional public `SKYLIGHT_CALENDAR_URL`.
 - `SKYLIGHT_FRAME_ID` — required for most OpenAPI-documented endpoints (`/api/frames/{frameId}/...`).
 - `SKYLIGHT_CALENDAR_URL` — optional public share URL used to infer a numeric frame id.
 - `SKYLIGHT_TIMEZONE` — defaults to `America/Chicago`.
+- `SKYLIGHT_REQUEST_TIMEOUT_MS` — positive request timeout in milliseconds (default `30000`).
 
 ## Frame scoping
 

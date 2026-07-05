@@ -1,6 +1,6 @@
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
-import { requestJson } from "./http.js";
+import { requestJson, SkylightRequestError } from "./http.js";
 import { pathSegment } from "./validation.js";
 
 type FramesListResponse = {
@@ -28,8 +28,10 @@ export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): P
       });
       process.env.SKYLIGHT_FRAME_ID = fromUrl;
       return pathSegment(fromUrl, "SKYLIGHT_CALENDAR_URL frame id");
-    } catch {
-      // fall through to /api/frames enumeration
+    } catch (error) {
+      if (!(error instanceof SkylightRequestError) || error.status !== 404) {
+        throw error;
+      }
     }
   }
 

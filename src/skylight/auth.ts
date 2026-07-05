@@ -52,32 +52,51 @@ export async function getAuthorizationHeader(opts: {
     );
   }
 
-  const { apiBaseUrl } = getSkylightConfig(env);
-  const response = await opts.fetch(`${apiBaseUrl}/api/sessions`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      accept: "application/json",
-    },
-    body: JSON.stringify({ email, password }),
-  });
+  const { apiBaseUrl, requestTimeoutMs } = getSkylightConfig(env);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+  try {
+    const response = await opts.fetch(`${apiBaseUrl}/api/sessions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    const excerpt = errorBodyExcerpt(text);
-    throw new UserError(
-      `Login failed (${response.status}). ${excerpt.length > 0 ? excerpt : "Check credentials."}`
-    );
+    const text = await response.text();
+    if (!response.ok) {
+      const excerpt = errorBodyExcerpt(text);
+      throw new UserError(
+        `Login failed (${response.status}). ${excerpt.length > 0 ? excerpt : "Check credentials."}`
+      );
+    }
+
+    let json: SessionResponse;
+    try {
+      json = JSON.parse(text) as SessionResponse;
+    } catch {
+      throw new UserError("Login response was not valid JSON.");
+    }
+    const id = json.data?.id;
+    const token = json.data?.attributes?.token;
+    if (!id || !token) {
+      throw new UserError("Login response missing id/token.");
+    }
+
+    const computed = base64(`${id}:${token}`);
+    process.env.SKYLIGHT_BASIC_TOKEN = computed;
+    return `Basic ${computed}`;
+  } catch (error) {
+    if (error instanceof UserError) throw error;
+    if (controller.signal.aborted) {
+      throw new UserError(`Login request timed out after ${requestTimeoutMs}ms.`);
+    }
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new UserError(`Login request failed: ${detail}`);
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const json = (await response.json()) as SessionResponse;
-  const id = json.data?.id;
-  const token = json.data?.attributes?.token;
-  if (!id || !token) {
-    throw new UserError("Login response missing id/token.");
-  }
-
-  const computed = base64(`${id}:${token}`);
-  process.env.SKYLIGHT_BASIC_TOKEN = computed;
-  return `Basic ${computed}`;
 }
