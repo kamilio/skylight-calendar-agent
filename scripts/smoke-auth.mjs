@@ -167,9 +167,18 @@ const isolatedFetch = async () => {
 await getAuthorizationHeader({ fetch: isolatedFetch, env: isolatedEnv });
 await getAuthorizationHeader({ fetch: isolatedFetch, env: isolatedEnv });
 if (loginCalls !== 1) throw new Error(`Custom env token was not cached; login calls: ${loginCalls}`);
-if (!isolatedEnv.SKYLIGHT_BASIC_TOKEN) throw new Error("Custom env did not receive cached token");
+if (isolatedEnv.SKYLIGHT_BASIC_TOKEN !== undefined) {
+  throw new Error("Generated login token leaked into the custom environment");
+}
 if (process.env.SKYLIGHT_BASIC_TOKEN !== undefined) {
   throw new Error("Custom env login polluted process.env");
+}
+
+isolatedEnv.SKYLIGHT_EMAIL = "changed@example.com";
+isolatedEnv.SKYLIGHT_PASSWORD = "changed-secret";
+await getAuthorizationHeader({ fetch: isolatedFetch, env: isolatedEnv });
+if (loginCalls !== 2 || isolatedEnv.SKYLIGHT_BASIC_TOKEN !== undefined) {
+  throw new Error(`Changed credentials reused a generated token; login calls: ${loginCalls}`);
 }
 
 let submittedPassword;
@@ -241,7 +250,7 @@ const staleAuthorization = await staleLogin;
 if (
   changingEmails.join(",") !== "first@example.com,second@example.com" ||
   staleAuthorization === currentAuthorization ||
-  changingEnv.SKYLIGHT_BASIC_TOKEN !== currentAuthorization.slice("Basic ".length)
+  changingEnv.SKYLIGHT_BASIC_TOKEN !== undefined
 ) {
   throw new Error(
     `Credential changes leaked across logins: ${JSON.stringify({ changingEmails, staleAuthorization, currentAuthorization })}`

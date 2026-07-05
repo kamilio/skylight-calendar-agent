@@ -1,6 +1,6 @@
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
-import { getAuthorizationHeader } from "./auth.js";
+import { getAuthorizationHeader, refreshAuthorizationHeader } from "./auth.js";
 import { terminalSafeText, truncateText } from "./text.js";
 import { assertWellFormedUnicode } from "./validation.js";
 
@@ -153,8 +153,17 @@ export async function requestJson<TResponse>(opts: {
   const timeout = setTimeout(() => controller.abort(), config.requestTimeoutMs);
   init.signal = controller.signal;
   try {
-    const response = await opts.fetch(url.toString(), init);
-    const text = await response.text();
+    let response = await opts.fetch(url.toString(), init);
+    let text = await response.text();
+
+    if (response.status === 401 && opts.authenticated !== false) {
+      const refreshedAuthorization = await refreshAuthorizationHeader({ fetch: opts.fetch, env });
+      if (refreshedAuthorization !== null) {
+        headers.authorization = refreshedAuthorization;
+        response = await opts.fetch(url.toString(), init);
+        text = await response.text();
+      }
+    }
 
     if (!response.ok) {
       const excerpt = errorBodyExcerpt(text);

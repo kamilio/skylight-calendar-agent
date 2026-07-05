@@ -16,9 +16,14 @@ interface SessionResponse {
 }
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
-const inFlightLogins = new WeakMap<
+interface LoginState {
+  requests: Map<string, Promise<string>>;
+  authorizations: Map<string, string>;
+}
+
+const loginStates = new WeakMap<
   object,
-  WeakMap<typeof globalThis.fetch, Map<string, Promise<string>>>
+  WeakMap<typeof globalThis.fetch, LoginState>
 >();
 
 function loginKey(env: NodeJS.ProcessEnv, email: string, password: string): string {
@@ -30,21 +35,21 @@ function loginKey(env: NodeJS.ProcessEnv, email: string, password: string): stri
   ]);
 }
 
-function loginRequests(
+function loginState(
   env: NodeJS.ProcessEnv,
   fetch: typeof globalThis.fetch
-): Map<string, Promise<string>> {
-  let byFetch = inFlightLogins.get(env);
+): LoginState {
+  let byFetch = loginStates.get(env);
   if (byFetch === undefined) {
     byFetch = new WeakMap();
-    inFlightLogins.set(env, byFetch);
+    loginStates.set(env, byFetch);
   }
-  let requests = byFetch.get(fetch);
-  if (requests === undefined) {
-    requests = new Map();
-    byFetch.set(fetch, requests);
+  let state = byFetch.get(fetch);
+  if (state === undefined) {
+    state = { requests: new Map(), authorizations: new Map() };
+    byFetch.set(fetch, state);
   }
-  return requests;
+  return state;
 }
 
 function errorBodyExcerpt(value: string): string {
@@ -123,12 +128,6 @@ async function login(opts: {
     }
 
     const computed = base64(`${id.trim()}:${token.trim()}`);
-    if (
-      opts.env.SKYLIGHT_EMAIL?.trim() === opts.email &&
-      opts.env.SKYLIGHT_PASSWORD === opts.password
-    ) {
-      opts.env.SKYLIGHT_BASIC_TOKEN = computed;
-    }
     return `Basic ${computed}`;
   } catch (error) {
     if (error instanceof UserError) throw error;
@@ -177,16 +176,40 @@ export async function getAuthorizationHeader(opts: {
   }
   assertWellFormedUnicode(password, "SKYLIGHT_PASSWORD");
 
-  const requests = loginRequests(env, opts.fetch);
+  const state = loginState(env, opts.fetch);
   const key = loginKey(env, email, password);
-  const existingLogin = requests.get(key);
+  const cachedAuthorization = state.authorizations.get(key);
+  if (cachedAuthorization !== undefined) return cachedAuthorization;
+  const existingLogin = state.requests.get(key);
   if (existingLogin !== undefined) return existingLogin;
 
   const loginRequest = login({ fetch: opts.fetch, env, email, password });
-  requests.set(key, loginRequest);
+  state.requests.set(key, loginRequest);
   try {
-    return await loginRequest;
+    const authorization = await loginRequest;
+    state.authorizations.set(key, authorization);
+    return authorization;
   } finally {
-    if (requests.get(key) === loginRequest) requests.delete(key);
+    if (state.requests.get(key) === loginRequest) state.requests.delete(key);
   }
+}
+
+export async function refreshAuthorizationHeader(opts: {
+  fetch: typeof globalThis.fetch;
+  env?: NodeJS.ProcessEnv;
+}): Promise<string | null> {
+  const env = opts.env ?? process.env;
+  if (
+    env.SKYLIGHT_AUTH_HEADER?.trim() ||
+    env.SKYLIGHT_BASIC_TOKEN?.trim() ||
+    env.SKYLIGHT_BEARER_TOKEN?.trim()
+  ) {
+    return null;
+  }
+  const email = loginEmail(env.SKYLIGHT_EMAIL);
+  const password = env.SKYLIGHT_PASSWORD;
+  if (!email || password === undefined || password.length === 0) return null;
+  const state = loginState(env, opts.fetch);
+  state.authorizations.delete(loginKey(env, email, password));
+  return getAuthorizationHeader({ fetch: opts.fetch, env });
 }

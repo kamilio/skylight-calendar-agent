@@ -6,6 +6,33 @@ const env = {
   SKYLIGHT_AUTH_HEADER: "Bearer test",
 };
 
+const refreshEnv = {
+  SKYLIGHT_API_BASE: "https://example.invalid",
+  SKYLIGHT_EMAIL: "refresh@example.com",
+  SKYLIGHT_PASSWORD: "secret",
+};
+let sessionCalls = 0;
+let resourceCalls = 0;
+let acceptedToken = "old";
+const refreshFetch = async (url, init) => {
+  if (new URL(url).pathname === "/api/sessions") {
+    sessionCalls += 1;
+    const token = sessionCalls === 1 ? "old" : "new";
+    return Response.json({ data: { id: "user", attributes: { token } } });
+  }
+  resourceCalls += 1;
+  const expected = `Basic ${Buffer.from(`user:${acceptedToken}`).toString("base64")}`;
+  return init?.headers?.authorization === expected
+    ? Response.json({ ok: true })
+    : new Response("expired", { status: 401 });
+};
+await requestJson({ fetch: refreshFetch, env: refreshEnv, method: "GET", path: "/api/test" });
+acceptedToken = "new";
+await requestJson({ fetch: refreshFetch, env: refreshEnv, method: "GET", path: "/api/test" });
+if (sessionCalls !== 2 || resourceCalls !== 3) {
+  throw new Error(`Expired session was not refreshed once: ${sessionCalls} logins, ${resourceCalls} requests`);
+}
+
 try {
   await requestJson({
     fetch: async (_url, init) =>
