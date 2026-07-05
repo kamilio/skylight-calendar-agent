@@ -66,6 +66,13 @@ try {
     );
   }
   delete process.env.SKYLIGHT_PASSWORD;
+
+  const malformedPath = path.join(directory, "malformed.env");
+  fs.writeFileSync(malformedPath, 'SKYLIGHT_PASSWORD="secret"junk\n');
+  loadDotEnv(malformedPath);
+  if (process.env.SKYLIGHT_PASSWORD !== undefined) {
+    throw new Error("Malformed quoted dotenv value was silently truncated");
+  }
 } finally {
   server.close();
   fs.rmSync(directory, { recursive: true, force: true });

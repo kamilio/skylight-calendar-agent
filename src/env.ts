@@ -1,11 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 
-function parseQuotedValue(value: string, quote: '"' | "'"): string | null {
+function parseQuotedValue(
+  value: string,
+  quote: '"' | "'"
+): { parsed: string; endIndex: number } | null {
   let parsed = "";
   for (let index = 1; index < value.length; index += 1) {
     const character = value[index];
-    if (character === quote) return parsed;
+    if (character === quote) return { parsed, endIndex: index };
     if (quote === '"' && character === "\\") {
       index += 1;
       if (index >= value.length) return null;
@@ -51,13 +54,17 @@ function parseDotEnv(contents: string): Record<string, string> {
     let value = line.slice(equalsIndex + 1).trim();
 
     if (value.startsWith('"')) {
-      const parsed = parseQuotedValue(value, '"');
-      if (parsed === null) continue;
-      value = parsed;
+      const quoted = parseQuotedValue(value, '"');
+      if (quoted === null) continue;
+      const trailing = value.slice(quoted.endIndex + 1).trim();
+      if (trailing.length > 0 && !trailing.startsWith("#")) continue;
+      value = quoted.parsed;
     } else if (value.startsWith("'")) {
-      const parsed = parseQuotedValue(value, "'");
-      if (parsed === null) continue;
-      value = parsed;
+      const quoted = parseQuotedValue(value, "'");
+      if (quoted === null) continue;
+      const trailing = value.slice(quoted.endIndex + 1).trim();
+      if (trailing.length > 0 && !trailing.startsWith("#")) continue;
+      value = quoted.parsed;
     } else {
       const commentIndex = value.indexOf("#");
       if (commentIndex >= 0) value = value.slice(0, commentIndex).trimEnd();

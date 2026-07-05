@@ -110,7 +110,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "sdk"],
       params: S.Object({
         email: emailParam({ description: "New email", short: "e" }),
-        password: S.String({ description: "Current password", short: "p" }),
+        password: S.String({ description: "Current password", short: "p", minLength: 1 }),
       }),
       handler: async (ctx) =>
         requestJson({

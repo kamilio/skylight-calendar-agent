@@ -163,6 +163,14 @@ try {
     '{"id":null,"summary":"Pack lunch"}',
   ]);
   await runExpectingFailure([
+    "profiles",
+    "update-email",
+    "--email",
+    "new@example.com",
+    "--password",
+    "",
+  ]);
+  await runExpectingFailure([
     "tasks",
     "chore-create-simple",
     "--summary",
