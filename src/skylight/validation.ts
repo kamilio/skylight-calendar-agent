@@ -271,6 +271,7 @@ export function assertValidAbsoluteUrl(
   label: string,
   allowedProtocols?: ReadonlyArray<string>
 ): void {
+  assertWellFormedUnicode(value, label);
   let url: URL;
   try {
     url = new URL(value);

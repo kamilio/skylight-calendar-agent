@@ -1,6 +1,7 @@
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { terminalSafeText, truncateText } from "./text.js";
+import { assertWellFormedUnicode } from "./validation.js";
 
 interface SessionResponse {
   data?: {
@@ -59,6 +60,7 @@ function base64(value: string): string {
 
 function safeCredentialValue(value: string, label: string): string {
   const trimmed = value.trim();
+  assertWellFormedUnicode(trimmed, label);
   if (/[\u0000-\u001F\u007F-\u009F]/.test(trimmed)) {
     throw new UserError(`${label} must not contain control characters.`);
   }
@@ -68,6 +70,7 @@ function safeCredentialValue(value: string, label: string): string {
 function loginEmail(value: string | undefined): string {
   const email = value?.trim() ?? "";
   if (email.length === 0) return "";
+  assertWellFormedUnicode(email, "SKYLIGHT_EMAIL");
   if (!/^[^\s@]+@[^\s@]+$/.test(email)) {
     throw new UserError("SKYLIGHT_EMAIL must be a valid email address.");
   }
@@ -172,6 +175,7 @@ export async function getAuthorizationHeader(opts: {
       "Missing credentials. Set SKYLIGHT_EMAIL and SKYLIGHT_PASSWORD (or SKYLIGHT_BASIC_TOKEN / SKYLIGHT_BEARER_TOKEN / SKYLIGHT_AUTH_HEADER)."
     );
   }
+  assertWellFormedUnicode(password, "SKYLIGHT_PASSWORD");
 
   const requests = loginRequests(env, opts.fetch);
   const key = loginKey(env, email, password);

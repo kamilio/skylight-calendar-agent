@@ -54,6 +54,10 @@ try {
       "Request body contains an unsafe integer",
     ],
     [
+      () => sdk.lists.createRaw({ listJson: { label: "\uD800" } }),
+      "Request body property \"label\" contains invalid Unicode",
+    ],
+    [
       () => sdk.profiles.ownerProfileUpdate({ birthday: "02/31" }),
       "birthday must be a valid MM/DD date",
     ],

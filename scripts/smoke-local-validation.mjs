@@ -1,9 +1,18 @@
 import { spawn } from "node:child_process";
 import {
+  assertValidAbsoluteUrl,
   assertValidDate,
   assertValidDateOrDateTimeRange,
   pathSegment,
 } from "../dist/skylight/validation.js";
+
+try {
+  assertValidAbsoluteUrl("https://example.com/\uD800", "calendarUrl", ["https:"]);
+  throw new Error("Malformed Unicode URL unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("calendarUrl contains invalid Unicode")) throw error;
+}
 
 assertValidDate("0099-01-01", "date");
 assertValidDate("0000-02-29", "date");

@@ -23,6 +23,28 @@ for (const [name, value] of [
 try {
   await getAuthorizationHeader({
     fetch: globalThis.fetch,
+    env: { SKYLIGHT_AUTH_HEADER: "Bearer \uD800" },
+  });
+  throw new Error("Malformed Unicode auth header unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("SKYLIGHT_AUTH_HEADER contains invalid Unicode")) throw error;
+}
+
+try {
+  await getAuthorizationHeader({
+    fetch: async () => Response.json({ data: { id: "1", attributes: { token: "x" } } }),
+    env: { ...credentials, SKYLIGHT_PASSWORD: "\uD800" },
+  });
+  throw new Error("Malformed Unicode password unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("SKYLIGHT_PASSWORD contains invalid Unicode")) throw error;
+}
+
+try {
+  await getAuthorizationHeader({
+    fetch: globalThis.fetch,
     env: { SKYLIGHT_EMAIL: "not-an-email", SKYLIGHT_PASSWORD: "secret" },
   });
   throw new Error("Invalid login email unexpectedly succeeded");

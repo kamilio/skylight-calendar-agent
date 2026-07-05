@@ -60,6 +60,8 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
 function serializeJsonBody(value: unknown): string | undefined {
   return JSON.stringify(value, (key, child) => {
     const location = key.length === 0 ? "the root value" : `property ${JSON.stringify(key)}`;
+    if (key.length > 0) assertWellFormedUnicode(key, "Request body property name");
+    if (typeof child === "string") assertWellFormedUnicode(child, `Request body ${location}`);
     if (typeof child === "number" && !Number.isFinite(child)) {
       throw new UserError(`Request body contains a non-finite number at ${location}.`);
     }
