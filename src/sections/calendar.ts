@@ -4,7 +4,6 @@ import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
   assertAtLeastOneDefined,
-  assertValidAbsoluteUrl,
   assertValidDateOrDateTime,
   assertValidDateOrDateTimeRange,
   assertValidDateRange,
@@ -14,6 +13,7 @@ import {
   emailParam,
   jsonParam,
   nonBlankParam,
+  normalizeAbsoluteUrl,
   normalizeIdentifier,
   normalizeRrule,
   parseJsonContainer,
@@ -525,7 +525,7 @@ export const calendarGroup = defineGroup({
         calendarUrl: nonBlankParam({ description: "Public share URL", short: "u" }),
       }),
       handler: async (ctx) => {
-        assertValidAbsoluteUrl(ctx.params.calendarUrl, "calendarUrl", [
+        const calendarUrl = normalizeAbsoluteUrl(ctx.params.calendarUrl, "calendarUrl", [
           "http:",
           "https:",
           "webcal:",
@@ -535,7 +535,7 @@ export const calendarGroup = defineGroup({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/webcal_accounts`,
-          body: { sync_url: ctx.params.calendarUrl },
+          body: { sync_url: calendarUrl },
         });
       },
     }),
@@ -567,8 +567,11 @@ export const calendarGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        assertValidAbsoluteUrl(ctx.params.redirectUrl, "redirectUrl");
-        assertValidAbsoluteUrl(ctx.params.failureRedirectUrl, "failureRedirectUrl");
+        const redirectUrl = normalizeAbsoluteUrl(ctx.params.redirectUrl, "redirectUrl");
+        const failureRedirectUrl = normalizeAbsoluteUrl(
+          ctx.params.failureRedirectUrl,
+          "failureRedirectUrl"
+        );
         const frameId = await resolveFrameId(ctx);
         const twoWaySync = ctx.params.twoWaySync ?? true;
         return requestJson({
@@ -576,8 +579,8 @@ export const calendarGroup = defineGroup({
           method: "GET",
           path: `/api/frames/${frameId}/calendars/authorization_request_url`,
           query: {
-            redirect_url: ctx.params.redirectUrl,
-            failure_redirect_url: ctx.params.failureRedirectUrl,
+            redirect_url: redirectUrl,
+            failure_redirect_url: failureRedirectUrl,
             two_way_sync: twoWaySync,
             provider: ctx.params.provider,
             ...(ctx.params.email === undefined ? {} : { login_hint: ctx.params.email }),

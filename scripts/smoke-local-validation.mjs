@@ -14,6 +14,14 @@ try {
   if (!message.includes("calendarUrl contains invalid Unicode")) throw error;
 }
 
+try {
+  assertValidAbsoluteUrl("https://example.com/\npath", "calendarUrl", ["https:"]);
+  throw new Error("Control-character URL unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("calendarUrl must not contain control characters")) throw error;
+}
+
 assertValidDate("0099-01-01", "date");
 assertValidDate("0000-02-29", "date");
 

@@ -143,6 +143,12 @@ try {
     "account-clear",
     "--clear-active-calendars",
   ]);
+  await run([
+    "calendar",
+    "webcal-sync",
+    "--calendar-url",
+    " https://example.com/family.ics ",
+  ]);
   await run(["tasks", "taskbox-create", "--summary", "Pack lunch"]);
   await run([
     "tasks",
@@ -623,6 +629,13 @@ if (
   clearedCalendars.body.active_calendars.length !== 0
 ) {
   throw new Error("Calendar account update did not clear active calendars");
+}
+
+const webcalSync = requests.find(
+  (request) => request.url === "/api/frames/42/webcal_accounts"
+);
+if (webcalSync?.body?.sync_url !== "https://example.com/family.ics") {
+  throw new Error(`Webcal URL was not normalized: ${JSON.stringify(webcalSync?.body)}`);
 }
 
 const taskBoxCreate = requests.find(

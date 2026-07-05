@@ -281,15 +281,19 @@ export function assertValidTimezone(value: string, label = "timezone"): void {
   }
 }
 
-export function assertValidAbsoluteUrl(
+export function normalizeAbsoluteUrl(
   value: string,
   label: string,
   allowedProtocols?: ReadonlyArray<string>
-): void {
-  assertWellFormedUnicode(value, label);
+): string {
+  const normalized = value.trim();
+  assertWellFormedUnicode(normalized, label);
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(normalized)) {
+    throw new UserError(`${label} must not contain control characters.`);
+  }
   let url: URL;
   try {
-    url = new URL(value);
+    url = new URL(normalized);
   } catch {
     throw new UserError(`${label} must be a valid absolute URL.`);
   }
@@ -304,4 +308,13 @@ export function assertValidAbsoluteUrl(
   ) {
     throw new UserError(`${label} must not use the ${url.protocol.slice(0, -1)} scheme.`);
   }
+  return normalized;
+}
+
+export function assertValidAbsoluteUrl(
+  value: string,
+  label: string,
+  allowedProtocols?: ReadonlyArray<string>
+): void {
+  normalizeAbsoluteUrl(value, label, allowedProtocols);
 }
