@@ -270,7 +270,7 @@ export const photosGroup = defineGroup({
     defineCommand({
       name: "upload-credentials",
       description: "Get cloud upload credentials",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
         requestJson({
@@ -302,7 +302,7 @@ export const photosGroup = defineGroup({
     defineCommand({
       name: "upload-url",
       description: "Create a single upload URL (raw fields JSON)",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         payloadJson: jsonParam({ description: "JSON for {ext, frame_ids, ...}", short: "j" }),
       }),
@@ -319,7 +319,7 @@ export const photosGroup = defineGroup({
     defineCommand({
       name: "upload-urls",
       description: "Create multiple upload URLs (raw fields JSON)",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         payloadJson: jsonParam({ description: "JSON for {frame_ids, messages}", short: "j" }),
       }),

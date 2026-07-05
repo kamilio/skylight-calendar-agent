@@ -75,7 +75,10 @@ export const profilesGroup = defineGroup({
       description: "Update user marketing preference",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        agree: S.Boolean({ description: "Agree to marketing?", short: "a" }),
+        agree: S.Boolean({
+          description: "Agree to marketing; use --agree=false to opt out",
+          short: "a",
+        }),
       }),
       handler: async (ctx) =>
         requestJson({
@@ -184,7 +187,8 @@ export const profilesGroup = defineGroup({
       params: S.Object({
         type: S.Optional(
           S.Enum(["calendar", "photo", "tv"] as const, {
-            description: "Frame type",
+            description: "Frame type: calendar, photo, or tv",
+            short: "t",
           })
         ),
       }),
@@ -302,7 +306,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         name: S.Optional(nonBlankParam({ description: "Owner name" })),
-        birthday: S.Optional(S.String({ description: "Birthday (server format)" })),
+        birthday: S.Optional(S.String({ description: "Birthday in MM/DD format" })),
       }),
       handler: async (ctx) => {
         assertAtLeastOneDefined(

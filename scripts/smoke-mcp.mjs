@@ -43,6 +43,9 @@ child.stdout.on("data", (chunk) => {
       "skylight__profiles__user_delete",
       "skylight__profiles__frame_transfer",
       "skylight__profiles__frame_share_token_redeem",
+      "skylight__photos__upload_credentials",
+      "skylight__photos__upload_url",
+      "skylight__photos__upload_urls",
     ];
     for (const name of forbiddenTools) {
       if (names.includes(name)) throw new Error(`MCP exposes sensitive tool: ${name}`);

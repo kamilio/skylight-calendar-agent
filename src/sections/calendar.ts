@@ -44,8 +44,8 @@ export const calendarGroup = defineGroup({
       description: "Update event notification settings",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        onTime: S.Boolean({ description: "Notify on time" }),
-        early: S.Boolean({ description: "Notify early" }),
+        onTime: S.Boolean({ description: "Notify on time; use --on-time=false to disable" }),
+        early: S.Boolean({ description: "Notify early; use --early=false to disable" }),
         earlyMinutesBefore: S.Optional(
           S.Number({
             description: "Minutes before event when early=true",
@@ -275,7 +275,9 @@ export const calendarGroup = defineGroup({
         endsAt: S.Optional(
           dateOrDateTimeParam({ description: "ISO datetime or YYYY-MM-DD", short: "b" })
         ),
-        allDay: S.Optional(S.Boolean({ description: "All day event" })),
+        allDay: S.Optional(
+          S.Boolean({ description: "All day event; use --all-day=false to disable" })
+        ),
         rrule: S.Optional(S.String({ description: "RRULE string (server format)" })),
         categoryIds: S.Optional(S.Array(nonBlankParam({ description: "Category id" }))),
         invitedEmails: S.Optional(S.Array(emailParam({ description: "Invite email" }))),
@@ -288,7 +290,11 @@ export const calendarGroup = defineGroup({
         notificationSettingJson: S.Optional(
           jsonParam({ description: "event_notification_setting_attributes JSON", short: "n" })
         ),
-        countdownEnabled: S.Optional(S.Boolean({ description: "Enable countdown" })),
+        countdownEnabled: S.Optional(
+          S.Boolean({
+            description: "Enable countdown; use --countdown-enabled=false to disable",
+          })
+        ),
       }),
       handler: async (ctx) => {
         assertAtLeastOneDefined(
