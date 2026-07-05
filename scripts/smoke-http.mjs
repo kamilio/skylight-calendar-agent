@@ -23,6 +23,45 @@ try {
   }
 }
 
+const sanitizedSuccess = await requestJson({
+  fetch: async () =>
+    new Response(
+      JSON.stringify({
+        "bad\u001bkey": "\u001b[31mred\u001b[0m\rreplace\nkeep-newline",
+        nested: ["ok\u009bunsafe"],
+        ["__proto__"]: "safe",
+      }),
+      { status: 200 }
+    ),
+  env,
+  method: "GET",
+  path: "/api/test",
+});
+const sanitizedText = JSON.stringify(sanitizedSuccess);
+if (
+  sanitizedText.includes("\u001b") ||
+  sanitizedText.includes("\u009b") ||
+  sanitizedText.includes("\\r") ||
+  sanitizedSuccess["bad key"] !== " [31mred [0m replace\nkeep-newline" ||
+  !Object.prototype.hasOwnProperty.call(sanitizedSuccess, "__proto__")
+) {
+  throw new Error(`Successful response retained terminal controls: ${sanitizedText}`);
+}
+
+try {
+  await requestJson({
+    fetch: async () =>
+      new Response(JSON.stringify({ ["same\u001b"]: 1, "same ": 2 }), { status: 200 }),
+    env,
+    method: "GET",
+    path: "/api/test",
+  });
+  throw new Error("Sanitized duplicate response keys unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("duplicate keys after terminal sanitization")) throw error;
+}
+
 try {
   await requestJson({
     fetch: async () => new Response("unauthorized", { status: 401 }),
@@ -80,7 +119,7 @@ try {
 try {
   await requestJson({
     fetch: async () => {
-      throw new Error("socket closed");
+      throw new Error("\u001b[31msocket closed\u001b[0m\rreplace");
     },
     env,
     method: "GET",
@@ -89,7 +128,12 @@ try {
   throw new Error("Network error unexpectedly succeeded");
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  if (!message.includes("GET /api/frames/42/lists") || !message.includes("socket closed")) {
+  if (
+    !message.includes("GET /api/frames/42/lists") ||
+    !message.includes("socket closed") ||
+    message.includes("\u001b") ||
+    message.includes("\r")
+  ) {
     throw new Error(`Network error lacks request context: ${message}`);
   }
 }

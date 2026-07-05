@@ -26,6 +26,23 @@ function base64(value: string): string {
   return Buffer.from(value, "utf8").toString("base64");
 }
 
+function safeCredentialValue(value: string, label: string): string {
+  const trimmed = value.trim();
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(trimmed)) {
+    throw new UserError(`${label} must not contain control characters.`);
+  }
+  return trimmed;
+}
+
+function loginEmail(value: string | undefined): string {
+  const email = value?.trim() ?? "";
+  if (email.length === 0) return "";
+  if (!/^[^\s@]+@[^\s@]+$/.test(email)) {
+    throw new UserError("SKYLIGHT_EMAIL must be a valid email address.");
+  }
+  return email;
+}
+
 async function login(opts: {
   fetch: typeof globalThis.fetch;
   env: NodeJS.ProcessEnv;
@@ -79,7 +96,7 @@ async function login(opts: {
     if (controller.signal.aborted) {
       throw new UserError(`Login request timed out after ${requestTimeoutMs}ms.`);
     }
-    const detail = error instanceof Error ? error.message : String(error);
+    const detail = errorBodyExcerpt(error instanceof Error ? error.message : String(error));
     throw new UserError(`Login request failed: ${detail}`);
   } finally {
     clearTimeout(timeout);
@@ -91,22 +108,28 @@ export async function getAuthorizationHeader(opts: {
   env?: NodeJS.ProcessEnv;
 }): Promise<string> {
   const env = opts.env ?? process.env;
-  const explicit = env.SKYLIGHT_AUTH_HEADER?.trim();
+  const explicit = env.SKYLIGHT_AUTH_HEADER
+    ? safeCredentialValue(env.SKYLIGHT_AUTH_HEADER, "SKYLIGHT_AUTH_HEADER")
+    : "";
   if (explicit) {
     return explicit;
   }
 
-  const existing = env.SKYLIGHT_BASIC_TOKEN?.trim();
+  const existing = env.SKYLIGHT_BASIC_TOKEN
+    ? safeCredentialValue(env.SKYLIGHT_BASIC_TOKEN, "SKYLIGHT_BASIC_TOKEN")
+    : "";
   if (existing) {
     return `Basic ${existing}`;
   }
 
-  const bearer = env.SKYLIGHT_BEARER_TOKEN?.trim();
+  const bearer = env.SKYLIGHT_BEARER_TOKEN
+    ? safeCredentialValue(env.SKYLIGHT_BEARER_TOKEN, "SKYLIGHT_BEARER_TOKEN")
+    : "";
   if (bearer) {
     return `Bearer ${bearer}`;
   }
 
-  const email = env.SKYLIGHT_EMAIL?.trim();
+  const email = loginEmail(env.SKYLIGHT_EMAIL);
   const password = env.SKYLIGHT_PASSWORD;
   if (!email || password === undefined || password.length === 0) {
     throw new UserError(

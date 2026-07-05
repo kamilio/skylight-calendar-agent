@@ -18,7 +18,13 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         page: S.Optional(
-          S.Number({ description: "Page number (1-based)", default: 1, minimum: 1, jsonType: "integer" })
+          S.Number({
+            description: "Page number (1-based)",
+            default: 1,
+            minimum: 1,
+            maximum: Number.MAX_SAFE_INTEGER,
+            jsonType: "integer",
+          })
         ),
       }),
       handler: async (ctx) => {
@@ -152,7 +158,13 @@ export const photosGroup = defineGroup({
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
         page: S.Optional(
-          S.Number({ description: "Page number (1-based)", default: 1, minimum: 1, jsonType: "integer" })
+          S.Number({
+            description: "Page number (1-based)",
+            default: 1,
+            minimum: 1,
+            maximum: Number.MAX_SAFE_INTEGER,
+            jsonType: "integer",
+          })
         ),
       }),
       handler: async (ctx) => {
@@ -405,7 +417,13 @@ export const photosGroup = defineGroup({
       params: S.Object({
         albumId: nonBlankParam({ description: "Album id", short: "i" }),
         page: S.Optional(
-          S.Number({ description: "Page number (1-based)", default: 1, minimum: 1, jsonType: "integer" })
+          S.Number({
+            description: "Page number (1-based)",
+            default: 1,
+            minimum: 1,
+            maximum: Number.MAX_SAFE_INTEGER,
+            jsonType: "integer",
+          })
         ),
       }),
       handler: async (ctx) => {

@@ -46,6 +46,10 @@ function normalizeTimezone(value: string): string {
   return timezone;
 }
 
+function systemTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+}
+
 function normalizeApiVersion(value: string): string {
   const version = value.trim();
   assertValidDate(version, "SKYLIGHT_API_VERSION");
@@ -95,7 +99,7 @@ export function getSkylightConfig(env: NodeJS.ProcessEnv = process.env): Skyligh
     calendarUrl,
     calendarShareId,
     frameId: firstNonEmpty(env.SKYLIGHT_FRAME_ID),
-    timezone: normalizeTimezone(firstNonEmpty(env.SKYLIGHT_TIMEZONE) ?? "America/Chicago"),
+    timezone: normalizeTimezone(firstNonEmpty(env.SKYLIGHT_TIMEZONE) ?? systemTimezone()),
     requestTimeoutMs: parseRequestTimeout(firstNonEmpty(env.SKYLIGHT_REQUEST_TIMEOUT_MS)),
   };
 }

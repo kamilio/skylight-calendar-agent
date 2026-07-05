@@ -1,4 +1,13 @@
 import { spawn } from "node:child_process";
+import { pathSegment } from "../dist/skylight/validation.js";
+
+try {
+  pathSegment("\uD800", "id");
+  throw new Error("Malformed Unicode path id unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("id contains invalid Unicode")) throw error;
+}
 
 const env = { ...process.env, SKYLIGHT_FRAME_ID: "42" };
 for (const name of [

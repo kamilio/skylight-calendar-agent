@@ -8,6 +8,18 @@ if (normalized.apiBaseUrl !== "https://app.ourskylight.com") {
   throw new Error(`API base was not normalized: ${normalized.apiBaseUrl}`);
 }
 
+const originalTimezone = process.env.TZ;
+process.env.TZ = "UTC";
+try {
+  const defaultTimezone = getSkylightConfig({});
+  if (defaultTimezone.timezone !== "UTC") {
+    throw new Error(`System timezone was not used by default: ${defaultTimezone.timezone}`);
+  }
+} finally {
+  if (originalTimezone === undefined) delete process.env.TZ;
+  else process.env.TZ = originalTimezone;
+}
+
 for (const [key, value] of [
   ["SKYLIGHT_API_BASE", "not-a-url"],
   ["SKYLIGHT_API_BASE", "ftp://example.com"],

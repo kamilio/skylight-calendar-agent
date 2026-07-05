@@ -23,6 +23,31 @@ function errorBodyExcerpt(value: string): string {
   return `${sanitized.slice(0, MAX_ERROR_BODY_LENGTH)}… [truncated ${sanitized.length - MAX_ERROR_BODY_LENGTH} characters]`;
 }
 
+function safeOutputText(value: string): string {
+  return value.replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, " ");
+}
+
+function sanitizeJsonValue(value: unknown): unknown {
+  if (typeof value === "string") return safeOutputText(value);
+  if (Array.isArray(value)) return value.map(sanitizeJsonValue);
+  if (value === null || typeof value !== "object") return value;
+
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    const safeKey = safeOutputText(key);
+    if (Object.prototype.hasOwnProperty.call(sanitized, safeKey)) {
+      throw new UserError("Response contained duplicate keys after terminal sanitization.");
+    }
+    Object.defineProperty(sanitized, safeKey, {
+      value: sanitizeJsonValue(child),
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  }
+  return sanitized;
+}
+
 export async function requestJson<TResponse>(opts: {
   fetch: typeof globalThis.fetch;
   env?: NodeJS.ProcessEnv;
@@ -47,7 +72,7 @@ export async function requestJson<TResponse>(opts: {
     try {
       serializedBody = JSON.stringify(opts.body);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
+      const detail = errorBodyExcerpt(error instanceof Error ? error.message : String(error));
       throw new UserError(`Request body is not JSON-serializable for ${opts.method} ${opts.path}: ${detail}`);
     }
     if (serializedBody === undefined) {
@@ -112,13 +137,15 @@ export async function requestJson<TResponse>(opts: {
       return null as TResponse;
     }
 
+    let parsed: unknown;
     try {
-      return JSON.parse(text) as TResponse;
+      parsed = JSON.parse(text);
     } catch {
       throw new UserError(
         `Invalid JSON response (${response.status}) ${opts.method} ${opts.path}`
       );
     }
+    return sanitizeJsonValue(parsed) as TResponse;
   } catch (error) {
     if (error instanceof UserError) throw error;
     if (controller.signal.aborted) {
@@ -126,7 +153,7 @@ export async function requestJson<TResponse>(opts: {
         `Request timed out after ${config.requestTimeoutMs}ms ${opts.method} ${opts.path}`
       );
     }
-    const detail = error instanceof Error ? error.message : String(error);
+    const detail = errorBodyExcerpt(error instanceof Error ? error.message : String(error));
     throw new UserError(`Request failed ${opts.method} ${opts.path}: ${detail}`);
   } finally {
     clearTimeout(timeout);

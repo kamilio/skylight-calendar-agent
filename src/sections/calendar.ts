@@ -49,6 +49,7 @@ export const calendarGroup = defineGroup({
           S.Number({
             description: "Minutes before the event for early notifications",
             minimum: 0,
+            maximum: Number.MAX_SAFE_INTEGER,
             jsonType: "integer",
           })
         ),

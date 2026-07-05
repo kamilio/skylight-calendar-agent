@@ -108,14 +108,13 @@ export const recipesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const applyToSittings = ctx.params.includeMeals === true ? "true" : "";
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/meals/recipes/${pathSegment(ctx.params.recipeId, "recipeId")}`,
-          query: {
-            apply_to_sittings: applyToSittings,
-          },
+          ...(ctx.params.includeMeals === true
+            ? { query: { apply_to_sittings: true } }
+            : {}),
         });
       },
     }),

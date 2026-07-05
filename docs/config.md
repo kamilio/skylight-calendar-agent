@@ -12,7 +12,7 @@ You may set `SKYLIGHT_FRAME_ID` directly or provide a public `SKYLIGHT_CALENDAR_
 - `SKYLIGHT_API_VERSION` — valid `YYYY-MM-DD` value sent as `Skylight-Api-Version` (default `2026-03-01`).
 - `SKYLIGHT_FRAME_ID` — optional explicit frame id for `/api/frames/{frameId}/...` endpoints.
 - `SKYLIGHT_CALENDAR_URL` — optional absolute HTTP(S) share URL containing `/calendar/<numeric-id>`.
-- `SKYLIGHT_TIMEZONE` — defaults to `America/Chicago`.
+- `SKYLIGHT_TIMEZONE` — defaults to the machine's IANA timezone.
 - `SKYLIGHT_REQUEST_TIMEOUT_MS` — request timeout from `1` to `2147483647` milliseconds (default `30000`).
 
 Credential precedence is `SKYLIGHT_AUTH_HEADER`, then `SKYLIGHT_BASIC_TOKEN`, then `SKYLIGHT_BEARER_TOKEN`, then email/password login. Unset an expired higher-priority token if you want the agent to log in with email and password.

@@ -101,9 +101,23 @@ child.stdout.on("data", (chunk) => {
       "skylight__photos__album_messages",
     ]) {
       const page = tools.find((tool) => tool.name === toolName)?.inputSchema?.properties?.page;
-      if (page?.type !== "integer" || page.minimum !== 1) {
+      if (
+        page?.type !== "integer" ||
+        page.minimum !== 1 ||
+        page.maximum !== Number.MAX_SAFE_INTEGER
+      ) {
         throw new Error(`${toolName}.page must be a positive integer`);
       }
+    }
+
+    const points = tools.find((tool) => tool.name === "skylight__rewards__points_add")
+      ?.inputSchema?.properties?.points;
+    if (
+      points?.type !== "integer" ||
+      points.minimum !== Number.MIN_SAFE_INTEGER ||
+      points.maximum !== Number.MAX_SAFE_INTEGER
+    ) {
+      throw new Error("Reward points must use the JavaScript safe integer range");
     }
 
     clearTimeout(timeout);

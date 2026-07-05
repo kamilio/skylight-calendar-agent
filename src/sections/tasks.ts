@@ -96,7 +96,12 @@ export const tasksGroup = defineGroup({
         start: dateParam({ description: "YYYY-MM-DD", short: "d" }),
         categoryId: S.Optional(nonBlankParam({ description: "Category id" })),
         rewardPoints: S.Optional(
-          S.Number({ description: "Reward points", jsonType: "integer" })
+          S.Number({
+            description: "Reward points",
+            jsonType: "integer",
+            minimum: Number.MIN_SAFE_INTEGER,
+            maximum: Number.MAX_SAFE_INTEGER,
+          })
         ),
         emojiIcon: S.Optional(S.String({ description: "Emoji icon" })),
         recurrenceRrule: S.Optional(

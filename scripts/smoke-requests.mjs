@@ -32,6 +32,7 @@ const env = {
   SKYLIGHT_API_BASE: `http://127.0.0.1:${address.port}`,
   SKYLIGHT_AUTH_HEADER: "Bearer test",
   SKYLIGHT_FRAME_ID: "42",
+  SKYLIGHT_PASSWORD: "",
 };
 
 async function run(args) {
@@ -176,6 +177,12 @@ try {
     "--password",
     "",
   ]);
+  await runExpectingFailure([
+    "profiles",
+    "update-email",
+    "--email",
+    "new@example.com",
+  ]);
   await runExpectingFailure(["profiles", "user-delete", "--confirm=false"]);
   await runExpectingFailure(["profiles", "frame-hide", "--confirm=false"]);
   await runExpectingFailure([
@@ -193,6 +200,14 @@ try {
     "--confirm=false",
   ]);
   await runExpectingFailure(["meals", "migrate", "--confirm=false"]);
+  await runExpectingFailure([
+    "rewards",
+    "points-add",
+    "--category-ids",
+    "category-1",
+    "--points",
+    "9007199254740993",
+  ]);
   await runExpectingFailure([
     "tasks",
     "chore-create-simple",
@@ -222,6 +237,7 @@ try {
   await runExpectingFailure(["meals", "list", "--date-min", "2026-13-01"]);
   await runExpectingFailure(["photos", "list", "--page", "0"]);
   await runExpectingFailure(["photos", "list", "--page", "1.5"]);
+  await runExpectingFailure(["photos", "list", "--page", "9007199254740993"]);
   await runExpectingFailure(["photos", "list-paged", "--page-token", "   "]);
   await runExpectingFailure(["photos", "album-create", "--title", "   "]);
   await runExpectingFailure(["rewards", "list", "--redeemed-at-min", "not-a-date"]);
@@ -461,6 +477,22 @@ try {
     "--after-item-id",
     "not-a-number",
   ]);
+  await run(["recipes", "delete", "--recipe-id", "recipe-without-meals"]);
+  await run([
+    "recipes",
+    "delete",
+    "--recipe-id",
+    "recipe-with-meals",
+    "--include-meals",
+  ]);
+  await run([
+    "profiles",
+    "update-email",
+    "--email",
+    "new@example.com",
+    "--password",
+    " secret ",
+  ]);
 } finally {
   server.close();
 }
@@ -558,4 +590,30 @@ if (
   !choresList?.url?.includes("include_up_for_grabs=false")
 ) {
   throw new Error(`Chore list did not send captured defaults: ${choresList?.url}`);
+}
+
+const recipeDelete = requests.find((request) =>
+  request.url?.includes("/meals/recipes/recipe-without-meals")
+);
+if (recipeDelete?.url !== "/api/frames/42/meals/recipes/recipe-without-meals") {
+  throw new Error(`Recipe delete emitted an unexpected scope query: ${recipeDelete?.url}`);
+}
+
+const recipeDeleteWithMeals = requests.find((request) =>
+  request.url?.includes("/meals/recipes/recipe-with-meals")
+);
+if (
+  recipeDeleteWithMeals?.url !==
+  "/api/frames/42/meals/recipes/recipe-with-meals?apply_to_sittings=true"
+) {
+  throw new Error(
+    `Recipe delete did not opt into deleting sittings: ${recipeDeleteWithMeals?.url}`
+  );
+}
+
+const emailUpdate = requests.find(
+  (request) => request.method === "PUT" && request.url === "/api/user"
+);
+if (emailUpdate?.body?.password !== " secret ") {
+  throw new Error("Email update did not preserve the explicit password exactly");
 }

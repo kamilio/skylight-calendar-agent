@@ -6,6 +6,31 @@ const credentials = {
   SKYLIGHT_PASSWORD: "secret",
 };
 
+for (const [name, value] of [
+  ["SKYLIGHT_AUTH_HEADER", "Bearer good\nInjected: x"],
+  ["SKYLIGHT_BASIC_TOKEN", "good\rbad"],
+  ["SKYLIGHT_BEARER_TOKEN", "good\u0000bad"],
+]) {
+  try {
+    await getAuthorizationHeader({ fetch: globalThis.fetch, env: { [name]: value } });
+    throw new Error(`${name} with control characters unexpectedly succeeded`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes(`${name} must not contain control characters`)) throw error;
+  }
+}
+
+try {
+  await getAuthorizationHeader({
+    fetch: globalThis.fetch,
+    env: { SKYLIGHT_EMAIL: "not-an-email", SKYLIGHT_PASSWORD: "secret" },
+  });
+  throw new Error("Invalid login email unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("SKYLIGHT_EMAIL must be a valid email address")) throw error;
+}
+
 try {
   await getAuthorizationHeader({
     fetch: async (_url, init) =>
@@ -42,14 +67,19 @@ try {
 try {
   await getAuthorizationHeader({
     fetch: async () => {
-      throw new Error("socket closed");
+      throw new Error("\u001b[31msocket closed\u001b[0m\rreplace");
     },
     env: credentials,
   });
   throw new Error("Network login error unexpectedly succeeded");
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  if (!message.includes("Login request failed") || !message.includes("socket closed")) {
+  if (
+    !message.includes("Login request failed") ||
+    !message.includes("socket closed") ||
+    message.includes("\u001b") ||
+    message.includes("\r")
+  ) {
     throw error;
   }
 }

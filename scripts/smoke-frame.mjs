@@ -80,6 +80,24 @@ try {
   delete process.env.SKYLIGHT_CALENDAR_URL;
   process.env.SKYLIGHT_API_BASE = "https://example.invalid";
   process.env.SKYLIGHT_AUTH_HEADER = "Bearer test";
+  try {
+    await resolveFrameId({
+      fetch: async () =>
+        Response.json({
+          data: [
+            { id: "1", attributes: { name: "Home\u001b[31m" } },
+            { id: "2", attributes: { name: "Other\nFrame" } },
+          ],
+        }),
+    });
+    throw new Error("Ambiguous frame discovery unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Multiple frames found")) throw error;
+    if (message.includes("\u001b") || message.includes("\nFrame")) {
+      throw new Error(`Frame selection error retained control characters: ${JSON.stringify(message)}`);
+    }
+  }
   let calls = 0;
   let release;
   const gate = new Promise((resolve) => {

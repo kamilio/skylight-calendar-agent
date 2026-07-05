@@ -110,15 +110,26 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "sdk"],
       params: S.Object({
         email: emailParam({ description: "New email", short: "e" }),
-        password: S.String({ description: "Current password", short: "p", minLength: 1 }),
+        password: S.Optional(
+          S.String({
+            description: "Current password; omit to use SKYLIGHT_PASSWORD",
+            short: "p",
+            minLength: 1,
+          })
+        ),
       }),
-      handler: async (ctx) =>
-        requestJson({
+      handler: async (ctx) => {
+        const password = ctx.params.password ?? process.env.SKYLIGHT_PASSWORD;
+        if (password === undefined || password.length === 0) {
+          throw new UserError("Set SKYLIGHT_PASSWORD or pass password to update the email.");
+        }
+        return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
           path: "/api/user",
-          body: { email: ctx.params.email, password: ctx.params.password },
-        }),
+          body: { email: ctx.params.email, password },
+        });
+      },
     }),
     defineCommand({
       name: "discount-code",

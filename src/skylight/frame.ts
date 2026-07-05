@@ -15,6 +15,11 @@ type FramesListResponse = {
 
 let inFlightFrameResolution: Promise<string> | undefined;
 
+function displayValue(value: string): string {
+  const sanitized = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
+  return sanitized.length <= 200 ? sanitized : `${sanitized.slice(0, 200)}…`;
+}
+
 function validateFramesListResponse(value: unknown): FramesListResponse {
   if (
     value === null ||
@@ -98,7 +103,11 @@ async function discoverFrameId(
     throw new UserError("No frames returned for this account.");
   }
 
-  const lines = ids.map((frame) => `- ${frame.id}${frame.name ? ` (${frame.name})` : ""}`);
+  const lines = ids.map((frame) => {
+    const id = displayValue(frame.id);
+    const name = displayValue(frame.name);
+    return `- ${id}${name ? ` (${name})` : ""}`;
+  });
   throw new UserError(
     `Multiple frames found. Set SKYLIGHT_FRAME_ID.\n${lines.join("\n")}`
   );

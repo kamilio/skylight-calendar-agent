@@ -174,7 +174,12 @@ export const rewardsGroup = defineGroup({
           description: "Category ids",
           minItems: 1,
         }),
-        points: S.Number({ description: "Points to add", jsonType: "integer" }),
+        points: S.Number({
+          description: "Points to add",
+          jsonType: "integer",
+          minimum: Number.MIN_SAFE_INTEGER,
+          maximum: Number.MAX_SAFE_INTEGER,
+        }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

@@ -96,7 +96,11 @@ export function pathSegment(value: string | number, label: string): string {
   if (normalized.length === 0) {
     throw new UserError(`${label} must not be blank.`);
   }
-  return encodeURIComponent(normalized);
+  try {
+    return encodeURIComponent(normalized);
+  } catch {
+    throw new UserError(`${label} contains invalid Unicode.`);
+  }
 }
 
 export function assertAtLeastOneDefined(
