@@ -204,11 +204,21 @@ export async function requestJson<TResponse>(opts: {
     try {
       parsed = JSON.parse(text);
     } catch {
+      const excerpt = errorBodyExcerpt(text);
       throw new UserError(
-        `Invalid JSON response (${response.status}) ${opts.method} ${opts.path}`
+        `Invalid JSON response (${response.status}) ${opts.method} ${opts.path}${
+          excerpt.length > 0 ? `: ${excerpt}` : ""
+        }`
       );
     }
-    return sanitizeJsonValue(parsed) as TResponse;
+    try {
+      return sanitizeJsonValue(parsed) as TResponse;
+    } catch (error) {
+      if (error instanceof UserError) {
+        throw new UserError(`${error.message} Request: ${opts.method} ${opts.path}.`);
+      }
+      throw error;
+    }
   } catch (error) {
     if (error instanceof UserError) throw error;
     if (controller.signal.aborted) {

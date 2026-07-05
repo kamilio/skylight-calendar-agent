@@ -143,7 +143,12 @@ try {
   throw new Error("Excessively nested response unexpectedly succeeded");
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  if (!message.includes("maximum nesting depth of 100")) throw error;
+  if (
+    !message.includes("maximum nesting depth of 100") ||
+    !message.includes("Request: GET /api/test")
+  ) {
+    throw error;
+  }
 }
 
 try {
@@ -348,7 +353,11 @@ try {
   throw new Error("Invalid JSON response unexpectedly succeeded");
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  if (!message.includes("Invalid JSON response") || !message.includes("GET /api/frames/42/lists")) {
+  if (
+    !message.includes("Invalid JSON response") ||
+    !message.includes("GET /api/frames/42/lists") ||
+    !message.includes("not json")
+  ) {
     throw error;
   }
 }
