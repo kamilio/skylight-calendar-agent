@@ -3,6 +3,7 @@ import { getSkylightConfig } from "./config.js";
 import { getAuthorizationHeader } from "./auth.js";
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
+const MAX_RESPONSE_JSON_DEPTH = 100;
 
 export class SkylightRequestError extends UserError {
   readonly status: number;
@@ -24,12 +25,21 @@ function errorBodyExcerpt(value: string): string {
 }
 
 function safeOutputText(value: string): string {
-  return value.replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, " ");
+  return value
+    .replace(/\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)/g, "")
+    .replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, "")
+    .replace(/\u009B[0-?]*[ -/]*m/g, "")
+    .replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, " ");
 }
 
-function sanitizeJsonValue(value: unknown): unknown {
+function sanitizeJsonValue(value: unknown, depth = 0): unknown {
+  if (depth > MAX_RESPONSE_JSON_DEPTH) {
+    throw new UserError(
+      `Response JSON exceeds the maximum nesting depth of ${MAX_RESPONSE_JSON_DEPTH}.`
+    );
+  }
   if (typeof value === "string") return safeOutputText(value);
-  if (Array.isArray(value)) return value.map(sanitizeJsonValue);
+  if (Array.isArray(value)) return value.map((child) => sanitizeJsonValue(child, depth + 1));
   if (value === null || typeof value !== "object") return value;
 
   const sanitized: Record<string, unknown> = {};
@@ -39,7 +49,7 @@ function sanitizeJsonValue(value: unknown): unknown {
       throw new UserError("Response contained duplicate keys after terminal sanitization.");
     }
     Object.defineProperty(sanitized, safeKey, {
-      value: sanitizeJsonValue(child),
+      value: sanitizeJsonValue(child, depth + 1),
       enumerable: true,
       configurable: true,
       writable: true,

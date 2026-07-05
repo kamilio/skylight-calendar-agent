@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { requestJson, SkylightRequestError } from "./http.js";
@@ -13,7 +14,27 @@ type FramesListResponse = {
   }>;
 };
 
-let inFlightFrameResolution: Promise<string> | undefined;
+const frameResolutions = new WeakMap<
+  typeof globalThis.fetch,
+  Map<string, Promise<string>>
+>();
+
+function frameResolutionKey(config: ReturnType<typeof getSkylightConfig>): string {
+  const env = process.env;
+  return createHash("sha256")
+    .update(
+      JSON.stringify([
+        config.apiBaseUrl,
+        config.calendarShareId,
+        env.SKYLIGHT_AUTH_HEADER,
+        env.SKYLIGHT_BASIC_TOKEN,
+        env.SKYLIGHT_BEARER_TOKEN,
+        env.SKYLIGHT_EMAIL,
+        env.SKYLIGHT_PASSWORD,
+      ])
+    )
+    .digest("hex");
+}
 
 function displayValue(value: string): string {
   const sanitized = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
@@ -73,7 +94,6 @@ async function discoverFrameId(
         method: "GET",
         path: `/api/frames/${pathSegment(fromUrl, "SKYLIGHT_CALENDAR_URL frame id")}`,
       });
-      process.env.SKYLIGHT_FRAME_ID = fromUrl;
       return pathSegment(fromUrl, "SKYLIGHT_CALENDAR_URL frame id");
     } catch (error) {
       if (!(error instanceof SkylightRequestError) || error.status !== 404) {
@@ -95,7 +115,6 @@ async function discoverFrameId(
     if (!frame) {
       throw new UserError("Unable to infer frame id.");
     }
-    process.env.SKYLIGHT_FRAME_ID = frame.id;
     return pathSegment(frame.id, "frame id");
   }
 
@@ -117,13 +136,23 @@ export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): P
   const config = getSkylightConfig();
   const fromEnv = config.frameId?.trim();
   if (fromEnv) return pathSegment(fromEnv, "SKYLIGHT_FRAME_ID");
-  if (inFlightFrameResolution !== undefined) return inFlightFrameResolution;
-
+  const key = frameResolutionKey(config);
+  let resolutions = frameResolutions.get(ctx.fetch);
+  if (resolutions === undefined) {
+    resolutions = new Map();
+    frameResolutions.set(ctx.fetch, resolutions);
+  }
+  const existing = resolutions.get(key);
+  if (existing !== undefined) return existing;
   const resolution = discoverFrameId(ctx, config.calendarShareId);
-  inFlightFrameResolution = resolution;
+  resolutions.set(key, resolution);
   try {
-    return await resolution;
-  } finally {
-    if (inFlightFrameResolution === resolution) inFlightFrameResolution = undefined;
+    const frameId = await resolution;
+    const currentKey = frameResolutionKey(getSkylightConfig());
+    if (currentKey !== key) resolutions.set(currentKey, resolution);
+    return frameId;
+  } catch (error) {
+    if (resolutions.get(key) === resolution) resolutions.delete(key);
+    throw error;
   }
 }

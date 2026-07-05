@@ -188,3 +188,39 @@ if (concurrentCalls !== 1) {
 }
 releaseLogin();
 await Promise.all([firstLogin, secondLogin]);
+
+const changingEnv = {
+  SKYLIGHT_API_BASE: "https://example.invalid",
+  SKYLIGHT_EMAIL: "first@example.com",
+  SKYLIGHT_PASSWORD: "first-secret",
+};
+let releaseFirstLogin;
+const firstLoginGate = new Promise((resolve) => {
+  releaseFirstLogin = resolve;
+});
+const changingEmails = [];
+const changingFetch = async (_url, init) => {
+  const body = JSON.parse(String(init?.body));
+  changingEmails.push(body.email);
+  if (body.email === "first@example.com") await firstLoginGate;
+  return Response.json({
+    data: { id: body.email, attributes: { token: body.password } },
+  });
+};
+const staleLogin = getAuthorizationHeader({ fetch: changingFetch, env: changingEnv });
+await new Promise((resolve) => setTimeout(resolve, 0));
+changingEnv.SKYLIGHT_EMAIL = "second@example.com";
+changingEnv.SKYLIGHT_PASSWORD = "second-secret";
+const currentLogin = getAuthorizationHeader({ fetch: changingFetch, env: changingEnv });
+const currentAuthorization = await currentLogin;
+releaseFirstLogin();
+const staleAuthorization = await staleLogin;
+if (
+  changingEmails.join(",") !== "first@example.com,second@example.com" ||
+  staleAuthorization === currentAuthorization ||
+  changingEnv.SKYLIGHT_BASIC_TOKEN !== currentAuthorization.slice("Basic ".length)
+) {
+  throw new Error(
+    `Credential changes leaked across logins: ${JSON.stringify({ changingEmails, staleAuthorization, currentAuthorization })}`
+  );
+}

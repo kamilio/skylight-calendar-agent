@@ -42,10 +42,25 @@ if (
   sanitizedText.includes("\u001b") ||
   sanitizedText.includes("\u009b") ||
   sanitizedText.includes("\\r") ||
-  sanitizedSuccess["bad key"] !== " [31mred [0m replace\nkeep-newline" ||
+  sanitizedSuccess["bad key"] !== "red replace\nkeep-newline" ||
   !Object.prototype.hasOwnProperty.call(sanitizedSuccess, "__proto__")
 ) {
   throw new Error(`Successful response retained terminal controls: ${sanitizedText}`);
+}
+
+let deeplyNested = "0";
+for (let depth = 0; depth < 101; depth += 1) deeplyNested = `[${deeplyNested}]`;
+try {
+  await requestJson({
+    fetch: async () => new Response(deeplyNested, { status: 200 }),
+    env,
+    method: "GET",
+    path: "/api/test",
+  });
+  throw new Error("Excessively nested response unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("maximum nesting depth of 100")) throw error;
 }
 
 try {

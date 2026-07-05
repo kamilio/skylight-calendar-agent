@@ -14,7 +14,36 @@ interface SessionResponse {
 }
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
-const inFlightLogins = new WeakMap<object, Promise<string>>();
+const inFlightLogins = new WeakMap<
+  object,
+  WeakMap<typeof globalThis.fetch, Map<string, Promise<string>>>
+>();
+
+function loginKey(env: NodeJS.ProcessEnv, email: string, password: string): string {
+  return JSON.stringify([
+    env.SKYLIGHT_API_BASE,
+    env.SKYLIGHT_REQUEST_TIMEOUT_MS,
+    email,
+    password,
+  ]);
+}
+
+function loginRequests(
+  env: NodeJS.ProcessEnv,
+  fetch: typeof globalThis.fetch
+): Map<string, Promise<string>> {
+  let byFetch = inFlightLogins.get(env);
+  if (byFetch === undefined) {
+    byFetch = new WeakMap();
+    inFlightLogins.set(env, byFetch);
+  }
+  let requests = byFetch.get(fetch);
+  if (requests === undefined) {
+    requests = new Map();
+    byFetch.set(fetch, requests);
+  }
+  return requests;
+}
 
 function errorBodyExcerpt(value: string): string {
   const sanitized = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
@@ -89,7 +118,12 @@ async function login(opts: {
     }
 
     const computed = base64(`${id.trim()}:${token.trim()}`);
-    opts.env.SKYLIGHT_BASIC_TOKEN = computed;
+    if (
+      opts.env.SKYLIGHT_EMAIL?.trim() === opts.email &&
+      opts.env.SKYLIGHT_PASSWORD === opts.password
+    ) {
+      opts.env.SKYLIGHT_BASIC_TOKEN = computed;
+    }
     return `Basic ${computed}`;
   } catch (error) {
     if (error instanceof UserError) throw error;
@@ -137,14 +171,16 @@ export async function getAuthorizationHeader(opts: {
     );
   }
 
-  const existingLogin = inFlightLogins.get(env);
+  const requests = loginRequests(env, opts.fetch);
+  const key = loginKey(env, email, password);
+  const existingLogin = requests.get(key);
   if (existingLogin !== undefined) return existingLogin;
 
   const loginRequest = login({ fetch: opts.fetch, env, email, password });
-  inFlightLogins.set(env, loginRequest);
+  requests.set(key, loginRequest);
   try {
     return await loginRequest;
   } finally {
-    if (inFlightLogins.get(env) === loginRequest) inFlightLogins.delete(env);
+    if (requests.get(key) === loginRequest) requests.delete(key);
   }
 }

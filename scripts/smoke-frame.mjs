@@ -117,6 +117,58 @@ try {
   if (ids[0] !== "789" || ids[1] !== "789") {
     throw new Error(`Concurrent frame discovery returned wrong ids: ${ids.join(",")}`);
   }
+  if ((await resolveFrameId({ fetch })) !== "789" || calls !== 1) {
+    throw new Error(`Resolved frame was not cached for its fetch client: ${calls} requests`);
+  }
+
+  const firstClientPaths = [];
+  const secondClientPaths = [];
+  const firstClientFetch = async (url) => {
+    firstClientPaths.push(new URL(url).pathname);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    return Response.json({ data: [{ id: "111" }] });
+  };
+  const secondClientFetch = async (url) => {
+    secondClientPaths.push(new URL(url).pathname);
+    return Response.json({ data: [{ id: "222" }] });
+  };
+  const clientIds = await Promise.all([
+    resolveFrameId({ fetch: firstClientFetch }),
+    resolveFrameId({ fetch: secondClientFetch }),
+  ]);
+  if (
+    clientIds[0] !== "111" ||
+    clientIds[1] !== "222" ||
+    firstClientPaths.join(",") !== "/api/frames/calendar" ||
+    secondClientPaths.join(",") !== "/api/frames/calendar"
+  ) {
+    throw new Error(
+      `Frame discovery leaked across fetch clients: ${JSON.stringify({ clientIds, firstClientPaths, secondClientPaths })}`
+    );
+  }
+
+  delete process.env.SKYLIGHT_AUTH_HEADER;
+  delete process.env.SKYLIGHT_BASIC_TOKEN;
+  process.env.SKYLIGHT_EMAIL = "cache@example.com";
+  process.env.SKYLIGHT_PASSWORD = "secret";
+  const authenticatedPaths = [];
+  const authenticatedFetch = async (url) => {
+    const path = new URL(url).pathname;
+    authenticatedPaths.push(path);
+    if (path === "/api/sessions") {
+      return Response.json({ data: { id: "user", attributes: { token: "token" } } });
+    }
+    return Response.json({ data: [{ id: "333" }] });
+  };
+  if (
+    (await resolveFrameId({ fetch: authenticatedFetch })) !== "333" ||
+    (await resolveFrameId({ fetch: authenticatedFetch })) !== "333" ||
+    authenticatedPaths.join(",") !== "/api/sessions,/api/frames/calendar"
+  ) {
+    throw new Error(
+      `Login changed the frame cache identity: ${JSON.stringify(authenticatedPaths)}`
+    );
+  }
 } finally {
   for (const key of Object.keys(process.env)) {
     if (!(key in savedEnv)) delete process.env[key];
