@@ -11,29 +11,39 @@ for (const name of [
   delete env[name];
 }
 
-const child = spawn(
-  process.execPath,
-  ["dist/cli.js", "lists", "create-raw", "--list-json", "not-json"],
-  { env, stdio: ["ignore", "pipe", "pipe"] }
+async function expectLocalError(args, expected) {
+  const child = spawn(process.execPath, ["dist/cli.js", ...args], {
+    env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  let output = "";
+  child.stdout.on("data", (chunk) => {
+    output += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    output += chunk;
+  });
+
+  const code = await new Promise((resolve, reject) => {
+    child.on("exit", resolve);
+    child.on("error", reject);
+  });
+
+  if (code === 0) throw new Error(`Invalid local input unexpectedly succeeded: ${args.join(" ")}`);
+  if (!output.includes(expected)) {
+    throw new Error(`Local validation error was not reported: ${output}`);
+  }
+  if (output.includes("Missing credentials")) {
+    throw new Error(`Credential validation ran before local validation: ${output}`);
+  }
+}
+
+await expectLocalError(
+  ["lists", "create-raw", "--list-json", "not-json"],
+  'Invalid value for "listJson". Expected valid JSON'
 );
-
-let output = "";
-child.stdout.on("data", (chunk) => {
-  output += chunk;
-});
-child.stderr.on("data", (chunk) => {
-  output += chunk;
-});
-
-const code = await new Promise((resolve, reject) => {
-  child.on("exit", resolve);
-  child.on("error", reject);
-});
-
-if (code === 0) throw new Error("Invalid local input unexpectedly succeeded");
-if (!output.includes('Invalid value for "listJson". Expected valid JSON')) {
-  throw new Error(`Local validation error was not reported: ${output}`);
-}
-if (output.includes("Missing credentials")) {
-  throw new Error(`Credential validation ran before local validation: ${output}`);
-}
+await expectLocalError(
+  ["lists", "get", "--list-id", " "],
+  'Invalid value for "listId": " " does not match pattern "\\S"'
+);

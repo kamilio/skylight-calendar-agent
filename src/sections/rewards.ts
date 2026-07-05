@@ -55,7 +55,7 @@ export const rewardsGroup = defineGroup({
       description: "Get a reward by id",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        rewardId: S.String({ description: "Reward id", short: "i" }),
+        rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -89,7 +89,7 @@ export const rewardsGroup = defineGroup({
       description: "Update a reward (reward JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        rewardId: S.String({ description: "Reward id", short: "i" }),
+        rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
         rewardJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -108,7 +108,7 @@ export const rewardsGroup = defineGroup({
       description: "Delete a reward",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        rewardId: S.String({ description: "Reward id", short: "i" }),
+        rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -124,7 +124,7 @@ export const rewardsGroup = defineGroup({
       description: "Redeem a reward",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        rewardId: S.String({ description: "Reward id", short: "i" }),
+        rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -140,7 +140,7 @@ export const rewardsGroup = defineGroup({
       description: "Unredeem a reward",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        rewardId: S.String({ description: "Reward id", short: "i" }),
+        rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

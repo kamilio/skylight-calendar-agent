@@ -127,6 +127,14 @@ try {
   ]);
   await run(["tasks", "taskbox-create", "--summary", "Pack lunch"]);
   await run([
+    "tasks",
+    "chores",
+    "--after",
+    "2026-07-01",
+    "--before",
+    "2026-07-31",
+  ]);
+  await run([
     "calendar",
     "notification-settings-update",
     "--on-time",
@@ -134,6 +142,26 @@ try {
   ]);
   await runExpectingFailure(["lists", "create", "--label", ""]);
   await runExpectingFailure(["lists", "create", "--label", "   "]);
+  await runExpectingFailure([
+    "calendar",
+    "source-calendar-save",
+    "--calendar-id",
+    " ",
+    "--attributes-json",
+    '{"name":"Family"}',
+  ]);
+  await runExpectingFailure([
+    "tasks",
+    "taskbox-save",
+    "--task-box-item-json",
+    '{"id":"","summary":"Pack lunch"}',
+  ]);
+  await runExpectingFailure([
+    "tasks",
+    "taskbox-save",
+    "--task-box-item-json",
+    '{"id":null,"summary":"Pack lunch"}',
+  ]);
   await runExpectingFailure([
     "tasks",
     "chore-create-simple",
@@ -477,4 +505,12 @@ if (
   notificationUpdate?.body?.early_minutes_before !== null
 ) {
   throw new Error("Notification settings update did not preserve explicit boolean values");
+}
+
+const choresList = requests.find((request) => request.url?.includes("/chores?"));
+if (
+  !choresList?.url?.includes("include_late=true") ||
+  !choresList?.url?.includes("include_up_for_grabs=false")
+) {
+  throw new Error(`Chore list did not send captured defaults: ${choresList?.url}`);
 }

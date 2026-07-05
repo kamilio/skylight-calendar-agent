@@ -33,7 +33,7 @@ export const listsGroup = defineGroup({
       description: "Get list by id",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -111,7 +111,7 @@ export const listsGroup = defineGroup({
       description: "Update a list (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
         updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -130,7 +130,7 @@ export const listsGroup = defineGroup({
       description: "Delete a list",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -146,7 +146,7 @@ export const listsGroup = defineGroup({
       description: "List list items for a list",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -162,7 +162,7 @@ export const listsGroup = defineGroup({
       description: "Add a to-do item to a list",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
         label: nonBlankParam({ description: "To-do text", short: "l" }),
         section: S.Optional(S.String({ description: "Optional section name", short: "s" })),
       }),
@@ -184,7 +184,7 @@ export const listsGroup = defineGroup({
       description: "Add multiple to-do items to a list",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
         labels: S.Array(nonBlankParam({ description: "To-do text" }), {
           description: "One or more to-do items",
           minItems: 1,
@@ -222,7 +222,7 @@ export const listsGroup = defineGroup({
       description: "Add a list item from a raw JSON object",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
         itemJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -241,8 +241,8 @@ export const listsGroup = defineGroup({
       description: "Update a list item (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
-        itemId: S.String({ description: "List item id" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
+        itemId: nonBlankParam({ description: "List item id" }),
         updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -261,8 +261,8 @@ export const listsGroup = defineGroup({
       description: "Delete a list item",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
-        itemId: S.String({ description: "List item id" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
+        itemId: nonBlankParam({ description: "List item id" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -278,8 +278,8 @@ export const listsGroup = defineGroup({
       description: "Move a list item after another item",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
-        itemId: S.String({ description: "List item id" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
+        itemId: nonBlankParam({ description: "List item id" }),
         afterItemId: S.Optional(
           positiveIntegerStringParam({ description: "After item id (omit to move to top)" })
         ),
@@ -304,7 +304,7 @@ export const listsGroup = defineGroup({
       description: "Bulk move items to a section",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
         itemIds: S.Array(nonBlankParam({ description: "List item id" }), {
           description: "Item ids",
           minItems: 1,
@@ -329,7 +329,7 @@ export const listsGroup = defineGroup({
       description: "Bulk delete list items",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        listId: S.String({ description: "List id", short: "i" }),
+        listId: nonBlankParam({ description: "List id", short: "i" }),
         itemIds: S.Array(nonBlankParam({ description: "List item id" }), {
           description: "Item ids",
           minItems: 1,

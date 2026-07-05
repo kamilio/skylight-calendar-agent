@@ -267,7 +267,7 @@ export const calendarGroup = defineGroup({
       description: "Edit a calendar event",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        eventId: S.String({ description: "Event id", short: "i" }),
+        eventId: nonBlankParam({ description: "Event id", short: "i" }),
         summary: S.Optional(nonBlankParam({ description: "Event title", short: "s" })),
         startsAt: S.Optional(
           dateOrDateTimeParam({ description: "ISO datetime or YYYY-MM-DD", short: "a" })
@@ -366,7 +366,7 @@ export const calendarGroup = defineGroup({
       description: "Delete a calendar event",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        eventId: S.String({ description: "Event id", short: "i" }),
+        eventId: nonBlankParam({ description: "Event id", short: "i" }),
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
       }),
       handler: async (ctx) => {
@@ -400,7 +400,7 @@ export const calendarGroup = defineGroup({
       description: "List calendars from an account id",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        accountId: S.String({ description: "Calendar account id", short: "i" }),
+        accountId: nonBlankParam({ description: "Calendar account id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -416,7 +416,7 @@ export const calendarGroup = defineGroup({
       description: "Update synced account calendars",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        accountId: S.String({ description: "Calendar account id", short: "i" }),
+        accountId: nonBlankParam({ description: "Calendar account id", short: "i" }),
         activeCalendars: S.Array(nonBlankParam({ description: "Calendar id" }), {
           description: "Active calendars",
         }),
@@ -516,7 +516,7 @@ export const calendarGroup = defineGroup({
       description: "Get a source calendar by id",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        calendarId: S.String({ description: "Source calendar id", short: "i" }),
+        calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -532,7 +532,9 @@ export const calendarGroup = defineGroup({
       description: "Create or update a source calendar (attributes JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        calendarId: S.Optional(S.String({ description: "If set, updates that calendar id" })),
+        calendarId: S.Optional(
+          nonBlankParam({ description: "If set, updates that calendar id" })
+        ),
         attributesJson: jsonParam({ description: "JSON object of attributes", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -559,7 +561,7 @@ export const calendarGroup = defineGroup({
       description: "Delete a source calendar",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        calendarId: S.String({ description: "Source calendar id", short: "i" }),
+        calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -575,7 +577,7 @@ export const calendarGroup = defineGroup({
       description: "Set a source calendar as default for new events",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        calendarId: S.String({ description: "Source calendar id", short: "i" }),
+        calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -592,7 +594,7 @@ export const calendarGroup = defineGroup({
       description: "Link profiles/categories to a source calendar (categorizations JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        calendarId: S.String({ description: "Source calendar id", short: "i" }),
+        calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
         categorizationsJson: jsonParam({
           description: "JSON array/object payload",
           short: "j",

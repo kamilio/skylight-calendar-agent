@@ -31,7 +31,7 @@ export const recipesGroup = defineGroup({
       description: "Get a meal recipe by id",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        recipeId: S.String({ description: "Recipe id", short: "i" }),
+        recipeId: nonBlankParam({ description: "Recipe id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -72,7 +72,7 @@ export const recipesGroup = defineGroup({
       description: "Update a meal recipe",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        recipeId: S.String({ description: "Recipe id", short: "i" }),
+        recipeId: nonBlankParam({ description: "Recipe id", short: "i" }),
         categoryId: S.Optional(nonBlankParam({ description: "Meal category id", short: "c" })),
         summary: S.Optional(nonBlankParam({ description: "Recipe title", short: "s" })),
         description: S.Optional(S.String({ description: "Recipe description" })),
@@ -103,7 +103,7 @@ export const recipesGroup = defineGroup({
       description: "Delete a meal recipe",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        recipeId: S.String({ description: "Recipe id", short: "i" }),
+        recipeId: nonBlankParam({ description: "Recipe id", short: "i" }),
         includeMeals: S.Optional(S.Boolean({ description: "Apply deletion to sittings too" })),
       }),
       handler: async (ctx) => {
@@ -124,7 +124,7 @@ export const recipesGroup = defineGroup({
       description: "Add recipe ingredients to grocery list",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        recipeId: S.String({ description: "Recipe id", short: "i" }),
+        recipeId: nonBlankParam({ description: "Recipe id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

@@ -1,4 +1,4 @@
-import { defineCommand, defineGroup, S } from "toolcraft";
+import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
@@ -24,8 +24,15 @@ export const tasksGroup = defineGroup({
       params: S.Object({
         after: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "a" })),
         before: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "b" })),
-        includeLate: S.Optional(S.Boolean({ description: "Include late chores", short: "l" })),
-        includeUpForGrabs: S.Optional(S.Boolean({ description: "Include up-for-grabs chores" })),
+        includeLate: S.Boolean({
+          description: "Include late chores",
+          short: "l",
+          default: true,
+        }),
+        includeUpForGrabs: S.Boolean({
+          description: "Include up-for-grabs chores",
+          default: false,
+        }),
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.after, ctx.params.before, "after", "before");
@@ -129,7 +136,7 @@ export const tasksGroup = defineGroup({
       description: "Update a chore",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        choreId: S.String({ description: "Chore id", short: "i" }),
+        choreId: nonBlankParam({ description: "Chore id", short: "i" }),
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
         updatesJson: jsonParam({ description: "JSON object of updates", short: "j" }),
       }),
@@ -152,7 +159,7 @@ export const tasksGroup = defineGroup({
       description: "Delete a chore",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        choreId: S.String({ description: "Chore id", short: "i" }),
+        choreId: nonBlankParam({ description: "Chore id", short: "i" }),
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
       }),
       handler: async (ctx) => {
@@ -172,7 +179,7 @@ export const tasksGroup = defineGroup({
       description: "Update task completion status",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        seriesId: S.String({ description: "Chore series id", short: "i" }),
+        seriesId: nonBlankParam({ description: "Chore series id", short: "i" }),
         status: nonBlankParam({ description: "Status (server-defined)", short: "s" }),
         instanceDate: dateParam({ description: "YYYY-MM-DD", short: "d" }),
         instanceTime: S.Optional(timeParam({ description: "HH:mm", short: "t" })),
@@ -260,15 +267,22 @@ export const tasksGroup = defineGroup({
           ctx.params.taskBoxItemJson,
           "taskBoxItemJson"
         ) as {
-          id?: string | number;
+          id?: unknown;
         };
-        const frameId = await resolveFrameId(ctx);
         const id = taskBoxItem.id;
-        if (id !== undefined && String(id).length > 0) {
+        let itemPath: string | undefined;
+        if (id !== undefined) {
+          if (typeof id !== "string" && typeof id !== "number") {
+            throw new UserError("id must be a non-blank string or number when provided.");
+          }
+          itemPath = pathSegment(id, "id");
+        }
+        const frameId = await resolveFrameId(ctx);
+        if (itemPath !== undefined) {
           return requestJson({
             fetch: ctx.fetch,
             method: "PATCH",
-            path: `/api/frames/${frameId}/task_box/items/${pathSegment(id, "id")}`,
+            path: `/api/frames/${frameId}/task_box/items/${itemPath}`,
             body: taskBoxItem,
           });
         }
@@ -285,7 +299,7 @@ export const tasksGroup = defineGroup({
       description: "Delete a Task Box item",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        taskBoxItemId: S.String({ description: "Task Box item id", short: "i" }),
+        taskBoxItemId: nonBlankParam({ description: "Task Box item id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

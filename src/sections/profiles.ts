@@ -340,7 +340,7 @@ export const profilesGroup = defineGroup({
       description: "Get a category by id",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryId: S.String({ description: "Category id", short: "i" }),
+        categoryId: nonBlankParam({ description: "Category id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -392,7 +392,7 @@ export const profilesGroup = defineGroup({
       description: "Update a category (raw JSON updates)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryId: S.String({ description: "Category id", short: "i" }),
+        categoryId: nonBlankParam({ description: "Category id", short: "i" }),
         updatesJson: jsonParam({ description: "Raw JSON updates", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -411,7 +411,7 @@ export const profilesGroup = defineGroup({
       description: "Delete a category",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryId: S.String({ description: "Category id", short: "i" }),
+        categoryId: nonBlankParam({ description: "Category id", short: "i" }),
         reassignToCategoryId: S.Optional(
           nonBlankParam({ description: "Reassign items to this category id" })
         ),
@@ -435,7 +435,7 @@ export const profilesGroup = defineGroup({
       description: "Link source calendars to a profile category (categorizations JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryId: S.String({ description: "Category id", short: "i" }),
+        categoryId: nonBlankParam({ description: "Category id", short: "i" }),
         categorizationsJson: jsonParam({ description: "JSON payload", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -457,7 +457,7 @@ export const profilesGroup = defineGroup({
       description: "Update a family member (category-backed) (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryId: S.String({ description: "Category id", short: "i" }),
+        categoryId: nonBlankParam({ description: "Category id", short: "i" }),
         updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -490,7 +490,7 @@ export const profilesGroup = defineGroup({
       description: "Get a device by id",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        deviceId: S.String({ description: "Device id", short: "i" }),
+        deviceId: nonBlankParam({ description: "Device id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -529,7 +529,7 @@ export const profilesGroup = defineGroup({
       description: "Rename a device",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        deviceId: S.String({ description: "Device id", short: "i" }),
+        deviceId: nonBlankParam({ description: "Device id", short: "i" }),
         name: nonBlankParam({ description: "New name", short: "n" }),
       }),
       handler: async (ctx) => {
@@ -547,7 +547,7 @@ export const profilesGroup = defineGroup({
       description: "Delete a device",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        deviceId: S.String({ description: "Device id", short: "i" }),
+        deviceId: nonBlankParam({ description: "Device id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -563,7 +563,7 @@ export const profilesGroup = defineGroup({
       description: "Reset a device",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        deviceId: S.String({ description: "Device id", short: "i" }),
+        deviceId: nonBlankParam({ description: "Device id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -579,7 +579,7 @@ export const profilesGroup = defineGroup({
       description: "Get a device activation code",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        deviceId: S.String({ description: "Device id", short: "i" }),
+        deviceId: nonBlankParam({ description: "Device id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -595,7 +595,7 @@ export const profilesGroup = defineGroup({
       description: "Update device settings (raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        deviceId: S.String({ description: "Device id", short: "i" }),
+        deviceId: nonBlankParam({ description: "Device id", short: "i" }),
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
       handler: async (ctx) => {

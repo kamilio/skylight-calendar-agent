@@ -37,7 +37,7 @@ export const mealsGroup = defineGroup({
       description: "Update a meal category (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryId: S.String({ description: "Meal category id", short: "i" }),
+        categoryId: nonBlankParam({ description: "Meal category id", short: "i" }),
         updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
@@ -79,7 +79,7 @@ export const mealsGroup = defineGroup({
       description: "Get meal instances for a sitting id",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        mealId: S.String({ description: "Meal sitting id", short: "i" }),
+        mealId: nonBlankParam({ description: "Meal sitting id", short: "i" }),
         dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "a" })),
         dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "b" })),
       }),
@@ -168,7 +168,7 @@ export const mealsGroup = defineGroup({
       description: "Update a meal instance",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        mealId: S.String({ description: "Meal sitting id", short: "i" }),
+        mealId: nonBlankParam({ description: "Meal sitting id", short: "i" }),
         instanceISO: dateOrDateTimeParam({
           description: "Instance date or ISO datetime (path segment)",
           short: "t",
@@ -219,7 +219,7 @@ export const mealsGroup = defineGroup({
       description: "Delete a meal instance",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        mealId: S.String({ description: "Meal sitting id", short: "i" }),
+        mealId: nonBlankParam({ description: "Meal sitting id", short: "i" }),
         instanceISO: dateOrDateTimeParam({
           description: "Instance date or ISO datetime (path segment)",
           short: "t",

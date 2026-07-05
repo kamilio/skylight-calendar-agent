@@ -118,7 +118,7 @@ export const photosGroup = defineGroup({
       description: "Get message details",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageId: S.String({ description: "Message id", short: "i" }),
+        messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -134,7 +134,7 @@ export const photosGroup = defineGroup({
       description: "List message likes",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageId: S.String({ description: "Message id", short: "i" }),
+        messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -150,7 +150,7 @@ export const photosGroup = defineGroup({
       description: "List message comments",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageId: S.String({ description: "Message id", short: "i" }),
+        messageId: nonBlankParam({ description: "Message id", short: "i" }),
         page: S.Optional(
           S.Number({ description: "Page number (1-based)", default: 1, minimum: 1, jsonType: "integer" })
         ),
@@ -171,7 +171,7 @@ export const photosGroup = defineGroup({
       description: "Delete a message",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageId: S.String({ description: "Message id", short: "i" }),
+        messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -187,7 +187,7 @@ export const photosGroup = defineGroup({
       description: "Like a message",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageId: S.String({ description: "Message id", short: "i" }),
+        messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -203,7 +203,7 @@ export const photosGroup = defineGroup({
       description: "Unlike a message",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageId: S.String({ description: "Message id", short: "i" }),
+        messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -219,7 +219,7 @@ export const photosGroup = defineGroup({
       description: "Comment on a message",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageId: S.String({ description: "Message id", short: "i" }),
+        messageId: nonBlankParam({ description: "Message id", short: "i" }),
         body: nonBlankParam({ description: "Comment body", short: "b" }),
       }),
       handler: async (ctx) => {
@@ -237,8 +237,8 @@ export const photosGroup = defineGroup({
       description: "Delete a comment on a message",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageId: S.String({ description: "Message id", short: "m" }),
-        commentId: S.String({ description: "Comment id", short: "c" }),
+        messageId: nonBlankParam({ description: "Message id", short: "m" }),
+        commentId: nonBlankParam({ description: "Comment id", short: "c" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -254,7 +254,7 @@ export const photosGroup = defineGroup({
       description: "Update message caption",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageId: S.String({ description: "Message id", short: "i" }),
+        messageId: nonBlankParam({ description: "Message id", short: "i" }),
         caption: S.String({ description: "New caption", short: "c" }),
       }),
       handler: async (ctx) => {
@@ -369,7 +369,7 @@ export const photosGroup = defineGroup({
       description: "Rename an album",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        albumId: S.String({ description: "Album id", short: "i" }),
+        albumId: nonBlankParam({ description: "Album id", short: "i" }),
         title: nonBlankParam({ description: "New title", short: "t" }),
       }),
       handler: async (ctx) => {
@@ -387,7 +387,7 @@ export const photosGroup = defineGroup({
       description: "Delete an album",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        albumId: S.String({ description: "Album id", short: "i" }),
+        albumId: nonBlankParam({ description: "Album id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -403,7 +403,7 @@ export const photosGroup = defineGroup({
       description: "List messages in an album",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        albumId: S.String({ description: "Album id", short: "i" }),
+        albumId: nonBlankParam({ description: "Album id", short: "i" }),
         page: S.Optional(
           S.Number({ description: "Page number (1-based)", default: 1, minimum: 1, jsonType: "integer" })
         ),
@@ -424,7 +424,7 @@ export const photosGroup = defineGroup({
       description: "List all message ids in an album",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        albumId: S.String({ description: "Album id", short: "i" }),
+        albumId: nonBlankParam({ description: "Album id", short: "i" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -467,7 +467,7 @@ export const photosGroup = defineGroup({
       description: "Remove messages from an album",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        albumId: S.String({ description: "Album id", short: "i" }),
+        albumId: nonBlankParam({ description: "Album id", short: "i" }),
         messageIds: S.Array(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
           minItems: 1,
