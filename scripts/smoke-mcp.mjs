@@ -1,4 +1,9 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
+
+const packageVersion = JSON.parse(
+  fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")
+).version;
 
 const child = spawn(process.execPath, ["dist/mcp.js"], {
   stdio: ["pipe", "pipe", "inherit"],
@@ -20,6 +25,14 @@ child.stdout.on("data", (chunk) => {
     if (!line) continue;
 
     const message = JSON.parse(line);
+    if (message.id === 1) {
+      if (message.result?.serverInfo?.version !== packageVersion) {
+        throw new Error(
+          `MCP version ${message.result?.serverInfo?.version} does not match package ${packageVersion}`
+        );
+      }
+      continue;
+    }
     if (message.id !== 2) continue;
 
     const tools = message.result.tools;
@@ -118,6 +131,12 @@ child.stdout.on("data", (chunk) => {
       points.maximum !== Number.MAX_SAFE_INTEGER
     ) {
       throw new Error("Reward points must use the JavaScript safe integer range");
+    }
+
+    const mealInstance = tools.find((tool) => tool.name === "skylight__meals__delete")
+      ?.inputSchema?.properties?.instance_iso;
+    if (mealInstance?.type !== "string") {
+      throw new Error("Meal instance MCP parameter must remain instance_iso");
     }
 
     clearTimeout(timeout);

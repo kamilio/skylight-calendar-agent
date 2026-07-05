@@ -169,7 +169,7 @@ export const mealsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         mealId: nonBlankParam({ description: "Meal sitting id", short: "i" }),
-        instanceISO: dateOrDateTimeParam({
+        instanceIso: dateOrDateTimeParam({
           description: "Instance date or ISO datetime (path segment)",
           short: "t",
         }),
@@ -187,7 +187,7 @@ export const mealsGroup = defineGroup({
           [ctx.params.recipeId, ctx.params.categoryId, ctx.params.updatesJson],
           "Specify recipeId, categoryId, or updatesJson to update the meal."
         );
-        assertValidDateOrDateTime(ctx.params.instanceISO, "instanceISO");
+        assertValidDateOrDateTime(ctx.params.instanceIso, "instanceIso");
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
         const updates =
           ctx.params.updatesJson === undefined
@@ -197,7 +197,7 @@ export const mealsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "PATCH",
-          path: `/api/frames/${frameId}/meals/sittings/${pathSegment(ctx.params.mealId, "mealId")}/instances/${pathSegment(ctx.params.instanceISO, "instanceISO")}`,
+          path: `/api/frames/${frameId}/meals/sittings/${pathSegment(ctx.params.mealId, "mealId")}/instances/${pathSegment(ctx.params.instanceIso, "instanceIso")}`,
           query: {
             ...(ctx.params.dateMin === undefined ? {} : { date_min: ctx.params.dateMin }),
             ...(ctx.params.dateMax === undefined ? {} : { date_max: ctx.params.dateMax }),
@@ -220,7 +220,7 @@ export const mealsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         mealId: nonBlankParam({ description: "Meal sitting id", short: "i" }),
-        instanceISO: dateOrDateTimeParam({
+        instanceIso: dateOrDateTimeParam({
           description: "Instance date or ISO datetime (path segment)",
           short: "t",
         }),
@@ -229,13 +229,13 @@ export const mealsGroup = defineGroup({
         dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
       }),
       handler: async (ctx) => {
-        assertValidDateOrDateTime(ctx.params.instanceISO, "instanceISO");
+        assertValidDateOrDateTime(ctx.params.instanceIso, "instanceIso");
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/meals/sittings/${pathSegment(ctx.params.mealId, "mealId")}/instances/${pathSegment(ctx.params.instanceISO, "instanceISO")}`,
+          path: `/api/frames/${frameId}/meals/sittings/${pathSegment(ctx.params.mealId, "mealId")}/instances/${pathSegment(ctx.params.instanceIso, "instanceIso")}`,
           query: {
             ...(ctx.params.dateMin === undefined ? {} : { date_min: ctx.params.dateMin }),
             ...(ctx.params.dateMax === undefined ? {} : { date_max: ctx.params.dateMax }),

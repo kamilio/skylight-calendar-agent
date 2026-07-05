@@ -1,6 +1,18 @@
 import { spawnSync } from "node:child_process";
 import { root } from "../dist/root.js";
 
+const rootHelp = spawnSync(process.execPath, ["dist/cli.js", "--help"], {
+  encoding: "utf8",
+});
+const rootOutput = `${rootHelp.stdout ?? ""}${rootHelp.stderr ?? ""}`;
+if (
+  rootHelp.status !== 0 ||
+  !rootOutput.includes("skylight — Skylight Calendar Agent") ||
+  rootOutput.includes("(scoped)")
+) {
+  throw new Error(`Root help title is incorrect: ${rootOutput}`);
+}
+
 function collectPaths(group, prefix = []) {
   const paths = [];
   for (const child of group.children ?? []) {

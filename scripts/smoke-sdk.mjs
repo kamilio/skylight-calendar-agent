@@ -81,6 +81,9 @@ try {
   if (calls !== 2 || requestBody?.password !== " env secret ") {
     throw new Error("SDK email update did not use SKYLIGHT_PASSWORD exactly");
   }
+
+  await sdk.meals.delete({ mealId: "meal-1", instanceIso: "2026-07-05" });
+  if (calls !== 3) throw new Error("SDK meal instance parameter was not accepted");
 } finally {
   for (const key of Object.keys(process.env)) {
     if (!(key in savedEnv)) delete process.env[key];

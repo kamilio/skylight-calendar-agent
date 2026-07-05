@@ -10,7 +10,7 @@ import { profilesGroup } from "./sections/profiles.js";
 
 export const root = defineGroup({
   name: "skylight",
-  description: "Skylight Calendar Agent (scoped)",
+  description: "Skylight Calendar Agent",
   children: [
     calendarGroup,
     tasksGroup,
