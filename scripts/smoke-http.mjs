@@ -119,6 +119,24 @@ if (emptyResponse !== null) {
   throw new Error("Empty successful response should return null");
 }
 
+let arrayQueryUrl;
+await requestJson({
+  fetch: async (url) => {
+    arrayQueryUrl = String(url);
+    return Response.json({ ok: true });
+  },
+  env,
+  method: "GET",
+  path: "/api/test",
+  query: { "message_ids[]": ["1", "2"] },
+});
+if (
+  arrayQueryUrl === undefined ||
+  new URL(arrayQueryUrl).searchParams.getAll("message_ids[]").join(",") !== "1,2"
+) {
+  throw new Error(`Array query values were not repeated: ${arrayQueryUrl}`);
+}
+
 try {
   await requestJson({
     fetch: async () => Response.json({ ok: true }),

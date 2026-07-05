@@ -24,6 +24,20 @@ child.stdout.on("data", (chunk) => {
 
     const tools = message.result.tools;
     const names = tools.map((tool) => tool.name);
+    if (new Set(names).size !== names.length) {
+      throw new Error("MCP tool names must be unique");
+    }
+    for (const tool of tools) {
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(tool.name)) {
+        throw new Error(`Invalid MCP tool name: ${tool.name}`);
+      }
+      if (typeof tool.description !== "string" || tool.description.trim().length === 0) {
+        throw new Error(`MCP tool lacks a description: ${tool.name}`);
+      }
+      if (tool.inputSchema?.type !== "object") {
+        throw new Error(`MCP tool lacks an object input schema: ${tool.name}`);
+      }
+    }
     const requiredTools = [
       "skylight__lists__create",
       "skylight__lists__item_create",
