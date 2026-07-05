@@ -2,6 +2,13 @@ import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { getAuthorizationHeader } from "./auth.js";
 
+const MAX_ERROR_BODY_LENGTH = 2_000;
+
+function errorBodyExcerpt(value: string): string {
+  if (value.length <= MAX_ERROR_BODY_LENGTH) return value;
+  return `${value.slice(0, MAX_ERROR_BODY_LENGTH)}… [truncated ${value.length - MAX_ERROR_BODY_LENGTH} characters]`;
+}
+
 export async function requestJson<TResponse>(opts: {
   fetch: typeof globalThis.fetch;
   env?: NodeJS.ProcessEnv;
@@ -50,16 +57,34 @@ export async function requestJson<TResponse>(opts: {
     init.body = JSON.stringify(opts.body);
   }
 
-  const response = await opts.fetch(url.toString(), init);
+  let response: Response;
+  try {
+    response = await opts.fetch(url.toString(), init);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new UserError(`Request failed ${opts.method} ${opts.path}: ${detail}`);
+  }
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
+    const excerpt = errorBodyExcerpt(text);
     throw new UserError(
       `Request failed (${response.status}) ${opts.method} ${opts.path}${
-        text.length > 0 ? `: ${text}` : ""
+        excerpt.length > 0 ? `: ${excerpt}` : ""
       }`
     );
   }
 
-  return (await response.json()) as TResponse;
+  const text = await response.text();
+  if (text.trim().length === 0) {
+    return null as TResponse;
+  }
+
+  try {
+    return JSON.parse(text) as TResponse;
+  } catch {
+    throw new UserError(
+      `Invalid JSON response (${response.status}) ${opts.method} ${opts.path}`
+    );
+  }
 }

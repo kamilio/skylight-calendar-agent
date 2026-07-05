@@ -2,6 +2,14 @@ import { defineCommand, defineGroup, S } from "toolcraft";
 import { getSkylightConfig } from "../skylight/config.js";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
+import {
+  assertValidDateRange,
+  dateParam,
+  nonBlankParam,
+  parseJsonObject,
+  parseJsonValue,
+  pathSegment,
+} from "../skylight/validation.js";
 
 export const calendarGroup = defineGroup({
   name: "calendar",
@@ -51,8 +59,8 @@ export const calendarGroup = defineGroup({
       description: "List calendar events for a date range",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        dateMin: S.String({ description: "YYYY-MM-DD", short: "a" }),
-        dateMax: S.String({ description: "YYYY-MM-DD", short: "b" }),
+        dateMin: dateParam({ description: "YYYY-MM-DD", short: "a" }),
+        dateMax: dateParam({ description: "YYYY-MM-DD", short: "b" }),
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
         include: S.Optional(
           S.String({
@@ -61,6 +69,7 @@ export const calendarGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
+        assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
         const frameId = await resolveFrameId(ctx);
         const config = getSkylightConfig();
         return requestJson({
@@ -82,7 +91,7 @@ export const calendarGroup = defineGroup({
       description: "Search calendar events",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        searchQuery: S.String({ description: "Search query", short: "q" }),
+        searchQuery: nonBlankParam({ description: "Search query", short: "q" }),
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
         include: S.Optional(
           S.String({
@@ -147,7 +156,7 @@ export const calendarGroup = defineGroup({
       description: "Create a calendar event",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        summary: S.String({ description: "Event title", short: "s" }),
+        summary: nonBlankParam({ description: "Event title", short: "s" }),
         startsAt: S.String({ description: "ISO datetime or YYYY-MM-DD", short: "a" }),
         endsAt: S.Optional(S.String({ description: "ISO datetime or YYYY-MM-DD", short: "b" })),
         allDay: S.Optional(S.Boolean({ description: "All day event" })),
@@ -178,7 +187,7 @@ export const calendarGroup = defineGroup({
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
-            : (JSON.parse(ctx.params.notificationSettingJson) as unknown);
+            : parseJsonObject(ctx.params.notificationSettingJson, "notificationSettingJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -240,11 +249,11 @@ export const calendarGroup = defineGroup({
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
-            : (JSON.parse(ctx.params.notificationSettingJson) as unknown);
+            : parseJsonObject(ctx.params.notificationSettingJson, "notificationSettingJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/calendar_events/${ctx.params.eventId}`,
+          path: `/api/frames/${frameId}/calendar_events/${pathSegment(ctx.params.eventId, "eventId")}`,
           body: {
             ...(ctx.params.summary === undefined ? {} : { summary: ctx.params.summary }),
             ...(ctx.params.startsAt === undefined ? {} : { starts_at: ctx.params.startsAt }),
@@ -282,7 +291,7 @@ export const calendarGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/calendar_events/${ctx.params.eventId}`,
+          path: `/api/frames/${frameId}/calendar_events/${pathSegment(ctx.params.eventId, "eventId")}`,
           query: {
             ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
           },
@@ -315,7 +324,7 @@ export const calendarGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/calendars/${ctx.params.accountId}`,
+          path: `/api/frames/${frameId}/calendars/${pathSegment(ctx.params.accountId, "accountId")}`,
         });
       },
     }),
@@ -332,7 +341,7 @@ export const calendarGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/calendars/${ctx.params.accountId}`,
+          path: `/api/frames/${frameId}/calendars/${pathSegment(ctx.params.accountId, "accountId")}`,
           body: { active_calendars: ctx.params.activeCalendars },
         });
       },
@@ -422,7 +431,7 @@ export const calendarGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/source_calendars/${ctx.params.calendarId}`,
+          path: `/api/frames/${frameId}/source_calendars/${pathSegment(ctx.params.calendarId, "calendarId")}`,
         });
       },
     }),
@@ -436,12 +445,12 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const attributes = JSON.parse(ctx.params.attributesJson) as unknown;
+        const attributes = parseJsonObject(ctx.params.attributesJson, "attributesJson");
         if (ctx.params.calendarId) {
           return requestJson({
             fetch: ctx.fetch,
             method: "PUT",
-            path: `/api/frames/${frameId}/source_calendars/${ctx.params.calendarId}`,
+            path: `/api/frames/${frameId}/source_calendars/${pathSegment(ctx.params.calendarId, "calendarId")}`,
             body: attributes,
           });
         }
@@ -465,7 +474,7 @@ export const calendarGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/source_calendars/${ctx.params.calendarId}`,
+          path: `/api/frames/${frameId}/source_calendars/${pathSegment(ctx.params.calendarId, "calendarId")}`,
         });
       },
     }),
@@ -496,11 +505,14 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const categorizations = JSON.parse(ctx.params.categorizationsJson) as unknown;
+        const categorizations = parseJsonValue(
+          ctx.params.categorizationsJson,
+          "categorizationsJson"
+        );
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/source_calendars/${ctx.params.calendarId}/source_calendar_categorizations`,
+          path: `/api/frames/${frameId}/source_calendars/${pathSegment(ctx.params.calendarId, "calendarId")}/source_calendar_categorizations`,
           body: { categorizations },
         });
       },

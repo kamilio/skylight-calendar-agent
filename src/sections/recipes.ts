@@ -1,6 +1,7 @@
 import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
+import { nonBlankParam, pathSegment } from "../skylight/validation.js";
 
 export const recipesGroup = defineGroup({
   name: "recipes",
@@ -33,7 +34,7 @@ export const recipesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/meals/recipes/${ctx.params.recipeId}`,
+          path: `/api/frames/${frameId}/meals/recipes/${pathSegment(ctx.params.recipeId, "recipeId")}`,
           query: { include: "meal_category" },
         });
       },
@@ -44,7 +45,7 @@ export const recipesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         categoryId: S.String({ description: "Meal category id", short: "c" }),
-        summary: S.String({ description: "Recipe title", short: "s" }),
+        summary: nonBlankParam({ description: "Recipe title", short: "s" }),
         description: S.Optional(S.String({ description: "Recipe description" })),
       }),
       handler: async (ctx) => {
@@ -77,7 +78,7 @@ export const recipesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "PATCH",
-          path: `/api/frames/${frameId}/meals/recipes/${ctx.params.recipeId}`,
+          path: `/api/frames/${frameId}/meals/recipes/${pathSegment(ctx.params.recipeId, "recipeId")}`,
           query: { include: "meal_category" },
           body: {
             ...(ctx.params.categoryId === undefined
@@ -103,7 +104,7 @@ export const recipesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/meals/recipes/${ctx.params.recipeId}`,
+          path: `/api/frames/${frameId}/meals/recipes/${pathSegment(ctx.params.recipeId, "recipeId")}`,
           query: {
             apply_to_sittings: applyToSittings,
           },
@@ -122,7 +123,7 @@ export const recipesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/meals/recipes/${ctx.params.recipeId}/add_to_grocery_list`,
+          path: `/api/frames/${frameId}/meals/recipes/${pathSegment(ctx.params.recipeId, "recipeId")}/add_to_grocery_list`,
         });
       },
     }),

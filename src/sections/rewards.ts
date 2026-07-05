@@ -1,6 +1,7 @@
 import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
+import { parseJsonObject, pathSegment } from "../skylight/validation.js";
 
 export const rewardsGroup = defineGroup({
   name: "rewards",
@@ -39,7 +40,7 @@ export const rewardsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/rewards/${ctx.params.rewardId}`,
+          path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}`,
         });
       },
     }),
@@ -52,7 +53,7 @@ export const rewardsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const reward = JSON.parse(ctx.params.rewardJson) as unknown;
+        const reward = parseJsonObject(ctx.params.rewardJson, "rewardJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -71,11 +72,11 @@ export const rewardsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const reward = JSON.parse(ctx.params.rewardJson) as unknown;
+        const reward = parseJsonObject(ctx.params.rewardJson, "rewardJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PATCH",
-          path: `/api/frames/${frameId}/rewards/${ctx.params.rewardId}`,
+          path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}`,
           body: reward,
         });
       },
@@ -92,7 +93,7 @@ export const rewardsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/rewards/${ctx.params.rewardId}`,
+          path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}`,
         });
       },
     }),
@@ -108,7 +109,7 @@ export const rewardsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/rewards/${ctx.params.rewardId}/redeem`,
+          path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}/redeem`,
         });
       },
     }),
@@ -124,7 +125,7 @@ export const rewardsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/rewards/${ctx.params.rewardId}/unredeem`,
+          path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}/unredeem`,
         });
       },
     }),
@@ -147,8 +148,9 @@ export const rewardsGroup = defineGroup({
       description: "Add reward points to categories",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryIds: S.Array(S.String({ description: "Category id" }), {
+        categoryIds: S.Array(S.String({ description: "Category id", minLength: 1 }), {
           description: "Category ids",
+          minItems: 1,
         }),
         points: S.Number({ description: "Points to add" }),
       }),

@@ -27,6 +27,7 @@
   },
   "files": [
     "dist",
+    "src",
     "README.md",
     "LICENSE"
   ],
@@ -38,7 +39,7 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
     "check": "npm run build && npm run smoke && npm pack --dry-run",
-    "smoke": "node dist/cli.js --help && node dist/cli.js lists --help && node scripts/smoke-mcp.mjs && node scripts/smoke-requests.mjs",
+    "smoke": "node dist/cli.js --help && node dist/cli.js lists --help && node scripts/smoke-mcp.mjs && node scripts/smoke-http.mjs && node scripts/smoke-requests.mjs && node scripts/smoke-package.mjs",
     "prepublishOnly": "npm run check",
     "cli": "node --enable-source-maps dist/cli.js",
     "mcp": "node --enable-source-maps dist/mcp.js",

@@ -1,6 +1,14 @@
 import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
+import {
+  assertValidDate,
+  assertValidDateRange,
+  dateParam,
+  nonBlankParam,
+  parseJsonObject,
+  pathSegment,
+} from "../skylight/validation.js";
 
 export const tasksGroup = defineGroup({
   name: "tasks",
@@ -11,12 +19,13 @@ export const tasksGroup = defineGroup({
       description: "List chores for a date range",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        after: S.Optional(S.String({ description: "YYYY-MM-DD", short: "a" })),
-        before: S.Optional(S.String({ description: "YYYY-MM-DD", short: "b" })),
+        after: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "a" })),
+        before: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "b" })),
         includeLate: S.Optional(S.Boolean({ description: "Include late chores", short: "l" })),
         includeUpForGrabs: S.Optional(S.Boolean({ description: "Include up-for-grabs chores" })),
       }),
       handler: async (ctx) => {
+        assertValidDateRange(ctx.params.after, ctx.params.before, "after", "before");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -45,7 +54,7 @@ export const tasksGroup = defineGroup({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/chores/create_multiple`,
-          body: JSON.parse(ctx.params.choreJson) as unknown,
+          body: parseJsonObject(ctx.params.choreJson, "choreJson"),
         });
       },
     }),
@@ -62,7 +71,7 @@ export const tasksGroup = defineGroup({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/chores`,
-          body: JSON.parse(ctx.params.bodyJson) as unknown,
+          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
         });
       },
     }),
@@ -71,8 +80,8 @@ export const tasksGroup = defineGroup({
       description: "Create a simple chore (convenience wrapper)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        summary: S.String({ description: "Title", short: "s" }),
-        start: S.String({ description: "YYYY-MM-DD", short: "d" }),
+        summary: nonBlankParam({ description: "Title", short: "s" }),
+        start: dateParam({ description: "YYYY-MM-DD", short: "d" }),
         categoryId: S.Optional(S.String({ description: "Category id" })),
         rewardPoints: S.Optional(S.Number({ description: "Reward points" })),
         emojiIcon: S.Optional(S.String({ description: "Emoji icon" })),
@@ -81,6 +90,7 @@ export const tasksGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
+        assertValidDate(ctx.params.start, "start");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -112,11 +122,11 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const updates = JSON.parse(ctx.params.updatesJson) as Record<string, unknown>;
+        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/chores/${ctx.params.choreId}`,
+          path: `/api/frames/${frameId}/chores/${pathSegment(ctx.params.choreId, "choreId")}`,
           body: {
             ...updates,
             ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
@@ -137,7 +147,7 @@ export const tasksGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/chores/${ctx.params.choreId}`,
+          path: `/api/frames/${frameId}/chores/${pathSegment(ctx.params.choreId, "choreId")}`,
           query: {
             ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
           },
@@ -151,16 +161,17 @@ export const tasksGroup = defineGroup({
       params: S.Object({
         seriesId: S.String({ description: "Chore series id", short: "i" }),
         status: S.String({ description: "Status (server-defined)", short: "s" }),
-        instanceDate: S.String({ description: "YYYY-MM-DD", short: "d" }),
+        instanceDate: dateParam({ description: "YYYY-MM-DD", short: "d" }),
         instanceTime: S.Optional(S.String({ description: "HH:mm", short: "t" })),
         categoryId: S.Optional(S.String({ description: "Category id" })),
       }),
       handler: async (ctx) => {
+        assertValidDate(ctx.params.instanceDate, "instanceDate");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/chores/${ctx.params.seriesId}/completions`,
+          path: `/api/frames/${frameId}/chores/${pathSegment(ctx.params.seriesId, "seriesId")}/completions`,
           body: {
             status: ctx.params.status,
             instance_date: ctx.params.instanceDate,
@@ -175,7 +186,7 @@ export const tasksGroup = defineGroup({
       description: "Create a Task Box item",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        summary: S.String({ description: "Task summary", short: "s" }),
+        summary: nonBlankParam({ description: "Task summary", short: "s" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -200,7 +211,7 @@ export const tasksGroup = defineGroup({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/task_box/items`,
-          body: JSON.parse(ctx.params.bodyJson) as unknown,
+          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
         });
       },
     }),
@@ -227,13 +238,15 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const taskBoxItem = JSON.parse(ctx.params.taskBoxItemJson) as { id?: string | number };
+        const taskBoxItem = parseJsonObject(ctx.params.taskBoxItemJson, "taskBoxItemJson") as {
+          id?: string | number;
+        };
         const id = taskBoxItem.id;
         if (id !== undefined && String(id).length > 0) {
           return requestJson({
             fetch: ctx.fetch,
             method: "PATCH",
-            path: `/api/frames/${frameId}/task_box/items/${String(id)}`,
+            path: `/api/frames/${frameId}/task_box/items/${pathSegment(id, "id")}`,
             body: taskBoxItem,
           });
         }
@@ -257,7 +270,7 @@ export const tasksGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/task_box/items/${ctx.params.taskBoxItemId}`,
+          path: `/api/frames/${frameId}/task_box/items/${pathSegment(ctx.params.taskBoxItemId, "taskBoxItemId")}`,
         });
       },
     }),

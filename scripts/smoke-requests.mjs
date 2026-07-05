@@ -13,8 +13,13 @@ const server = http.createServer((request, response) => {
       url: request.url,
       body: body ? JSON.parse(body) : null,
     });
-    response.setHeader("content-type", "application/json");
-    response.end(JSON.stringify({ ok: true }));
+    if (request.method === "DELETE") {
+      response.statusCode = 204;
+      response.end();
+    } else {
+      response.setHeader("content-type", "application/json");
+      response.end(JSON.stringify({ ok: true }));
+    }
   });
 });
 
@@ -47,6 +52,19 @@ async function run(args) {
   });
 }
 
+async function runExpectingFailure(args) {
+  const requestCount = requests.length;
+  try {
+    await run(args);
+  } catch {
+    if (requests.length !== requestCount) {
+      throw new Error(`${args.join(" ")} reached the API despite invalid input`);
+    }
+    return;
+  }
+  throw new Error(`${args.join(" ")} unexpectedly succeeded`);
+}
+
 try {
   await run(["lists", "create", "--label", "Weekend", "--kind", "to_do"]);
   await run([
@@ -76,6 +94,32 @@ try {
     "--start",
     "2026-07-12",
   ]);
+  await run(["lists", "delete", "--list-id", "7"]);
+  await run(["lists", "get", "--list-id", "../../user"]);
+  await runExpectingFailure(["lists", "create", "--label", ""]);
+  await runExpectingFailure(["lists", "create", "--label", "   "]);
+  await runExpectingFailure([
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Replace filter",
+    "--start",
+    "2026-02-30",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "events",
+    "--date-min",
+    "2026-07-20",
+    "--date-max",
+    "2026-07-10",
+  ]);
+  await runExpectingFailure(["meals", "list", "--date-min", "2026-13-01"]);
+  await runExpectingFailure(["photos", "list", "--page", "0"]);
+  await runExpectingFailure(["photos", "list", "--page", "1.5"]);
+  await runExpectingFailure(["photos", "album-create", "--title", "   "]);
+  await runExpectingFailure(["lists", "create-raw", "--list-json", "null"]);
+  await runExpectingFailure(["lists", "create-raw", "--list-json", "[]"]);
 } finally {
   server.close();
 }
@@ -120,4 +164,12 @@ if (
   requests[4]?.body?.start !== "2026-07-12"
 ) {
   throw new Error("Dated chore request did not match the expected payload");
+}
+
+if (requests[5]?.method !== "DELETE" || requests[5]?.url !== "/api/frames/42/lists/7") {
+  throw new Error("Delete request did not complete successfully with a 204 response");
+}
+
+if (requests[6]?.url !== "/api/frames/42/lists/..%2F..%2Fuser") {
+  throw new Error(`Path parameter was not safely encoded: ${requests[6]?.url}`);
 }

@@ -1,6 +1,7 @@
 import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
+import { nonBlankParam, parseJsonObject, pathSegment } from "../skylight/validation.js";
 
 export const listsGroup = defineGroup({
   name: "lists",
@@ -32,7 +33,7 @@ export const listsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}`,
         });
       },
     }),
@@ -41,7 +42,7 @@ export const listsGroup = defineGroup({
       description: "Create a to-do or shopping list",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        label: S.String({ description: "List name", short: "l" }),
+        label: nonBlankParam({ description: "List name", short: "l" }),
         kind: S.Optional(
           S.Enum(["to_do", "shopping"] as const, {
             description: "List kind",
@@ -84,7 +85,7 @@ export const listsGroup = defineGroup({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/lists`,
-          body: JSON.parse(ctx.params.listJson) as unknown,
+          body: parseJsonObject(ctx.params.listJson, "listJson"),
         });
       },
     }),
@@ -98,11 +99,11 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const updates = JSON.parse(ctx.params.updatesJson) as unknown;
+        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}`,
           body: updates,
         });
       },
@@ -119,7 +120,7 @@ export const listsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}`,
         });
       },
     }),
@@ -135,7 +136,7 @@ export const listsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}/list_items`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
         });
       },
     }),
@@ -145,7 +146,7 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
-        label: S.String({ description: "To-do text", short: "l" }),
+        label: nonBlankParam({ description: "To-do text", short: "l" }),
         section: S.Optional(S.String({ description: "Optional section name", short: "s" })),
       }),
       handler: async (ctx) => {
@@ -153,7 +154,7 @@ export const listsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}/list_items`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
           body: {
             label: ctx.params.label,
             section: ctx.params.section?.trim() || null,
@@ -167,8 +168,9 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
-        labels: S.Array(S.String({ description: "To-do text" }), {
+        labels: S.Array(nonBlankParam({ description: "To-do text" }), {
           description: "One or more to-do items",
+          minItems: 1,
         }),
         section: S.Optional(S.String({ description: "Optional section name", short: "s" })),
       }),
@@ -180,7 +182,7 @@ export const listsGroup = defineGroup({
             await requestJson({
               fetch: ctx.fetch,
               method: "POST",
-              path: `/api/frames/${frameId}/lists/${ctx.params.listId}/list_items`,
+              path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
               body: {
                 label,
                 section: ctx.params.section?.trim() || null,
@@ -204,8 +206,8 @@ export const listsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}/list_items`,
-          body: JSON.parse(ctx.params.itemJson) as unknown,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
+          body: parseJsonObject(ctx.params.itemJson, "itemJson"),
         });
       },
     }),
@@ -220,11 +222,11 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const updates = JSON.parse(ctx.params.updatesJson) as unknown;
+        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}/list_items/${ctx.params.itemId}`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/${pathSegment(ctx.params.itemId, "itemId")}`,
           body: updates,
         });
       },
@@ -242,7 +244,7 @@ export const listsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}/list_items/${ctx.params.itemId}`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/${pathSegment(ctx.params.itemId, "itemId")}`,
         });
       },
     }),
@@ -260,7 +262,7 @@ export const listsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}/list_items/${ctx.params.itemId}/move`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/${pathSegment(ctx.params.itemId, "itemId")}/move`,
           body: {
             after_item_id: ctx.params.afterItemId ? Number(ctx.params.afterItemId) : null,
           },
@@ -273,7 +275,10 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
-        itemIds: S.Array(S.String({ description: "List item id" }), { description: "Item ids" }),
+        itemIds: S.Array(S.String({ description: "List item id", minLength: 1 }), {
+          description: "Item ids",
+          minItems: 1,
+        }),
         section: S.Optional(S.String({ description: "Section name (omit to clear)" })),
       }),
       handler: async (ctx) => {
@@ -281,7 +286,7 @@ export const listsGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}/list_items/bulk_update_section`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/bulk_update_section`,
           body: {
             item_ids: ctx.params.itemIds,
             section: ctx.params.section?.trim() || null,
@@ -295,14 +300,17 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: S.String({ description: "List id", short: "i" }),
-        itemIds: S.Array(S.String({ description: "List item id" }), { description: "Item ids" }),
+        itemIds: S.Array(S.String({ description: "List item id", minLength: 1 }), {
+          description: "Item ids",
+          minItems: 1,
+        }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/lists/${ctx.params.listId}/list_items/bulk_destroy`,
+          path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/bulk_destroy`,
           body: { ids: ctx.params.itemIds },
         });
       },

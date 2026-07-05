@@ -1,6 +1,7 @@
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { requestJson } from "./http.js";
+import { pathSegment } from "./validation.js";
 
 type FramesListResponse = {
   data?: Array<{
@@ -15,7 +16,7 @@ type FramesListResponse = {
 export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): Promise<string> {
   const config = getSkylightConfig();
   const fromEnv = config.frameId?.trim();
-  if (fromEnv) return fromEnv;
+  if (fromEnv) return pathSegment(fromEnv, "SKYLIGHT_FRAME_ID");
 
   const fromUrl = config.calendarShareId?.trim();
   if (fromUrl) {
@@ -23,10 +24,10 @@ export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): P
       await requestJson({
         fetch: ctx.fetch,
         method: "GET",
-        path: `/api/frames/${fromUrl}`,
+        path: `/api/frames/${pathSegment(fromUrl, "SKYLIGHT_CALENDAR_URL frame id")}`,
       });
       process.env.SKYLIGHT_FRAME_ID = fromUrl;
-      return fromUrl;
+      return pathSegment(fromUrl, "SKYLIGHT_CALENDAR_URL frame id");
     } catch {
       // fall through to /api/frames enumeration
     }
@@ -51,7 +52,7 @@ export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): P
       throw new UserError("Unable to infer frame id.");
     }
     process.env.SKYLIGHT_FRAME_ID = frame.id;
-    return frame.id;
+    return pathSegment(frame.id, "frame id");
   }
 
   if (ids.length === 0) {

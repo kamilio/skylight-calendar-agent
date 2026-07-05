@@ -13,6 +13,13 @@ interface SessionResponse {
   };
 }
 
+const MAX_ERROR_BODY_LENGTH = 2_000;
+
+function errorBodyExcerpt(value: string): string {
+  if (value.length <= MAX_ERROR_BODY_LENGTH) return value;
+  return `${value.slice(0, MAX_ERROR_BODY_LENGTH)}… [truncated ${value.length - MAX_ERROR_BODY_LENGTH} characters]`;
+}
+
 function base64(value: string): string {
   return Buffer.from(value, "utf8").toString("base64");
 }
@@ -57,8 +64,9 @@ export async function getAuthorizationHeader(opts: {
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
+    const excerpt = errorBodyExcerpt(text);
     throw new UserError(
-      `Login failed (${response.status}). ${text.length > 0 ? text : "Check credentials."}`
+      `Login failed (${response.status}). ${excerpt.length > 0 ? excerpt : "Check credentials."}`
     );
   }
 

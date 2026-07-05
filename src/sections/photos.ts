@@ -1,6 +1,7 @@
 import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
+import { nonBlankParam, parseJsonObject, pathSegment } from "../skylight/validation.js";
 
 export const photosGroup = defineGroup({
   name: "photos",
@@ -11,7 +12,9 @@ export const photosGroup = defineGroup({
       description: "List messages (photos/videos)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        page: S.Optional(S.Number({ description: "Page number (1-based)", default: 1 })),
+        page: S.Optional(
+          S.Number({ description: "Page number (1-based)", default: 1, minimum: 1, jsonType: "integer" })
+        ),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -63,7 +66,10 @@ export const photosGroup = defineGroup({
       description: "Bulk delete messages",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageIds: S.Array(S.String({ description: "Message id" }), { description: "Message ids" }),
+        messageIds: S.Array(S.String({ description: "Message id", minLength: 1 }), {
+          description: "Message ids",
+          minItems: 1,
+        }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -80,8 +86,14 @@ export const photosGroup = defineGroup({
       description: "Copy messages to other frames",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageIds: S.Array(S.String({ description: "Message id" }), { description: "Message ids" }),
-        newFrameIds: S.Array(S.String({ description: "New frame id" }), { description: "Target frame ids" }),
+        messageIds: S.Array(S.String({ description: "Message id", minLength: 1 }), {
+          description: "Message ids",
+          minItems: 1,
+        }),
+        newFrameIds: S.Array(S.String({ description: "New frame id", minLength: 1 }), {
+          description: "Target frame ids",
+          minItems: 1,
+        }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -108,7 +120,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/messages/${ctx.params.messageId}`,
+          path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}`,
         });
       },
     }),
@@ -124,7 +136,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/messages/${ctx.params.messageId}/all_likes`,
+          path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/all_likes`,
         });
       },
     }),
@@ -134,7 +146,9 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         messageId: S.String({ description: "Message id", short: "i" }),
-        page: S.Optional(S.Number({ description: "Page number (1-based)", default: 1 })),
+        page: S.Optional(
+          S.Number({ description: "Page number (1-based)", default: 1, minimum: 1, jsonType: "integer" })
+        ),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -142,7 +156,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/messages/${ctx.params.messageId}/comments`,
+          path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/comments`,
           ...(page > 1 ? { query: { page } } : {}),
         });
       },
@@ -159,7 +173,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/messages/${ctx.params.messageId}`,
+          path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}`,
         });
       },
     }),
@@ -175,7 +189,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/messages/${ctx.params.messageId}/likes`,
+          path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/likes`,
         });
       },
     }),
@@ -191,7 +205,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/messages/${ctx.params.messageId}/likes`,
+          path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/likes`,
         });
       },
     }),
@@ -201,14 +215,14 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         messageId: S.String({ description: "Message id", short: "i" }),
-        body: S.String({ description: "Comment body", short: "b" }),
+        body: nonBlankParam({ description: "Comment body", short: "b" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/messages/${ctx.params.messageId}/comments`,
+          path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/comments`,
           body: { body: ctx.params.body },
         });
       },
@@ -226,7 +240,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/messages/${ctx.params.messageId}/comments/${ctx.params.commentId}`,
+          path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/comments/${pathSegment(ctx.params.commentId, "commentId")}`,
         });
       },
     }),
@@ -243,7 +257,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/messages/${ctx.params.messageId}/caption`,
+          path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/caption`,
           body: { caption: ctx.params.caption },
         });
       },
@@ -268,7 +282,7 @@ export const photosGroup = defineGroup({
         payloadJson: S.String({ description: "JSON for {file_upload, frame_ids, ext, ...}", short: "j" }),
       }),
       handler: async (ctx) => {
-        const payload = JSON.parse(ctx.params.payloadJson) as unknown;
+        const payload = parseJsonObject(ctx.params.payloadJson, "payloadJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -285,7 +299,7 @@ export const photosGroup = defineGroup({
         payloadJson: S.String({ description: "JSON for {ext, frame_ids, ...}", short: "j" }),
       }),
       handler: async (ctx) => {
-        const payload = JSON.parse(ctx.params.payloadJson) as unknown;
+        const payload = parseJsonObject(ctx.params.payloadJson, "payloadJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -302,7 +316,7 @@ export const photosGroup = defineGroup({
         payloadJson: S.String({ description: "JSON for {frame_ids, messages}", short: "j" }),
       }),
       handler: async (ctx) => {
-        const payload = JSON.parse(ctx.params.payloadJson) as unknown;
+        const payload = parseJsonObject(ctx.params.payloadJson, "payloadJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
@@ -330,7 +344,7 @@ export const photosGroup = defineGroup({
       description: "Create an album",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        title: S.String({ description: "Album title", short: "t" }),
+        title: nonBlankParam({ description: "Album title", short: "t" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -348,14 +362,14 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         albumId: S.String({ description: "Album id", short: "i" }),
-        title: S.String({ description: "New title", short: "t" }),
+        title: nonBlankParam({ description: "New title", short: "t" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/albums/${ctx.params.albumId}`,
+          path: `/api/frames/${frameId}/albums/${pathSegment(ctx.params.albumId, "albumId")}`,
           body: { title: ctx.params.title },
         });
       },
@@ -372,7 +386,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/albums/${ctx.params.albumId}`,
+          path: `/api/frames/${frameId}/albums/${pathSegment(ctx.params.albumId, "albumId")}`,
         });
       },
     }),
@@ -382,7 +396,9 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         albumId: S.String({ description: "Album id", short: "i" }),
-        page: S.Optional(S.Number({ description: "Page number (1-based)", default: 1 })),
+        page: S.Optional(
+          S.Number({ description: "Page number (1-based)", default: 1, minimum: 1, jsonType: "integer" })
+        ),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -390,7 +406,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/albums/${ctx.params.albumId}/messages`,
+          path: `/api/frames/${frameId}/albums/${pathSegment(ctx.params.albumId, "albumId")}/messages`,
           ...(page > 1 ? { query: { page } } : {}),
         });
       },
@@ -407,7 +423,7 @@ export const photosGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/albums/${ctx.params.albumId}/messages/all_ids`,
+          path: `/api/frames/${frameId}/albums/${pathSegment(ctx.params.albumId, "albumId")}/messages/all_ids`,
         });
       },
     }),
@@ -416,8 +432,14 @@ export const photosGroup = defineGroup({
       description: "Add messages to album(s)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        albumIds: S.Array(S.String({ description: "Album id" }), { description: "Album ids" }),
-        messageIds: S.Array(S.String({ description: "Message id" }), { description: "Message ids" }),
+        albumIds: S.Array(S.String({ description: "Album id", minLength: 1 }), {
+          description: "Album ids",
+          minItems: 1,
+        }),
+        messageIds: S.Array(S.String({ description: "Message id", minLength: 1 }), {
+          description: "Message ids",
+          minItems: 1,
+        }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -438,7 +460,10 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         albumId: S.String({ description: "Album id", short: "i" }),
-        messageIds: S.Array(S.String({ description: "Message id" }), { description: "Message ids" }),
+        messageIds: S.Array(S.String({ description: "Message id", minLength: 1 }), {
+          description: "Message ids",
+          minItems: 1,
+        }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);

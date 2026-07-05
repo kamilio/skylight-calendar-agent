@@ -2,6 +2,12 @@ import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import { getAuthorizationHeader } from "../skylight/auth.js";
+import {
+  nonBlankParam,
+  parseJsonObject,
+  parseJsonValue,
+  pathSegment,
+} from "../skylight/validation.js";
 
 export const profilesGroup = defineGroup({
   name: "profiles",
@@ -10,7 +16,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "token",
       description: "Log in and print the Authorization header value",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
         const header = await getAuthorizationHeader({ fetch: ctx.fetch });
@@ -37,7 +43,7 @@ export const profilesGroup = defineGroup({
         updatesJson: S.String({ description: "JSON object", short: "j" }),
       }),
       handler: async (ctx) => {
-        const updates = JSON.parse(ctx.params.updatesJson) as unknown;
+        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PATCH",
@@ -94,7 +100,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "update-email",
       description: "Update user email (requires password)",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         email: S.String({ description: "New email", short: "e" }),
         password: S.String({ description: "Current password", short: "p" }),
@@ -146,7 +152,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "user-delete",
       description: "Delete user account",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
         requestJson({
@@ -178,7 +184,7 @@ export const profilesGroup = defineGroup({
         requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: ctx.params.type ? `/api/frames/${ctx.params.type}` : "/api/frames",
+          path: ctx.params.type ? `/api/frames/${pathSegment(ctx.params.type, "type")}` : "/api/frames",
         }),
     }),
     defineCommand({
@@ -208,7 +214,7 @@ export const profilesGroup = defineGroup({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}`,
-          body: JSON.parse(ctx.params.bodyJson) as unknown,
+          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
         });
       },
     }),
@@ -217,7 +223,7 @@ export const profilesGroup = defineGroup({
       description: "Rename frame",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        name: S.String({ description: "New name", short: "n" }),
+        name: nonBlankParam({ description: "New name", short: "n" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -246,7 +252,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "frame-transfer",
       description: "Transfer frame ownership to a new user email",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         email: S.String({ description: "New owner email", short: "e" }),
       }),
@@ -263,7 +269,7 @@ export const profilesGroup = defineGroup({
     defineCommand({
       name: "frame-share-token-redeem",
       description: "Redeem a share token for this frame",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         shareToken: S.String({ description: "Share token", short: "t" }),
       }),
@@ -324,7 +330,7 @@ export const profilesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/categories/${ctx.params.categoryId}`,
+          path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}`,
         });
       },
     }),
@@ -341,7 +347,7 @@ export const profilesGroup = defineGroup({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/categories`,
-          body: JSON.parse(ctx.params.bodyJson) as unknown,
+          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
         });
       },
     }),
@@ -358,7 +364,7 @@ export const profilesGroup = defineGroup({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/categories/find_or_create`,
-          body: JSON.parse(ctx.params.bodyJson) as unknown,
+          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
         });
       },
     }),
@@ -375,8 +381,8 @@ export const profilesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/categories/${ctx.params.categoryId}`,
-          body: JSON.parse(ctx.params.updatesJson) as unknown,
+          path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}`,
+          body: parseJsonObject(ctx.params.updatesJson, "updatesJson"),
         });
       },
     }),
@@ -393,7 +399,7 @@ export const profilesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/categories/${ctx.params.categoryId}`,
+          path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}`,
           query: {
             ...(ctx.params.reassignToCategoryId === undefined
               ? {}
@@ -412,11 +418,14 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const categorizations = JSON.parse(ctx.params.categorizationsJson) as unknown;
+        const categorizations = parseJsonValue(
+          ctx.params.categorizationsJson,
+          "categorizationsJson"
+        );
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/categories/${ctx.params.categoryId}/source_calendar_categorizations`,
+          path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}/source_calendar_categorizations`,
           body: { categorizations },
         });
       },
@@ -431,11 +440,11 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
-        const updates = JSON.parse(ctx.params.updatesJson) as unknown;
+        const updates = parseJsonObject(ctx.params.updatesJson, "updatesJson");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/categories/${ctx.params.categoryId}/family_member`,
+          path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}/family_member`,
           body: updates,
         });
       },
@@ -466,7 +475,7 @@ export const profilesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "GET",
-          path: `/api/frames/${frameId}/devices/${ctx.params.deviceId}`,
+          path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}`,
         });
       },
     }),
@@ -475,7 +484,7 @@ export const profilesGroup = defineGroup({
       description: "Create a device",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        name: S.String({ description: "Device name", short: "n" }),
+        name: nonBlankParam({ description: "Device name", short: "n" }),
         categoryId: S.String({ description: "Category id", short: "c" }),
         role: S.Optional(S.String({ description: "Role (server-defined)" })),
       }),
@@ -499,14 +508,14 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         deviceId: S.String({ description: "Device id", short: "i" }),
-        name: S.String({ description: "New name", short: "n" }),
+        name: nonBlankParam({ description: "New name", short: "n" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/devices/${ctx.params.deviceId}`,
+          path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}`,
           body: { name: ctx.params.name },
         });
       },
@@ -523,7 +532,7 @@ export const profilesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "DELETE",
-          path: `/api/frames/${frameId}/devices/${ctx.params.deviceId}`,
+          path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}`,
         });
       },
     }),
@@ -539,7 +548,7 @@ export const profilesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/devices/${ctx.params.deviceId}/reset`,
+          path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}/reset`,
         });
       },
     }),
@@ -555,7 +564,7 @@ export const profilesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
-          path: `/api/frames/${frameId}/devices/${ctx.params.deviceId}/activation_code`,
+          path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}/activation_code`,
         });
       },
     }),
@@ -572,8 +581,8 @@ export const profilesGroup = defineGroup({
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",
-          path: `/api/frames/${frameId}/devices/${ctx.params.deviceId}`,
-          body: JSON.parse(ctx.params.bodyJson) as unknown,
+          path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}`,
+          body: parseJsonObject(ctx.params.bodyJson, "bodyJson"),
         });
       },
     }),

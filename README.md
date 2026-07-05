@@ -98,6 +98,12 @@ Example MCP client configuration:
 
 If the package is globally installed, set `command` directly to `skylight-calendar-mcp` and omit `args`.
 
+### MCP safety
+
+Commands that reveal credentials, accept account passwords or share tokens, delete the user account, or transfer frame ownership are intentionally limited to the CLI and SDK. They are not advertised as MCP tools.
+
+Dynamic IDs are encoded as individual URL path segments, and typed commands reject blank names, impossible dates, reversed date ranges, invalid page numbers, empty bulk operations, and non-object payloads where a JSON object is required.
+
 ## Development
 
 ```sh
