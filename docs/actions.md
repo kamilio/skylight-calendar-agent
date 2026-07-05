@@ -2,7 +2,7 @@
 
 This agent implements the sections you asked for:
 
-All listed actions are available to the CLI and SDK. For safety, these are not advertised as MCP tools: `meals migrate`; `photos upload-credentials`, `photos upload-url`, `photos upload-urls`; and `profiles token`, `profiles forgot-password`, `profiles update-email`, `profiles discount-code`, `profiles plus-resend-entitlement-email`, `profiles user-export`, `profiles user-delete`, `profiles frame-hide`, `profiles frame-transfer`, `profiles frame-share-token-redeem`, `profiles device-delete`, `profiles device-reset`, and `profiles device-activation-code`.
+All listed actions are available to the CLI and SDK. For safety, these are not advertised as MCP tools: `calendar sync-oauth-url`; `meals migrate`; `photos upload-credentials`, `photos upload-url`, `photos upload-urls`; and `profiles token`, `profiles forgot-password`, `profiles update-email`, `profiles discount-code`, `profiles plus-resend-entitlement-email`, `profiles user-export`, `profiles user-delete`, `profiles frame-hide`, `profiles frame-transfer`, `profiles frame-share-token-redeem`, `profiles device-delete`, `profiles device-reset`, and `profiles device-activation-code`.
 
 ## Calendar
 

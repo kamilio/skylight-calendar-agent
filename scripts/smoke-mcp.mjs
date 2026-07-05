@@ -77,6 +77,7 @@ child.stdout.on("data", (chunk) => {
       "skylight__profiles__device_delete",
       "skylight__profiles__device_reset",
       "skylight__profiles__device_activation_code",
+      "skylight__calendar__sync_oauth_url",
       "skylight__meals__migrate",
       "skylight__photos__upload_credentials",
       "skylight__photos__upload_url",

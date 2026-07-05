@@ -107,7 +107,7 @@ If the package is globally installed, set `command` directly to `skylight-calend
 
 ### MCP safety
 
-Commands that reveal or mint credentials, device activation codes, and signed upload URLs; trigger account emails, exports, migrations, hardware reset/deletion, or hidden-frame state; accept account passwords or share tokens; delete the user account; or transfer frame ownership are intentionally limited to the CLI and SDK. They are not advertised as MCP tools.
+Commands that reveal or mint credentials, OAuth authorization URLs, device activation codes, and signed upload URLs; trigger account emails, exports, migrations, hardware reset/deletion, or hidden-frame state; accept account passwords or share tokens; delete the user account; or transfer frame ownership are intentionally limited to the CLI and SDK. They are not advertised as MCP tools.
 
 The destructive CLI commands `profiles user-delete`, `profiles frame-hide`, `profiles frame-transfer`, `profiles device-delete`, `profiles device-reset`, and `meals migrate` also require `--confirm`.
 

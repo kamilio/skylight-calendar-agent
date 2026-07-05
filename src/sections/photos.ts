@@ -115,8 +115,12 @@ export const photosGroup = defineGroup({
         if (new Set(newFrameIds).size !== newFrameIds.length) {
           throw new UserError("newFrameIds must not contain duplicates.");
         }
+        messageIds.forEach((messageId) => pathSegment(messageId, "messageId"));
+        const encodedNewFrameIds = newFrameIds.map((newFrameId) =>
+          pathSegment(newFrameId, "newFrameId")
+        );
         const frameId = await resolveFrameId(ctx);
-        if (newFrameIds.some((newFrameId) => pathSegment(newFrameId, "newFrameId") === frameId)) {
+        if (encodedNewFrameIds.includes(frameId)) {
           throw new UserError("newFrameIds must not include the source frame.");
         }
         return requestJson({

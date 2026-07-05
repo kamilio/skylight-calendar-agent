@@ -505,7 +505,7 @@ export const calendarGroup = defineGroup({
     defineCommand({
       name: "sync-oauth-url",
       description: "Get OAuth authorization request URL for a provider",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         provider: nonBlankParam({ description: "Provider (server-defined)", short: "p" }),
         redirectUrl: nonBlankParam({ description: "Redirect URL", short: "r" }),
