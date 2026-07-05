@@ -23,7 +23,7 @@ export function emailParam(options: { description: string; short?: string }) {
     ...options,
     format: "email",
     minLength: 3,
-    pattern: "^[^\\s@]+@[^\\s@]+$",
+    pattern: "^[^\\s@\\u0000-\\u001F\\u007F-\\u009F]+@[^\\s@\\u0000-\\u001F\\u007F-\\u009F]+$",
   });
 }
 
@@ -119,6 +119,9 @@ export function pathSegment(value: string | number, label: string): string {
     throw new UserError(`${label} must not be blank.`);
   }
   assertWellFormedUnicode(normalized, label);
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(normalized)) {
+    throw new UserError(`${label} must not contain control characters.`);
+  }
   return encodeURIComponent(normalized);
 }
 

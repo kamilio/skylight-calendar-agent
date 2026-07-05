@@ -76,6 +76,9 @@ function loginEmail(value: string | undefined): string {
   const email = value?.trim() ?? "";
   if (email.length === 0) return "";
   assertWellFormedUnicode(email, "SKYLIGHT_EMAIL");
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(email)) {
+    throw new UserError("SKYLIGHT_EMAIL must not contain control characters.");
+  }
   if (!/^[^\s@]+@[^\s@]+$/.test(email)) {
     throw new UserError("SKYLIGHT_EMAIL must be a valid email address.");
   }

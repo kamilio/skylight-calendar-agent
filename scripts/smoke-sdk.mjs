@@ -65,6 +65,10 @@ try {
       () => sdk.profiles.ownerProfileUpdate({ birthday: "99/99" }),
       'Invalid value for "birthday"',
     ],
+    [
+      () => sdk.profiles.forgotPassword({ email: "a\u0000@b.com" }),
+      'Invalid value for "email"',
+    ],
   ]) {
     try {
       await invoke();

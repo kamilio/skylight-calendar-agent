@@ -39,6 +39,14 @@ try {
   if (!message.includes("id contains invalid Unicode")) throw error;
 }
 
+try {
+  pathSegment("\u001b", "id");
+  throw new Error("Control-character path id unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("id must not contain control characters")) throw error;
+}
+
 const env = { ...process.env, SKYLIGHT_FRAME_ID: "42" };
 for (const name of [
   "SKYLIGHT_AUTH_HEADER",
