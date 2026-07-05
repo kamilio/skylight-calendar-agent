@@ -7,7 +7,6 @@ import {
   assertValidDateOrDateTime,
   assertValidDateOrDateTimeRange,
   assertValidDateRange,
-  assertValidTimezone,
   dateOrDateTimeParam,
   dateParam,
   emailParam,
@@ -16,6 +15,7 @@ import {
   normalizeAbsoluteUrl,
   normalizeIdentifier,
   normalizeRrule,
+  normalizeTimezone,
   parseJsonContainer,
   parseNonEmptyJsonObject,
   pathSegment,
@@ -102,8 +102,7 @@ export const calendarGroup = defineGroup({
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
         const config = getSkylightConfig();
-        const timezone = ctx.params.timezone ?? config.timezone;
-        assertValidTimezone(timezone);
+        const timezone = normalizeTimezone(ctx.params.timezone ?? config.timezone);
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -134,8 +133,7 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const config = getSkylightConfig();
-        const timezone = ctx.params.timezone ?? config.timezone;
-        assertValidTimezone(timezone);
+        const timezone = normalizeTimezone(ctx.params.timezone ?? config.timezone);
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -162,8 +160,7 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const config = getSkylightConfig();
-        const timezone = ctx.params.timezone ?? config.timezone;
-        assertValidTimezone(timezone);
+        const timezone = normalizeTimezone(ctx.params.timezone ?? config.timezone);
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -241,8 +238,7 @@ export const calendarGroup = defineGroup({
           throw new UserError("lat and lng must be provided together.");
         }
         const config = getSkylightConfig();
-        const timezone = ctx.params.timezone ?? config.timezone;
-        assertValidTimezone(timezone);
+        const timezone = normalizeTimezone(ctx.params.timezone ?? config.timezone);
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
@@ -389,9 +385,10 @@ export const calendarGroup = defineGroup({
         if ((ctx.params.lat === undefined) !== (ctx.params.lng === undefined)) {
           throw new UserError("lat and lng must be provided together.");
         }
-        if (ctx.params.timezone !== undefined) {
-          assertValidTimezone(ctx.params.timezone);
-        }
+        const timezone =
+          ctx.params.timezone === undefined
+            ? undefined
+            : normalizeTimezone(ctx.params.timezone);
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
@@ -417,7 +414,7 @@ export const calendarGroup = defineGroup({
             ...(ctx.params.lng === undefined ? {} : { lng: ctx.params.lng }),
             ...(ctx.params.description === undefined ? {} : { description: ctx.params.description }),
             ...(ctx.params.applyTo === undefined ? {} : { apply_to: ctx.params.applyTo }),
-            ...(ctx.params.timezone === undefined ? {} : { timezone: ctx.params.timezone }),
+            ...(timezone === undefined ? {} : { timezone }),
             ...(eventNotificationSettingAttributes === undefined
               ? {}
               : { event_notification_setting_attributes: eventNotificationSettingAttributes }),

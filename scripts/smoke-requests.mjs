@@ -135,6 +135,8 @@ try {
     "event-clear",
     "--clear-categories",
     "--clear-invited-emails",
+    "--timezone",
+    " UTC ",
   ]);
   await run([
     "calendar",
@@ -619,6 +621,9 @@ if (
   clearedEvent.body.invited_emails.length !== 0
 ) {
   throw new Error("Event edit did not clear categories and invited emails");
+}
+if (clearedEvent.body.timezone !== "UTC") {
+  throw new Error(`Event timezone was not normalized: ${JSON.stringify(clearedEvent.body)}`);
 }
 
 const clearedCalendars = requests.find(

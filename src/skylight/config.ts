@@ -1,5 +1,5 @@
 import { UserError } from "toolcraft";
-import { assertValidDate } from "./validation.js";
+import { assertValidDate, normalizeTimezone } from "./validation.js";
 
 export interface SkylightConfig {
   apiBaseUrl: string;
@@ -34,16 +34,6 @@ function normalizeApiBaseUrl(value: string): string {
     throw new UserError("SKYLIGHT_API_BASE must contain only the server origin, optionally ending in /api.");
   }
   return url.origin;
-}
-
-function normalizeTimezone(value: string): string {
-  const timezone = value.trim();
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(0);
-  } catch {
-    throw new UserError("SKYLIGHT_TIMEZONE is not a valid IANA timezone.");
-  }
-  return timezone;
 }
 
 function systemTimezone(): string {
@@ -104,7 +94,10 @@ export function getSkylightConfig(env: NodeJS.ProcessEnv = process.env): Skyligh
     calendarUrl,
     calendarShareId,
     frameId: firstNonEmpty(env.SKYLIGHT_FRAME_ID),
-    timezone: normalizeTimezone(firstNonEmpty(env.SKYLIGHT_TIMEZONE) ?? systemTimezone()),
+    timezone: normalizeTimezone(
+      firstNonEmpty(env.SKYLIGHT_TIMEZONE) ?? systemTimezone(),
+      "SKYLIGHT_TIMEZONE"
+    ),
     requestTimeoutMs: parseRequestTimeout(firstNonEmpty(env.SKYLIGHT_REQUEST_TIMEOUT_MS)),
   };
 }

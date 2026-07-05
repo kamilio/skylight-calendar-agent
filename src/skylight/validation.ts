@@ -273,12 +273,22 @@ export function assertValidDateOrDateTimeRange(
   }
 }
 
-export function assertValidTimezone(value: string, label = "timezone"): void {
+export function normalizeTimezone(value: string, label = "timezone"): string {
+  const normalized = value.trim();
+  assertWellFormedUnicode(normalized, label);
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(normalized)) {
+    throw new UserError(`${label} must not contain control characters.`);
+  }
   try {
-    new Intl.DateTimeFormat("en-US", { timeZone: value }).format();
+    new Intl.DateTimeFormat("en-US", { timeZone: normalized }).format();
   } catch {
     throw new UserError(`${label} must be a valid IANA timezone.`);
   }
+  return normalized;
+}
+
+export function assertValidTimezone(value: string, label = "timezone"): void {
+  normalizeTimezone(value, label);
 }
 
 export function normalizeAbsoluteUrl(
