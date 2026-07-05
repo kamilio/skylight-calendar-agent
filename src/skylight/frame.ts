@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { requestJson, SkylightRequestError } from "./http.js";
-import { terminalSafeText } from "./text.js";
+import { terminalSafeText, truncateText } from "./text.js";
 import { pathSegment } from "./validation.js";
 
 type FramesListResponse = {
@@ -39,7 +39,7 @@ function frameResolutionKey(config: ReturnType<typeof getSkylightConfig>): strin
 
 function displayValue(value: string): string {
   const sanitized = terminalSafeText(value);
-  return sanitized.length <= 200 ? sanitized : `${sanitized.slice(0, 200)}…`;
+  return sanitized.length <= 200 ? sanitized : `${truncateText(sanitized, 200)}…`;
 }
 
 function validateFramesListResponse(value: unknown): FramesListResponse {

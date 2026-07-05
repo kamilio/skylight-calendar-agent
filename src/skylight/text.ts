@@ -7,3 +7,19 @@ export function terminalSafeText(value: string, preserveLayout = false): string 
     ? withoutSequences.replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g, " ")
     : withoutSequences.replace(/[\u0000-\u001F\u007F-\u009F]/g, " ");
 }
+
+export function truncateText(value: string, maximumLength: number): string {
+  if (value.length <= maximumLength) return value;
+  let end = maximumLength;
+  const finalCode = value.charCodeAt(end - 1);
+  const nextCode = value.charCodeAt(end);
+  if (
+    finalCode >= 0xd800 &&
+    finalCode <= 0xdbff &&
+    nextCode >= 0xdc00 &&
+    nextCode <= 0xdfff
+  ) {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}

@@ -1,6 +1,6 @@
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
-import { terminalSafeText } from "./text.js";
+import { terminalSafeText, truncateText } from "./text.js";
 
 interface SessionResponse {
   data?: {
@@ -49,7 +49,8 @@ function loginRequests(
 function errorBodyExcerpt(value: string): string {
   const sanitized = terminalSafeText(value);
   if (sanitized.length <= MAX_ERROR_BODY_LENGTH) return sanitized;
-  return `${sanitized.slice(0, MAX_ERROR_BODY_LENGTH)}… [truncated ${sanitized.length - MAX_ERROR_BODY_LENGTH} characters]`;
+  const truncated = truncateText(sanitized, MAX_ERROR_BODY_LENGTH);
+  return `${truncated}… [truncated ${sanitized.length - truncated.length} characters]`;
 }
 
 function base64(value: string): string {

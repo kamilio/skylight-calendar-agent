@@ -280,6 +280,9 @@ export const tasksGroup = defineGroup({
           if (typeof id !== "string" && typeof id !== "number") {
             throw new UserError("id must be a non-blank string or number when provided.");
           }
+          if (typeof id === "number" && !Number.isSafeInteger(id)) {
+            throw new UserError("Numeric id must be a safe integer when provided.");
+          }
           itemPath = pathSegment(id, "id");
           if (Object.keys(taskBoxItem).every((key) => key === "id")) {
             throw new UserError("taskBoxItemJson must include an update field besides id.");

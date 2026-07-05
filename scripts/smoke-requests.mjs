@@ -187,6 +187,13 @@ try {
   await runExpectingFailure(["profiles", "frame-hide", "--confirm=false"]);
   await runExpectingFailure([
     "profiles",
+    "frame-transfer",
+    "--email",
+    "new-owner@example.com",
+    "--confirm=false",
+  ]);
+  await runExpectingFailure([
+    "profiles",
     "device-delete",
     "--device-id",
     "device-1",

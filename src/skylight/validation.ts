@@ -34,6 +34,13 @@ export function timeParam(options: { description: string; short?: string }) {
   });
 }
 
+export function monthDayParam(options: { description: string; short?: string }) {
+  return S.String({
+    ...options,
+    pattern: "^(?:0[1-9]|1[0-2])/(?:0[1-9]|[12]\\d|3[01])$",
+  });
+}
+
 export function dateOrDateTimeParam(options: { description: string; short?: string }) {
   return S.String({
     ...options,
@@ -161,6 +168,16 @@ export function assertValidDate(value: string, label: string): void {
   const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   if (month < 1 || month > 12 || day < 1 || day > (daysInMonth[month - 1] ?? 0)) {
     throw new UserError(`${label} must be a valid calendar date.`);
+  }
+}
+
+export function assertValidMonthDay(value: string, label: string): void {
+  const match = /^(\d{2})\/(\d{2})$/.exec(value);
+  const month = Number(match?.[1]);
+  const day = Number(match?.[2]);
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (month < 1 || month > 12 || day < 1 || day > (daysInMonth[month - 1] ?? 0)) {
+    throw new UserError(`${label} must be a valid MM/DD date.`);
   }
 }
 

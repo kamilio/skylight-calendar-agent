@@ -4,8 +4,10 @@ import { requestJson } from "../skylight/http.js";
 import { getAuthorizationHeader } from "../skylight/auth.js";
 import {
   assertAtLeastOneDefined,
+  assertValidMonthDay,
   emailParam,
   jsonParam,
+  monthDayParam,
   nonBlankParam,
   parseJsonContainer,
   parseNonEmptyJsonObject,
@@ -294,8 +296,12 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "sdk"],
       params: S.Object({
         email: emailParam({ description: "New owner email", short: "e" }),
+        confirm: S.Boolean({ description: "Confirm transferring frame ownership" }),
       }),
       handler: async (ctx) => {
+        if (ctx.params.confirm !== true) {
+          throw new UserError("Pass confirm=true to transfer frame ownership.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -328,13 +334,16 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         name: S.Optional(nonBlankParam({ description: "Owner name" })),
-        birthday: S.Optional(S.String({ description: "Birthday in MM/DD format" })),
+        birthday: S.Optional(monthDayParam({ description: "Birthday in MM/DD format" })),
       }),
       handler: async (ctx) => {
         assertAtLeastOneDefined(
           [ctx.params.name, ctx.params.birthday],
           "Specify name or birthday to update the owner profile."
         );
+        if (ctx.params.birthday !== undefined) {
+          assertValidMonthDay(ctx.params.birthday, "birthday");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,

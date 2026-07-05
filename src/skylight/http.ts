@@ -1,7 +1,7 @@
 import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { getAuthorizationHeader } from "./auth.js";
-import { terminalSafeText } from "./text.js";
+import { terminalSafeText, truncateText } from "./text.js";
 import { assertWellFormedUnicode } from "./validation.js";
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
@@ -23,7 +23,8 @@ export class SkylightRequestError extends UserError {
 function errorBodyExcerpt(value: string): string {
   const sanitized = terminalSafeText(value);
   if (sanitized.length <= MAX_ERROR_BODY_LENGTH) return sanitized;
-  return `${sanitized.slice(0, MAX_ERROR_BODY_LENGTH)}… [truncated ${sanitized.length - MAX_ERROR_BODY_LENGTH} characters]`;
+  const truncated = truncateText(sanitized, MAX_ERROR_BODY_LENGTH);
+  return `${truncated}… [truncated ${sanitized.length - truncated.length} characters]`;
 }
 
 function safeOutputText(value: string): string {
@@ -56,6 +57,29 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
   return sanitized;
 }
 
+function serializeJsonBody(value: unknown): string | undefined {
+  return JSON.stringify(value, (key, child) => {
+    const location = key.length === 0 ? "the root value" : `property ${JSON.stringify(key)}`;
+    if (typeof child === "number" && !Number.isFinite(child)) {
+      throw new UserError(`Request body contains a non-finite number at ${location}.`);
+    }
+    if (typeof child === "number" && Number.isInteger(child) && !Number.isSafeInteger(child)) {
+      throw new UserError(
+        `Request body contains an unsafe integer at ${location}; use a string to preserve it exactly.`
+      );
+    }
+    if (
+      child === undefined ||
+      typeof child === "function" ||
+      typeof child === "symbol" ||
+      typeof child === "bigint"
+    ) {
+      throw new UserError(`Request body contains a non-JSON value at ${location}.`);
+    }
+    return child;
+  });
+}
+
 export async function requestJson<TResponse>(opts: {
   fetch: typeof globalThis.fetch;
   env?: NodeJS.ProcessEnv;
@@ -78,7 +102,7 @@ export async function requestJson<TResponse>(opts: {
   let serializedBody: string | undefined;
   if (opts.body !== undefined) {
     try {
-      serializedBody = JSON.stringify(opts.body);
+      serializedBody = serializeJsonBody(opts.body);
     } catch (error) {
       const detail = errorBodyExcerpt(error instanceof Error ? error.message : String(error));
       throw new UserError(`Request body is not JSON-serializable for ${opts.method} ${opts.path}: ${detail}`);

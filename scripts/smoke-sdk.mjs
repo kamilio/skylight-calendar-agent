@@ -29,6 +29,38 @@ try {
       () => sdk.profiles.userDelete({ confirm: false }),
       "Pass confirm=true to permanently delete the user account",
     ],
+    [
+      () => sdk.profiles.frameTransfer({ email: "new-owner@example.com", confirm: false }),
+      "Pass confirm=true to transfer frame ownership",
+    ],
+    [
+      () => sdk.tasks.taskboxSave({ taskBoxItemJson: { id: Number.NaN, summary: "x" } }),
+      "Numeric id must be a safe integer",
+    ],
+    [
+      () => sdk.tasks.taskboxSave({ taskBoxItemJson: { id: Infinity, summary: "x" } }),
+      "Numeric id must be a safe integer",
+    ],
+    [
+      () => sdk.tasks.taskboxSave({ taskBoxItemJson: { id: 9_007_199_254_740_992, summary: "x" } }),
+      "Numeric id must be a safe integer",
+    ],
+    [
+      () => sdk.lists.createRaw({ listJson: { label: Number.NaN } }),
+      "Request body contains a non-finite number",
+    ],
+    [
+      () => sdk.lists.createRaw({ listJson: { id: 9_007_199_254_740_992 } }),
+      "Request body contains an unsafe integer",
+    ],
+    [
+      () => sdk.profiles.ownerProfileUpdate({ birthday: "02/31" }),
+      "birthday must be a valid MM/DD date",
+    ],
+    [
+      () => sdk.profiles.ownerProfileUpdate({ birthday: "99/99" }),
+      'Invalid value for "birthday"',
+    ],
   ]) {
     try {
       await invoke();

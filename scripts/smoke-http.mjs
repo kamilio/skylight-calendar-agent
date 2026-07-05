@@ -1,4 +1,5 @@
 import { requestJson } from "../dist/skylight/http.js";
+import { assertWellFormedUnicode } from "../dist/skylight/validation.js";
 
 const env = {
   SKYLIGHT_API_BASE: "https://example.invalid",
@@ -156,7 +157,8 @@ try {
 
 try {
   await requestJson({
-    fetch: async () => new Response("x".repeat(100_000), { status: 500 }),
+    fetch: async () =>
+      new Response(`${"x".repeat(1_999)}😀${"y".repeat(100_000)}`, { status: 500 }),
     env,
     method: "GET",
     path: "/api/frames/42/lists",
@@ -167,6 +169,7 @@ try {
   if (message.length > 2_200 || !message.includes("truncated")) {
     throw new Error(`Oversized error response was not truncated: ${message.length}`);
   }
+  assertWellFormedUnicode(message, "Truncated error message");
 }
 
 const emptyResponse = await requestJson({
