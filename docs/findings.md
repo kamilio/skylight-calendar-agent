@@ -33,7 +33,7 @@ The local `skylight.har` capture includes authenticated API calls summarized in 
 
 ## Discovered endpoint families (from web bundle inspection)
 
-These are implemented as CLI/MCP sections now:
+These are implemented as CLI sections now, with sensitive operations excluded from MCP as documented in `docs/actions.md`:
 
 - Calendar: `/api/frames/{frameId}/calendar_events/*`, `/api/frames/{frameId}/source_calendars/*`
 - Tasks: `/api/frames/{frameId}/chores/*`, `/api/frames/{frameId}/task_box/items`

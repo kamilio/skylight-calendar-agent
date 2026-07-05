@@ -12,7 +12,7 @@ This file is derived from `skylight.har` and is meant to be a quick “did we ca
 - `GET /api/frames/calendar`
 - `GET /api/frames/photo`
 - `GET /api/frames/tv`
-- `GET /api/frames/{frameId}` (observed `1234567`)
+- `GET /api/frames/{frameId}` (captured id redacted)
 - `GET /api/frames/{frameId}/calendar_events`
 - `GET /api/frames/{frameId}/categories`
 - `GET /api/frames/{frameId}/categories/{categoryId}`

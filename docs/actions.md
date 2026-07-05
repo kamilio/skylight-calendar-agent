@@ -2,6 +2,8 @@
 
 This agent implements the sections you asked for:
 
+All listed actions are available to the CLI and SDK. For safety, these are not advertised as MCP tools: `meals migrate`; `photos upload-credentials`, `photos upload-url`, `photos upload-urls`; and `profiles token`, `profiles forgot-password`, `profiles update-email`, `profiles discount-code`, `profiles plus-resend-entitlement-email`, `profiles user-export`, `profiles user-delete`, `profiles frame-hide`, `profiles frame-transfer`, and `profiles frame-share-token-redeem`.
+
 ## Calendar
 
 - Events: `calendar events`, `calendar events-search`, `calendar events-countdowns`, `calendar recent-invited-emails`
@@ -37,7 +39,7 @@ This agent implements the sections you asked for:
 
 ## Photos
 
-- Messages: `photos list`, `photos list-paged`, `photos list-synced`, `photos get`, `photos delete`, `photos delete-many`, `photos caption-update`
+- Messages: `photos list`, `photos list-paged`, `photos list-synced`, `photos get`, `photos delete`, `photos delete-many`, `photos copy-to-frames`, `photos caption-update`
 - Social: `photos likes`, `photos like`, `photos unlike`, `photos comments`, `photos comment`, `photos comment-delete`
 - Upload helpers: `photos upload-credentials`, `photos upload-url`, `photos upload-urls`, `photos upload-message`
 - Albums: `photos albums`, `photos album-create`, `photos album-rename`, `photos album-delete`, `photos album-messages`, `photos album-message-ids`, `photos album-add`, `photos album-remove`
@@ -46,6 +48,7 @@ This agent implements the sections you asked for:
 
 - Auth helper: `profiles token`
 - Account: `profiles user`, `profiles user-update`, `profiles user-export`, `profiles user-delete`
+- Subscription: `profiles plus-access`, `profiles plus-resend-entitlement-email`
 - Account prefs: `profiles notification-preference`, `profiles marketing-preference`, `profiles forgot-password`, `profiles update-email`, `profiles discount-code`
 - Frames: `profiles frames`, `profiles frame`, `profiles frame-update`, `profiles frame-rename`, `profiles frame-hide`, `profiles frame-transfer`, `profiles frame-share-token-redeem`
 - Household: `profiles owner-profile-update`, `profiles family-member-update`

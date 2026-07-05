@@ -48,7 +48,7 @@ export const calendarGroup = defineGroup({
         early: S.Boolean({ description: "Notify early; use --early=false to disable" }),
         earlyMinutesBefore: S.Optional(
           S.Number({
-            description: "Minutes before event when early=true",
+            description: "Minutes before the event for early notifications",
             minimum: 0,
             jsonType: "integer",
           })
@@ -84,7 +84,7 @@ export const calendarGroup = defineGroup({
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
         include: S.Optional(
           S.String({
-            description: "include= CSV (defaults to categories,calendar_account,event_notification_setting)",
+            description: "Comma-separated related resources; defaults to categories,calendar_account,event_notification_setting",
           })
         ),
       }),
@@ -117,7 +117,7 @@ export const calendarGroup = defineGroup({
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
         include: S.Optional(
           S.String({
-            description: "include= CSV (defaults to categories,calendar_account,event_notification_setting)",
+            description: "Comma-separated related resources; defaults to categories,calendar_account,event_notification_setting",
           })
         ),
       }),
@@ -145,7 +145,9 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
-        include: S.Optional(S.String({ description: "include= CSV" })),
+        include: S.Optional(
+          S.String({ description: "Comma-separated related resources to include" })
+        ),
       }),
       handler: async (ctx) => {
         const config = getSkylightConfig();
@@ -196,8 +198,10 @@ export const calendarGroup = defineGroup({
         rrule: S.Optional(
           nonBlankParam({ description: "RRULE string (without 'RRULE:' prefix)" })
         ),
-        calendarId: S.Optional(nonBlankParam({ description: "calendar_id" })),
-        calendarAccountId: S.Optional(nonBlankParam({ description: "calendar_account_id" })),
+        calendarId: S.Optional(nonBlankParam({ description: "Source calendar id" })),
+        calendarAccountId: S.Optional(
+          nonBlankParam({ description: "Calendar account id" })
+        ),
         categoryIds: S.Optional(
           S.Array(nonBlankParam({ description: "Category id" }), { description: "Category ids" })
         ),
@@ -279,8 +283,16 @@ export const calendarGroup = defineGroup({
           S.Boolean({ description: "All day event; use --all-day=false to disable" })
         ),
         rrule: S.Optional(S.String({ description: "RRULE string (server format)" })),
-        categoryIds: S.Optional(S.Array(nonBlankParam({ description: "Category id" }))),
-        invitedEmails: S.Optional(S.Array(emailParam({ description: "Invite email" }))),
+        categoryIds: S.Optional(
+          S.Array(nonBlankParam({ description: "Category id" }), {
+            description: "Category ids",
+          })
+        ),
+        invitedEmails: S.Optional(
+          S.Array(emailParam({ description: "Invite email" }), {
+            description: "Invited emails",
+          })
+        ),
         location: S.Optional(S.String({ description: "Location" })),
         lat: S.Optional(S.Number({ description: "Latitude", minimum: -90, maximum: 90 })),
         lng: S.Optional(S.Number({ description: "Longitude", minimum: -180, maximum: 180 })),
@@ -481,8 +493,10 @@ export const calendarGroup = defineGroup({
         provider: nonBlankParam({ description: "Provider (server-defined)", short: "p" }),
         redirectUrl: nonBlankParam({ description: "Redirect URL", short: "r" }),
         failureRedirectUrl: nonBlankParam({ description: "Failure redirect URL", short: "f" }),
-        email: S.Optional(emailParam({ description: "login_hint email", short: "e" })),
-        twoWaySync: S.Optional(S.Boolean({ description: "two_way_sync", default: true })),
+        email: S.Optional(emailParam({ description: "OAuth login-hint email", short: "e" })),
+        twoWaySync: S.Optional(
+          S.Boolean({ description: "Enable two-way sync", default: true })
+        ),
       }),
       handler: async (ctx) => {
         assertValidAbsoluteUrl(ctx.params.redirectUrl, "redirectUrl");
