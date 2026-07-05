@@ -20,6 +20,15 @@ import {
   pathSegment,
 } from "../skylight/validation.js";
 
+function uniqueInvitedEmails(emails: readonly string[] | undefined): string[] | undefined {
+  if (emails === undefined) return undefined;
+  const normalized = emails.map((email) => email.trim());
+  if (new Set(normalized).size !== normalized.length) {
+    throw new UserError("invitedEmails must not contain duplicates.");
+  }
+  return normalized;
+}
+
 export const calendarGroup = defineGroup({
   name: "calendar",
   description: "Calendar events and source calendars",
@@ -239,6 +248,7 @@ export const calendarGroup = defineGroup({
                 ctx.params.notificationSettingJson,
                 "notificationSettingJson"
               );
+        const invitedEmails = uniqueInvitedEmails(ctx.params.invitedEmails);
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -253,7 +263,7 @@ export const calendarGroup = defineGroup({
             all_day: ctx.params.allDay ?? false,
             rrule:
               ctx.params.rrule === undefined ? null : [normalizeRrule(ctx.params.rrule)],
-            invited_emails: ctx.params.invitedEmails ?? [],
+            invited_emails: invitedEmails ?? [],
             location: ctx.params.location ?? null,
             lat: ctx.params.lat ?? null,
             lng: ctx.params.lng ?? null,
@@ -356,6 +366,7 @@ export const calendarGroup = defineGroup({
                 ctx.params.notificationSettingJson,
                 "notificationSettingJson"
               );
+        const invitedEmails = uniqueInvitedEmails(ctx.params.invitedEmails);
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -368,7 +379,7 @@ export const calendarGroup = defineGroup({
             ...(ctx.params.allDay === undefined ? {} : { all_day: ctx.params.allDay }),
             ...(ctx.params.rrule === undefined ? {} : { rrule: ctx.params.rrule }),
             ...(ctx.params.categoryIds === undefined ? {} : { category_ids: ctx.params.categoryIds }),
-            ...(ctx.params.invitedEmails === undefined ? {} : { invited_emails: ctx.params.invitedEmails }),
+            ...(invitedEmails === undefined ? {} : { invited_emails: invitedEmails }),
             ...(ctx.params.location === undefined ? {} : { location: ctx.params.location }),
             ...(ctx.params.lat === undefined ? {} : { lat: ctx.params.lat }),
             ...(ctx.params.lng === undefined ? {} : { lng: ctx.params.lng }),

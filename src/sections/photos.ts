@@ -1,4 +1,4 @@
-import { defineCommand, defineGroup, S } from "toolcraft";
+import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
@@ -107,14 +107,25 @@ export const photosGroup = defineGroup({
         }),
       }),
       handler: async (ctx) => {
+        const messageIds = ctx.params.messageIds.map((messageId) => messageId.trim());
+        const newFrameIds = ctx.params.newFrameIds.map((newFrameId) => newFrameId.trim());
+        if (new Set(messageIds).size !== messageIds.length) {
+          throw new UserError("messageIds must not contain duplicates.");
+        }
+        if (new Set(newFrameIds).size !== newFrameIds.length) {
+          throw new UserError("newFrameIds must not contain duplicates.");
+        }
         const frameId = await resolveFrameId(ctx);
+        if (newFrameIds.some((newFrameId) => pathSegment(newFrameId, "newFrameId") === frameId)) {
+          throw new UserError("newFrameIds must not include the source frame.");
+        }
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/copy_to_frames`,
           body: {
-            message_ids: ctx.params.messageIds,
-            new_frame_ids: ctx.params.newFrameIds,
+            message_ids: messageIds,
+            new_frame_ids: newFrameIds,
           },
         });
       },

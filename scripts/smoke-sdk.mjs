@@ -81,6 +81,35 @@ try {
       () => sdk.rewards.pointsAdd({ categoryIds: ["7", " 7 "], points: 10 }),
       "categoryIds must not contain duplicates",
     ],
+    [
+      () => sdk.photos.copyToFrames({ messageIds: ["1", " 1 "], newFrameIds: ["8"] }),
+      "messageIds must not contain duplicates",
+    ],
+    [
+      () => sdk.photos.copyToFrames({ messageIds: ["1"], newFrameIds: ["8", " 8 "] }),
+      "newFrameIds must not contain duplicates",
+    ],
+    [
+      () => sdk.photos.copyToFrames({ messageIds: ["1"], newFrameIds: ["42"] }),
+      "newFrameIds must not include the source frame",
+    ],
+    [
+      () =>
+        sdk.calendar.eventCreate({
+          summary: "Event",
+          startsAt: "2026-07-05",
+          invitedEmails: ["a@example.com", "a@example.com"],
+        }),
+      "invitedEmails must not contain duplicates",
+    ],
+    [
+      () =>
+        sdk.calendar.eventEdit({
+          eventId: "event-1",
+          invitedEmails: ["a@example.com", "a@example.com"],
+        }),
+      "invitedEmails must not contain duplicates",
+    ],
   ]) {
     try {
       await invoke();
