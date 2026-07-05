@@ -58,6 +58,11 @@ function normalizeApiVersion(value: string): string {
 
 function parseRequestTimeout(value: string | null): number {
   if (value === null) return 30_000;
+  if (!/^\d+$/.test(value)) {
+    throw new UserError(
+      "SKYLIGHT_REQUEST_TIMEOUT_MS must be an integer from 1 to 2147483647."
+    );
+  }
   const timeout = Number(value);
   if (!Number.isSafeInteger(timeout) || timeout <= 0 || timeout > 2_147_483_647) {
     throw new UserError(
