@@ -119,6 +119,24 @@ try {
     ],
     [
       () =>
+        sdk.calendar.eventEdit({
+          eventId: "event-1",
+          categoryIds: ["4"],
+          clearCategories: true,
+        }),
+      "categoryIds cannot be set when clearCategories is true",
+    ],
+    [
+      () =>
+        sdk.calendar.calendarAccountUpdate({
+          accountId: "a",
+          activeCalendars: ["c"],
+          clearActiveCalendars: true,
+        }),
+      "activeCalendars cannot be set when clearActiveCalendars is true",
+    ],
+    [
+      () =>
         sdk.calendar.eventCreate({
           summary: "Event",
           startsAt: "2026-07-05",

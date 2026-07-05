@@ -39,6 +39,7 @@ function minimalValue(name, schema) {
 }
 
 const optionalArguments = {
+  "calendar.calendar-account-update": { activeCalendars: ["calendar-1"] },
   "calendar.event-edit": { summary: "Updated" },
   "meals.update": { recipeId: "recipe-1" },
   "profiles.owner-profile-update": { name: "Owner" },

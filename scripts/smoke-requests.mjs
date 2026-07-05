@@ -126,6 +126,21 @@ try {
     "--summary",
     "Updated title",
   ]);
+  await run([
+    "calendar",
+    "event-edit",
+    "--event-id",
+    "event-clear",
+    "--clear-categories",
+    "--clear-invited-emails",
+  ]);
+  await run([
+    "calendar",
+    "calendar-account-update",
+    "--account-id",
+    "account-clear",
+    "--clear-active-calendars",
+  ]);
   await run(["tasks", "taskbox-create", "--summary", "Pack lunch"]);
   await run([
     "tasks",
@@ -380,6 +395,21 @@ try {
     "event-edit",
     "--event-id",
     "event-1",
+    "--category-ids",
+    "category-1",
+    "--clear-categories",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "calendar-account-update",
+    "--account-id",
+    "account-1",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "event-edit",
+    "--event-id",
+    "event-1",
     "--notification-setting-json",
     "{}",
   ]);
@@ -568,6 +598,28 @@ if (
   Object.hasOwn(requests[8]?.body ?? {}, "timezone")
 ) {
   throw new Error("Event edit changed unspecified fields");
+}
+
+const clearedEvent = requests.find(
+  (request) => request.url === "/api/frames/42/calendar_events/event-clear"
+);
+if (
+  !Array.isArray(clearedEvent?.body?.category_ids) ||
+  clearedEvent.body.category_ids.length !== 0 ||
+  !Array.isArray(clearedEvent?.body?.invited_emails) ||
+  clearedEvent.body.invited_emails.length !== 0
+) {
+  throw new Error("Event edit did not clear categories and invited emails");
+}
+
+const clearedCalendars = requests.find(
+  (request) => request.url === "/api/frames/42/calendars/account-clear"
+);
+if (
+  !Array.isArray(clearedCalendars?.body?.active_calendars) ||
+  clearedCalendars.body.active_calendars.length !== 0
+) {
+  throw new Error("Calendar account update did not clear active calendars");
 }
 
 const taskBoxCreate = requests.find(

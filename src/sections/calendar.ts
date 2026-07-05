@@ -303,10 +303,16 @@ export const calendarGroup = defineGroup({
             description: "Category ids",
           })
         ),
+        clearCategories: S.Optional(
+          S.Boolean({ description: "Remove all event categories" })
+        ),
         invitedEmails: S.Optional(
           S.Array(emailParam({ description: "Invite email" }), {
             description: "Invited emails",
           })
+        ),
+        clearInvitedEmails: S.Optional(
+          S.Boolean({ description: "Remove all invited emails" })
         ),
         location: S.Optional(S.String({ description: "Location" })),
         lat: S.Optional(S.Number({ description: "Latitude", minimum: -90, maximum: 90 })),
@@ -324,6 +330,22 @@ export const calendarGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
+        if (ctx.params.clearCategories === true && ctx.params.categoryIds !== undefined) {
+          throw new UserError("categoryIds cannot be set when clearCategories is true.");
+        }
+        if (ctx.params.clearInvitedEmails === true && ctx.params.invitedEmails !== undefined) {
+          throw new UserError("invitedEmails cannot be set when clearInvitedEmails is true.");
+        }
+        const categoryIds =
+          ctx.params.clearCategories === true
+            ? []
+            : ctx.params.categoryIds === undefined
+              ? undefined
+              : uniqueIdentifiers(ctx.params.categoryIds, "categoryIds");
+        const invitedEmails =
+          ctx.params.clearInvitedEmails === true
+            ? []
+            : uniqueInvitedEmails(ctx.params.invitedEmails);
         assertAtLeastOneDefined(
           [
             ctx.params.summary,
@@ -331,8 +353,8 @@ export const calendarGroup = defineGroup({
             ctx.params.endsAt,
             ctx.params.allDay,
             ctx.params.rrule,
-            ctx.params.categoryIds,
-            ctx.params.invitedEmails,
+            categoryIds,
+            invitedEmails,
             ctx.params.location,
             ctx.params.lat,
             ctx.params.lng,
@@ -368,11 +390,6 @@ export const calendarGroup = defineGroup({
                 ctx.params.notificationSettingJson,
                 "notificationSettingJson"
               );
-        const invitedEmails = uniqueInvitedEmails(ctx.params.invitedEmails);
-        const categoryIds =
-          ctx.params.categoryIds === undefined
-            ? undefined
-            : uniqueIdentifiers(ctx.params.categoryIds, "categoryIds");
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -458,12 +475,30 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         accountId: nonBlankParam({ description: "Calendar account id", short: "i" }),
-        activeCalendars: S.Array(nonBlankParam({ description: "Calendar id" }), {
-          description: "Active calendars",
-        }),
+        activeCalendars: S.Optional(
+          S.Array(nonBlankParam({ description: "Calendar id" }), {
+            description: "Active calendars",
+          })
+        ),
+        clearActiveCalendars: S.Optional(
+          S.Boolean({ description: "Deactivate all calendars for this account" })
+        ),
       }),
       handler: async (ctx) => {
-        const activeCalendars = uniqueIdentifiers(ctx.params.activeCalendars, "activeCalendars");
+        if (ctx.params.clearActiveCalendars === true && ctx.params.activeCalendars !== undefined) {
+          throw new UserError(
+            "activeCalendars cannot be set when clearActiveCalendars is true."
+          );
+        }
+        const activeCalendars =
+          ctx.params.clearActiveCalendars === true
+            ? []
+            : ctx.params.activeCalendars === undefined
+              ? undefined
+              : uniqueIdentifiers(ctx.params.activeCalendars, "activeCalendars");
+        if (activeCalendars === undefined) {
+          throw new UserError("Specify activeCalendars or set clearActiveCalendars=true.");
+        }
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
