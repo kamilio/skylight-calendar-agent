@@ -164,6 +164,34 @@ try {
     );
   }
 
+  process.env.SKYLIGHT_AUTH_HEADER = "Bearer old-account";
+  let accountSwitchCalls = 0;
+  let releaseOldAccount;
+  const oldAccountGate = new Promise((resolve) => {
+    releaseOldAccount = resolve;
+  });
+  const accountSwitchFetch = async () => {
+    accountSwitchCalls += 1;
+    if (accountSwitchCalls === 1) {
+      await oldAccountGate;
+      return Response.json({ data: [{ id: "old-frame" }] });
+    }
+    return Response.json({ data: [{ id: "new-frame" }] });
+  };
+  const oldAccountResolution = resolveFrameId({ fetch: accountSwitchFetch });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  process.env.SKYLIGHT_AUTH_HEADER = "Bearer new-account";
+  releaseOldAccount();
+  if ((await oldAccountResolution) !== "old-frame") {
+    throw new Error("Old account frame discovery returned the wrong frame");
+  }
+  const newAccountFrame = await resolveFrameId({ fetch: accountSwitchFetch });
+  if (newAccountFrame !== "new-frame" || accountSwitchCalls !== 2) {
+    throw new Error(
+      `Frame discovery leaked across credential changes: ${JSON.stringify({ newAccountFrame, accountSwitchCalls })}`
+    );
+  }
+
   delete process.env.SKYLIGHT_AUTH_HEADER;
   delete process.env.SKYLIGHT_BASIC_TOKEN;
   process.env.SKYLIGHT_EMAIL = "cache@example.com";

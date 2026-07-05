@@ -157,10 +157,7 @@ export async function resolveFrameId(ctx: { fetch: typeof globalThis.fetch }): P
   const resolution = discoverFrameId(ctx, config.calendarShareId);
   resolutions.set(key, resolution);
   try {
-    const frameId = await resolution;
-    const currentKey = frameResolutionKey(getSkylightConfig());
-    if (currentKey !== key) resolutions.set(currentKey, resolution);
-    return frameId;
+    return await resolution;
   } catch (error) {
     if (resolutions.get(key) === resolution) resolutions.delete(key);
     throw error;
