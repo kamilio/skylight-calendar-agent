@@ -151,6 +151,26 @@ try {
   }
 }
 
+for (const [body, expected] of [
+  ['{"id":9007199254740993}', "unsafe integer"],
+  ['{"value":1e400}', "non-finite number"],
+]) {
+  try {
+    await requestJson({
+      fetch: async () => new Response(body, { status: 200 }),
+      env,
+      method: "GET",
+      path: "/api/numeric-response",
+    });
+    throw new Error(`Lossy numeric response unexpectedly succeeded: ${body}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes(expected) || !message.includes("GET /api/numeric-response")) {
+      throw error;
+    }
+  }
+}
+
 try {
   await requestJson({
     fetch: async () =>

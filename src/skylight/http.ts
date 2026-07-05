@@ -46,6 +46,17 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
     );
   }
   if (typeof value === "string") return safeOutputText(value);
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      throw new UserError("Response JSON contains a non-finite number.");
+    }
+    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+      throw new UserError(
+        "Response JSON contains an unsafe integer; the server must encode it as a string to preserve it exactly."
+      );
+    }
+    return value;
+  }
   if (Array.isArray(value)) return value.map((child) => sanitizeJsonValue(child, depth + 1));
   if (value === null || typeof value !== "object") return value;
 
