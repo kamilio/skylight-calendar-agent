@@ -21,7 +21,7 @@ All listed actions are available to the CLI and SDK. For safety, these are not a
 ## Rewards
 
 - Rewards: `rewards list`, `rewards get`, `rewards create`, `rewards update`, `rewards delete`, `rewards redeem`, `rewards unredeem`
-- Points: `rewards points`, `rewards points-add`
+- Points: `rewards points`, `rewards points-add` (negative adjustments subtract points)
 
 ## Lists
 

@@ -170,7 +170,7 @@ export const rewardsGroup = defineGroup({
     }),
     defineCommand({
       name: "points-add",
-      description: "Add reward points to categories",
+      description: "Adjust reward points for categories (negative values subtract)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         categoryIds: S.Array(nonBlankParam({ description: "Category id" }), {
@@ -178,7 +178,7 @@ export const rewardsGroup = defineGroup({
           minItems: 1,
         }),
         points: S.Number({
-          description: "Points to add",
+          description: "Point adjustment; use a negative value to subtract",
           jsonType: "integer",
           minimum: Number.MIN_SAFE_INTEGER,
           maximum: Number.MAX_SAFE_INTEGER,
