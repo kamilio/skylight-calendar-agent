@@ -553,15 +553,37 @@ export function assertValidMonthDay(value: string, label: string): void {
   }
 }
 
-function dateOrDateTimeTimestamp(value: string): number {
+function dateOrDateTimeOrder(value: string): { seconds: number; fraction: string } {
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return Date.parse(`${value}T00:00:00Z`);
+    return { seconds: Date.parse(`${value}T00:00:00Z`) / 1_000, fraction: "" };
   }
   const hasOffset = /(?:Z|[+-]\d{2}:\d{2})$/.test(value);
   const leapSecond = /:60(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/.test(value);
-  const parseable = leapSecond ? value.replace(/:60(?=(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$)/, ":59") : value;
+  const fraction = /\.(\d+)/.exec(value)?.[1] ?? "";
+  const wholeSecondValue = value.replace(/\.\d+/, "");
+  const parseable = leapSecond
+    ? wholeSecondValue.replace(/:60(?=(?:Z|[+-]\d{2}:\d{2})?$)/, ":59")
+    : wholeSecondValue;
   const timestamp = Date.parse(hasOffset ? parseable : `${parseable}Z`);
-  return leapSecond ? timestamp + 1_000 : timestamp;
+  return {
+    seconds: timestamp / 1_000 + (leapSecond ? 1 : 0),
+    fraction,
+  };
+}
+
+function compareDateOrDateTime(left: string, right: string): number {
+  const leftOrder = dateOrDateTimeOrder(left);
+  const rightOrder = dateOrDateTimeOrder(right);
+  if (leftOrder.seconds !== rightOrder.seconds) {
+    return leftOrder.seconds < rightOrder.seconds ? -1 : 1;
+  }
+  const length = Math.max(leftOrder.fraction.length, rightOrder.fraction.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftDigit = leftOrder.fraction.charCodeAt(index) || 48;
+    const rightDigit = rightOrder.fraction.charCodeAt(index) || 48;
+    if (leftDigit !== rightDigit) return leftDigit < rightDigit ? -1 : 1;
+  }
+  return 0;
 }
 
 export function assertValidDateRange(
@@ -602,7 +624,7 @@ export function assertValidDateOrDateTime(value: string, label: string): void {
     offsetHour > 14 ||
     (offsetHour === 14 && offsetMinute > 0) ||
     offsetMinute > 59 ||
-    !Number.isFinite(dateOrDateTimeTimestamp(value))
+    !Number.isFinite(dateOrDateTimeOrder(value).seconds)
   ) {
     throw new UserError(`${label} must be a valid ISO datetime or YYYY-MM-DD date.`);
   }
@@ -623,7 +645,7 @@ export function assertValidDateTimeRange(
 ): void {
   assertValidDateTime(minimum, minimumLabel);
   assertValidDateTime(maximum, maximumLabel);
-  if (dateOrDateTimeTimestamp(minimum) > dateOrDateTimeTimestamp(maximum)) {
+  if (compareDateOrDateTime(minimum, maximum) > 0) {
     throw new UserError(`${minimumLabel} must not be after ${maximumLabel}.`);
   }
 }
@@ -637,7 +659,7 @@ export function assertValidDateOrDateTimeRange(
   assertValidDateOrDateTime(start, startLabel);
   if (end === undefined) return;
   assertValidDateOrDateTime(end, endLabel);
-  if (dateOrDateTimeTimestamp(start) > dateOrDateTimeTimestamp(end)) {
+  if (compareDateOrDateTime(start, end) > 0) {
     throw new UserError(`${startLabel} must not be after ${endLabel}.`);
   }
 }

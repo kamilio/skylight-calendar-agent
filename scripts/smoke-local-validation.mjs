@@ -4,6 +4,7 @@ import {
   assertValidDate,
   assertValidDateOrDateTimeRange,
   assertValidDateTime,
+  assertValidDateTimeRange,
   pathSegment,
 } from "../dist/skylight/validation.js";
 import { root } from "../dist/root.js";
@@ -103,6 +104,27 @@ assertValidDateOrDateTimeRange(
   "redeemedAtMin",
   "redeemedAtMax"
 );
+
+for (const validateRange of [assertValidDateTimeRange, assertValidDateOrDateTimeRange]) {
+  try {
+    validateRange(
+      "2026-01-01T00:00:00.0009Z",
+      "2026-01-01T00:00:00.0001Z",
+      "minimum",
+      "maximum"
+    );
+    throw new Error("Reversed sub-millisecond datetime range unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("minimum must not be after maximum")) throw error;
+  }
+  validateRange(
+    "2026-01-01T00:00:00.00010Z",
+    "2026-01-01T00:00:00.000100Z",
+    "minimum",
+    "maximum"
+  );
+}
 
 const env = { ...process.env, SKYLIGHT_FRAME_ID: "42" };
 for (const name of [
