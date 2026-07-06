@@ -1,4 +1,4 @@
-import { defineCommand, defineGroup, S, UserError } from "toolcraft";
+import { defineCommand, defineGroup, S } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
