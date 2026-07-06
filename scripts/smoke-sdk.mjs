@@ -352,8 +352,14 @@ try {
     dateMin: "2026-07-01",
     dateMax: "2026-07-31",
     timezone: "UTC",
+    include: " categories, calendar_account ",
   });
-  if (calls !== 7) throw new Error("Explicit timezone did not isolate calendar settings");
+  if (
+    calls !== 7 ||
+    new URL(requestUrl).searchParams.get("include") !== "categories,calendar_account"
+  ) {
+    throw new Error("Calendar include resources were not normalized");
+  }
 
   const failingSdk = createSkylightSDK({
     fetch: async () => new Response("failed", { status: 500 }),

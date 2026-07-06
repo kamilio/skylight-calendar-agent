@@ -31,6 +31,10 @@ function uniqueInvitedEmails(emails: readonly string[] | undefined): string[] | 
   return normalized;
 }
 
+function normalizeInclude(value: string): string {
+  return uniqueIdentifiers(value.split(","), "include").join(",");
+}
+
 export const calendarGroup = defineGroup({
   name: "calendar",
   description: "Calendar events and source calendars",
@@ -111,8 +115,9 @@ export const calendarGroup = defineGroup({
             date_min: ctx.params.dateMin,
             date_max: ctx.params.dateMax,
             timezone,
-            include:
-              ctx.params.include ?? "categories,calendar_account,event_notification_setting",
+            include: normalizeInclude(
+              ctx.params.include ?? "categories,calendar_account,event_notification_setting"
+            ),
           },
         });
       },
@@ -140,8 +145,9 @@ export const calendarGroup = defineGroup({
           query: {
             search_query: ctx.params.searchQuery,
             timezone,
-            include:
-              ctx.params.include ?? "categories,calendar_account,event_notification_setting",
+            include: normalizeInclude(
+              ctx.params.include ?? "categories,calendar_account,event_notification_setting"
+            ),
           },
         });
       },
@@ -165,7 +171,9 @@ export const calendarGroup = defineGroup({
           path: `/api/frames/${frameId}/calendar_events/countdowns`,
           query: {
             timezone,
-            ...(ctx.params.include === undefined ? {} : { include: ctx.params.include }),
+            ...(ctx.params.include === undefined
+              ? {}
+              : { include: normalizeInclude(ctx.params.include) }),
           },
         });
       },
