@@ -46,6 +46,14 @@ if (
 }
 
 if (
+  !readme.includes("command strings are limited to 8,192 characters") ||
+  !readme.includes("command arrays to 500 items") ||
+  !readme.includes("100 nesting levels")
+) {
+  throw new Error("README.md must explain command input safety limits");
+}
+
+if (
   !readme.includes("npm run --silent dev:mcp") ||
   fs.readFileSync("docs/commands.md", "utf8").includes("MCP (stdio): `npm run dev:mcp`")
 ) {
