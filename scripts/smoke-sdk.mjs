@@ -304,6 +304,22 @@ try {
     timezone: "UTC",
   });
   if (calls !== 6) throw new Error("Explicit timezone did not isolate calendar settings");
+
+  const failingSdk = createSkylightSDK({
+    fetch: async () => new Response("failed", { status: 500 }),
+  });
+  try {
+    await failingSdk.lists.itemsCreate({
+      listId: "1",
+      labels: [`safe\u202E${"x".repeat(100_000)}`],
+    });
+    throw new Error("Oversized partial failure unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.length > 2_500 || message.includes("\u202E") || !message.includes("…")) {
+      throw new Error(`Partial failure label was not safely bounded: ${message.length}`);
+    }
+  }
 } finally {
   for (const key of Object.keys(process.env)) {
     if (!(key in savedEnv)) delete process.env[key];

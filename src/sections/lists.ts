@@ -1,6 +1,7 @@
 import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
+import { terminalSafeText, truncateText } from "../skylight/text.js";
 import {
   assertWellFormedUnicode,
   jsonParam,
@@ -19,6 +20,11 @@ function normalizeSection(value: string | undefined): string | null {
     throw new UserError("section must not contain control characters.");
   }
   return value.trim() || null;
+}
+
+function displayLabel(value: string): string {
+  const safe = terminalSafeText(value);
+  return safe.length <= 200 ? safe : `${truncateText(safe, 200)}…`;
 }
 
 export const listsGroup = defineGroup({
@@ -223,7 +229,7 @@ export const listsGroup = defineGroup({
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
             throw new UserError(
-              `Created ${index} of ${ctx.params.labels.length} items. Failed on item ${index + 1} (${JSON.stringify(label)}): ${detail}`
+              `Created ${index} of ${ctx.params.labels.length} items. Failed on item ${index + 1} (${JSON.stringify(displayLabel(label))}): ${detail}`
             );
           }
         }
