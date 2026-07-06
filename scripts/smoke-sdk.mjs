@@ -1,4 +1,4 @@
-import { createSDK, root } from "../dist/index.js";
+import { createSkylightSDK } from "../dist/index.js";
 
 const savedEnv = { ...process.env };
 let calls = 0;
@@ -10,7 +10,7 @@ try {
   process.env.SKYLIGHT_FRAME_ID = "42";
   process.env.SKYLIGHT_PASSWORD = " env secret ";
 
-  const sdk = createSDK(root, {
+  const sdk = createSkylightSDK({
     fetch: async (_url, init) => {
       calls += 1;
       requestBody = init?.body === undefined ? undefined : JSON.parse(String(init.body));
