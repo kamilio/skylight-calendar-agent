@@ -295,6 +295,7 @@ export const tasksGroup = defineGroup({
         };
         const id = taskBoxItem.id;
         let itemPath: string | undefined;
+        let requestBody = taskBoxItem;
         if (id !== undefined) {
           if (typeof id !== "string" && typeof id !== "number") {
             throw new UserError("id must be a non-blank string or number when provided.");
@@ -302,7 +303,10 @@ export const tasksGroup = defineGroup({
           if (typeof id === "number" && !Number.isSafeInteger(id)) {
             throw new UserError("Numeric id must be a safe integer when provided.");
           }
-          itemPath = pathSegment(id, "id");
+          const normalizedId =
+            typeof id === "number" ? id : normalizeIdentifier(id, "id");
+          itemPath = pathSegment(normalizedId, "id");
+          requestBody = { ...taskBoxItem, id: normalizedId };
           if (Object.keys(taskBoxItem).every((key) => key === "id")) {
             throw new UserError("taskBoxItemJson must include an update field besides id.");
           }
@@ -313,14 +317,14 @@ export const tasksGroup = defineGroup({
             fetch: ctx.fetch,
             method: "PATCH",
             path: `/api/frames/${frameId}/task_box/items/${itemPath}`,
-            body: taskBoxItem,
+            body: requestBody,
           });
         }
         return requestJson({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/task_box/items`,
-          body: taskBoxItem,
+          body: requestBody,
         });
       },
     }),

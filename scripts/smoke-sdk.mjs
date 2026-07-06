@@ -3,6 +3,7 @@ import { createSkylightSDK } from "../dist/index.js";
 const savedEnv = { ...process.env };
 let calls = 0;
 let requestBody;
+let requestUrl;
 
 try {
   process.env.SKYLIGHT_API_BASE = "https://example.invalid";
@@ -11,8 +12,9 @@ try {
   process.env.SKYLIGHT_PASSWORD = " env secret ";
 
   const sdk = createSkylightSDK({
-    fetch: async (_url, init) => {
+    fetch: async (url, init) => {
       calls += 1;
+      requestUrl = String(url);
       requestBody = init?.body === undefined ? undefined : JSON.parse(String(init.body));
       return Response.json({ ok: true });
     },
@@ -321,17 +323,28 @@ try {
     throw new Error(`Typed body identifier was not normalized: ${JSON.stringify(requestBody)}`);
   }
 
+  const taskBoxItem = { id: " 7 ", summary: "Pack lunch" };
+  await sdk.tasks.taskboxSave({ taskBoxItemJson: taskBoxItem });
+  if (
+    calls !== 5 ||
+    !requestUrl?.endsWith("/api/frames/42/task_box/items/7") ||
+    requestBody?.id !== "7" ||
+    taskBoxItem.id !== " 7 "
+  ) {
+    throw new Error(`Task Box update id was not consistently normalized: ${JSON.stringify({ requestUrl, requestBody, taskBoxItem })}`);
+  }
+
   process.env.SKYLIGHT_TIMEZONE = "Not/A_Timezone";
   process.env.SKYLIGHT_CALENDAR_URL = "not-a-url";
   await sdk.lists.list({});
-  if (calls !== 5) throw new Error("Unrelated calendar settings blocked a list request");
+  if (calls !== 6) throw new Error("Unrelated calendar settings blocked a list request");
 
   await sdk.calendar.events({
     dateMin: "2026-07-01",
     dateMax: "2026-07-31",
     timezone: "UTC",
   });
-  if (calls !== 6) throw new Error("Explicit timezone did not isolate calendar settings");
+  if (calls !== 7) throw new Error("Explicit timezone did not isolate calendar settings");
 
   const failingSdk = createSkylightSDK({
     fetch: async () => new Response("failed", { status: 500 }),
