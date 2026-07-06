@@ -45,6 +45,12 @@ for (const [key, value] of [
   ["SKYLIGHT_CALENDAR_URL", "ftp://example.com/calendar/123"],
   ["SKYLIGHT_CALENDAR_URL", "https://example.com/calendar/123abc"],
   ["SKYLIGHT_CALENDAR_URL", "https://example.com/not-a-calendar"],
+  ["SKYLIGHT_FRAME_ID", "42\n"],
+  ["SKYLIGHT_API_BASE", "https://example.com\n"],
+  ["SKYLIGHT_API_VERSION", "2026-03-01\n"],
+  ["SKYLIGHT_TIMEZONE", "UTC\n"],
+  ["SKYLIGHT_REQUEST_TIMEOUT_MS", "1000\n"],
+  ["SKYLIGHT_CALENDAR_URL", "https://ourskylight.com/calendar/123\n"],
 ]) {
   try {
     getSkylightConfig({

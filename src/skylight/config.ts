@@ -1,5 +1,5 @@
 import { UserError } from "toolcraft";
-import { assertValidDate, normalizeTimezone } from "./validation.js";
+import { assertValidDate, assertWellFormedUnicode, normalizeTimezone } from "./validation.js";
 
 export interface SkylightConfig {
   apiBaseUrl: string;
@@ -11,8 +11,12 @@ export interface SkylightConfig {
   requestTimeoutMs: number;
 }
 
-function firstNonEmpty(value: string | undefined): string | null {
+function firstNonEmpty(value: string | undefined, label: string): string | null {
   if (value === undefined) return null;
+  assertWellFormedUnicode(value, label);
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(value)) {
+    throw new UserError(`${label} must not contain control characters.`);
+  }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
@@ -91,23 +95,27 @@ function parseCalendarShareId(calendarUrl: string): string | null {
 }
 
 export function getSkylightConfig(env: NodeJS.ProcessEnv = process.env): SkylightConfig {
-  const calendarUrl = firstNonEmpty(env.SKYLIGHT_CALENDAR_URL) ?? "";
+  const calendarUrl = firstNonEmpty(env.SKYLIGHT_CALENDAR_URL, "SKYLIGHT_CALENDAR_URL") ?? "";
   const calendarShareId = parseCalendarShareId(calendarUrl);
 
-  const rawApiBaseUrl = firstNonEmpty(env.SKYLIGHT_API_BASE) ?? "https://app.ourskylight.com";
+  const rawApiBaseUrl =
+    firstNonEmpty(env.SKYLIGHT_API_BASE, "SKYLIGHT_API_BASE") ??
+    "https://app.ourskylight.com";
 
   return {
     apiBaseUrl: normalizeApiBaseUrl(rawApiBaseUrl),
     apiVersion: normalizeApiVersion(
-      firstNonEmpty(env.SKYLIGHT_API_VERSION) ?? "2026-03-01"
+      firstNonEmpty(env.SKYLIGHT_API_VERSION, "SKYLIGHT_API_VERSION") ?? "2026-03-01"
     ),
     calendarUrl,
     calendarShareId,
-    frameId: firstNonEmpty(env.SKYLIGHT_FRAME_ID),
+    frameId: firstNonEmpty(env.SKYLIGHT_FRAME_ID, "SKYLIGHT_FRAME_ID"),
     timezone: normalizeTimezone(
-      firstNonEmpty(env.SKYLIGHT_TIMEZONE) ?? systemTimezone(),
+      firstNonEmpty(env.SKYLIGHT_TIMEZONE, "SKYLIGHT_TIMEZONE") ?? systemTimezone(),
       "SKYLIGHT_TIMEZONE"
     ),
-    requestTimeoutMs: parseRequestTimeout(firstNonEmpty(env.SKYLIGHT_REQUEST_TIMEOUT_MS)),
+    requestTimeoutMs: parseRequestTimeout(
+      firstNonEmpty(env.SKYLIGHT_REQUEST_TIMEOUT_MS, "SKYLIGHT_REQUEST_TIMEOUT_MS")
+    ),
   };
 }
