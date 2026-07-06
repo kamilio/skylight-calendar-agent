@@ -182,6 +182,10 @@ try {
       () => sdk.calendar.eventEdit({ eventId: "event-1", rrule: "\nFREQ=DAILY" }),
       "rrule must not contain control characters",
     ],
+    [
+      () => sdk.lists.itemCreate({ listId: "1", label: "Item", section: "\nHouse" }),
+      "section must not contain control characters",
+    ],
   ]) {
     try {
       await invoke();

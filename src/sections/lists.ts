@@ -2,6 +2,7 @@ import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
+  assertWellFormedUnicode,
   jsonParam,
   nonBlankParam,
   parseNonEmptyJsonObject,
@@ -10,6 +11,15 @@ import {
   positiveIntegerStringParam,
   uniqueIdentifiers,
 } from "../skylight/validation.js";
+
+function normalizeSection(value: string | undefined): string | null {
+  if (value === undefined) return null;
+  assertWellFormedUnicode(value, "section");
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(value)) {
+    throw new UserError("section must not contain control characters.");
+  }
+  return value.trim() || null;
+}
 
 export const listsGroup = defineGroup({
   name: "lists",
@@ -168,6 +178,7 @@ export const listsGroup = defineGroup({
         section: S.Optional(S.String({ description: "Optional section name", short: "s" })),
       }),
       handler: async (ctx) => {
+        const section = normalizeSection(ctx.params.section);
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -175,7 +186,7 @@ export const listsGroup = defineGroup({
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
           body: {
             label: ctx.params.label,
-            section: ctx.params.section?.trim() || null,
+            section,
           },
         });
       },
@@ -193,6 +204,7 @@ export const listsGroup = defineGroup({
         section: S.Optional(S.String({ description: "Optional section name", short: "s" })),
       }),
       handler: async (ctx) => {
+        const section = normalizeSection(ctx.params.section);
         const frameId = await resolveFrameId(ctx);
         const items: unknown[] = [];
         for (const [index, label] of ctx.params.labels.entries()) {
@@ -204,7 +216,7 @@ export const listsGroup = defineGroup({
                 path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
                 body: {
                   label,
-                  section: ctx.params.section?.trim() || null,
+                  section,
                 },
               })
             );
@@ -318,6 +330,7 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const itemIds = uniqueIdentifiers(ctx.params.itemIds, "itemIds");
+        const section = normalizeSection(ctx.params.section);
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -325,7 +338,7 @@ export const listsGroup = defineGroup({
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/bulk_update_section`,
           body: {
             item_ids: itemIds,
-            section: ctx.params.section?.trim() || null,
+            section,
           },
         });
       },
