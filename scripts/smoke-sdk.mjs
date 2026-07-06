@@ -91,6 +91,15 @@ try {
     [
       () =>
         sdk.tasks.choreCreateSimple({
+          summary: "Oversized count",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=DAILY;COUNT=2147483648",
+        }),
+      "recurrenceRrule contains an invalid COUNT value",
+    ],
+    [
+      () =>
+        sdk.tasks.choreCreateSimple({
           summary: "Conflicting end",
           start: "2026-07-05",
           recurrenceRrule: "FREQ=DAILY;COUNT=2;UNTIL=20260731",

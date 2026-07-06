@@ -3,6 +3,7 @@ import { terminalSafeText, truncateText } from "./text.js";
 
 const DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
 const MAX_REQUEST_JSON_DEPTH = 100;
+const MAX_RRULE_INTEGER = 2_147_483_647;
 
 function displayErrorValue(value: string): string {
   const safe = terminalSafeText(value);
@@ -348,7 +349,9 @@ export function normalizeRrule(value: string, label = "rrule"): string {
     const componentValue = components.get(name);
     if (
       componentValue !== undefined &&
-      (!/^[1-9]\d*$/.test(componentValue) || !Number.isSafeInteger(Number(componentValue)))
+      (!/^[1-9]\d*$/.test(componentValue) ||
+        !Number.isSafeInteger(Number(componentValue)) ||
+        Number(componentValue) > MAX_RRULE_INTEGER)
     ) {
       throw new UserError(
         `${label} contains an invalid ${name} value: ${JSON.stringify(displayErrorValue(componentValue))}.`
