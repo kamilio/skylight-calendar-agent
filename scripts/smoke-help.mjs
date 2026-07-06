@@ -68,3 +68,16 @@ const eventCreateOutput = `${eventCreateHelp.stdout ?? ""}${eventCreateHelp.stde
 if (eventCreateOutput.includes("--recurring")) {
   throw new Error(`Event creation advertises a no-op recurring flag: ${eventCreateOutput}`);
 }
+
+const tokenHelp = spawnSync(
+  process.execPath,
+  ["dist/cli.js", "profiles", "token", "--help"],
+  { encoding: "utf8" }
+);
+const tokenOutput = `${tokenHelp.stdout ?? ""}${tokenHelp.stderr ?? ""}`;
+if (
+  !tokenOutput.includes("configured or login-generated Authorization header") ||
+  tokenOutput.includes("Log in and print")
+) {
+  throw new Error(`Token help incorrectly promises a login: ${tokenOutput}`);
+}

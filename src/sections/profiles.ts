@@ -21,7 +21,7 @@ export const profilesGroup = defineGroup({
   children: [
     defineCommand({
       name: "token",
-      description: "Log in and print the Authorization header value",
+      description: "Print the configured or login-generated Authorization header value",
       scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
