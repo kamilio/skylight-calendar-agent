@@ -88,7 +88,7 @@ for (const name of [
   delete env[name];
 }
 
-async function expectLocalError(args, expected) {
+async function expectLocalError(args, expected, forbidden) {
   const child = spawn(process.execPath, ["dist/cli.js", ...args], {
     env,
     stdio: ["ignore", "pipe", "pipe"],
@@ -111,6 +111,9 @@ async function expectLocalError(args, expected) {
   if (!output.includes(expected)) {
     throw new Error(`Local validation error was not reported: ${output}`);
   }
+  if (forbidden !== undefined && output.includes(forbidden)) {
+    throw new Error(`Local validation error exposed a protected value: ${output}`);
+  }
   if (output.includes("\u001b")) {
     throw new Error(`Local validation error retained terminal escapes: ${JSON.stringify(output)}`);
   }
@@ -121,8 +124,21 @@ async function expectLocalError(args, expected) {
 
 await expectLocalError(
   ["lists", "create-raw", "--list-json", "not-json"],
-  'Invalid value for "listJson". Expected valid JSON'
+  "Invalid JSON for --list-json. The value was not displayed."
 );
+
+const secretJson = '{"password":"super-secret",}';
+for (const args of [
+  ["profiles", "user-update", "--updates-json", secretJson],
+  ["profiles", "user-update", "-j", secretJson],
+  ["profiles", "user-update", `--updates-json=${secretJson}`],
+]) {
+  await expectLocalError(
+    args,
+    "Invalid JSON for --updates-json. The value was not displayed.",
+    "super-secret"
+  );
+}
 await expectLocalError(
   ["lists", "get", "--list-id", " "],
   'Invalid value for "listId": " " does not match pattern "\\S"'
