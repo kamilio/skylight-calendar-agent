@@ -118,7 +118,11 @@ export function loadDotEnv(envPath = path.resolve(process.cwd(), ".env")): void 
   const credentialMethod = externalCredentialMethod();
 
   for (const [key, value] of Object.entries(parsed)) {
-    if (process.env[key] === undefined && mayLoadDotEnvKey(key, credentialMethod)) {
+    if (
+      key.startsWith("SKYLIGHT_") &&
+      process.env[key] === undefined &&
+      mayLoadDotEnvKey(key, credentialMethod)
+    ) {
       process.env[key] = value;
     }
   }

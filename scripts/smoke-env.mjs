@@ -123,6 +123,15 @@ try {
   ) {
     throw new Error("Dotenv did not complete the exported email/password credential pair safely");
   }
+
+  const unrelatedPath = path.join(directory, "unrelated.env");
+  fs.writeFileSync(unrelatedPath, "TZ=Pacific/Kiritimati\nUNRELATED=value\n");
+  delete process.env.TZ;
+  delete process.env.UNRELATED;
+  loadDotEnv(unrelatedPath);
+  if (process.env.TZ !== undefined || process.env.UNRELATED !== undefined) {
+    throw new Error("Dotenv loaded unrelated process settings");
+  }
 } finally {
   server.close();
   fs.rmSync(directory, { recursive: true, force: true });
