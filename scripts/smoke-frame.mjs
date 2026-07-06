@@ -32,6 +32,18 @@ try {
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes('duplicate frame id "1"')) throw error;
   }
+  try {
+    const id = `safe\u202E${"x".repeat(100_000)}`;
+    await listCalendarFrames({
+      fetch: async () => Response.json({ data: [{ id }, { id }] }),
+    });
+    throw new Error("Oversized duplicate frame ids unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.length > 300 || message.includes("\u202E") || !message.includes("…")) {
+      throw new Error(`Duplicate frame error was not safely bounded: ${message.length}`);
+    }
+  }
   const normalizedFrames = await listCalendarFrames({
     fetch: async () => Response.json({ data: [{ id: " 42 " }] }),
   });

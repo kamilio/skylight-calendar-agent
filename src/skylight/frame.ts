@@ -96,7 +96,9 @@ function validateFramesListResponse(value: unknown): FramesListResponse {
       throw new UserError(`Frame list response contains an invalid frame id: ${detail}`);
     }
     if (ids.has(id)) {
-      throw new UserError(`Frame list response contains duplicate frame id ${JSON.stringify(id)}.`);
+      throw new UserError(
+        `Frame list response contains duplicate frame id ${JSON.stringify(displayValue(id))}.`
+      );
     }
     ids.add(id);
     normalizedData.push({ ...(frame as FramesListResponse["data"][number]), id });
