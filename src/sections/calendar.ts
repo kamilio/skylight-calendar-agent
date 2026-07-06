@@ -575,7 +575,7 @@ export const calendarGroup = defineGroup({
         failureRedirectUrl: nonBlankParam({ description: "Failure redirect URL", short: "f" }),
         email: S.Optional(emailParam({ description: "OAuth login-hint email", short: "e" })),
         twoWaySync: S.Optional(
-          S.Boolean({ description: "Enable two-way sync", default: true })
+          S.Boolean({ description: "Whether two-way sync is enabled", default: true })
         ),
       }),
       handler: async (ctx) => {

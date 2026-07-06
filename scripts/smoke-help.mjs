@@ -32,3 +32,17 @@ for (const path of collectPaths(root)) {
     throw new Error(`Help failed for ${path.join(" ")}: ${output}`);
   }
 }
+
+const oauthHelp = spawnSync(
+  process.execPath,
+  ["dist/cli.js", "calendar", "sync-oauth-url", "--help"],
+  { encoding: "utf8" }
+);
+const oauthOutput = `${oauthHelp.stdout ?? ""}${oauthHelp.stderr ?? ""}`;
+if (
+  !oauthOutput.includes("--no-two-way-sync") ||
+  !oauthOutput.includes("Whether two-way sync is enabled") ||
+  oauthOutput.includes("--no-two-way-sync               Enable two-way sync")
+) {
+  throw new Error(`OAuth boolean help is misleading: ${oauthOutput}`);
+}

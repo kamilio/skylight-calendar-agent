@@ -161,6 +161,17 @@ try {
     "--calendar-url",
     " https://example.com/family.ics ",
   ]);
+  await run([
+    "calendar",
+    "sync-oauth-url",
+    "--provider",
+    "google",
+    "--redirect-url",
+    "https://example.com/success",
+    "--failure-redirect-url",
+    "https://example.com/failure",
+    "--no-two-way-sync",
+  ]);
   await run(["photos", "list-paged", "--page-token", " page-2 "]);
   await run([
     "profiles",
@@ -686,6 +697,13 @@ const webcalSync = requests.find(
 );
 if (webcalSync?.body?.sync_url !== "https://example.com/family.ics") {
   throw new Error(`Webcal URL was not normalized: ${JSON.stringify(webcalSync?.body)}`);
+}
+
+const oauthRequest = requests.find((request) =>
+  request.url?.startsWith("/api/frames/42/calendars/authorization_request_url?")
+);
+if (new URL(oauthRequest?.url ?? "", "https://example.invalid").searchParams.get("two_way_sync") !== "false") {
+  throw new Error(`OAuth request did not disable two-way sync: ${oauthRequest?.url}`);
 }
 
 const pagedPhotos = requests.find((request) =>
