@@ -108,6 +108,18 @@ try {
       ["\u202E", "x".repeat(1_000)],
     ],
     [
+      () => {
+        const name = "X".repeat(100_000);
+        return sdk.tasks.choreCreateSimple({
+          summary: "Duplicate component",
+          start: "2026-07-05",
+          recurrenceRrule: `${name}=1;${name}=2;FREQ=DAILY`,
+        });
+      },
+      "recurrenceRrule must not repeat",
+      "X".repeat(1_000),
+    ],
+    [
       () => sdk.tasks.taskboxSave({ taskBoxItemJson: { id: Infinity, summary: "x" } }),
       "Numeric id must be a safe integer",
     ],

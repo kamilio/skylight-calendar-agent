@@ -284,7 +284,9 @@ export function normalizeRrule(value: string, label = "rrule"): string {
     }
     const name = (match[1] ?? "").toUpperCase();
     if (components.has(name)) {
-      throw new UserError(`${label} must not repeat the ${name} component.`);
+      throw new UserError(
+        `${label} must not repeat the ${displayErrorValue(name)} component.`
+      );
     }
     components.set(name, match[2] ?? "");
   }
