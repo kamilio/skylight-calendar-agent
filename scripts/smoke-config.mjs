@@ -29,6 +29,13 @@ for (const apiBaseUrl of [
   }
 }
 
+const mappedLoopback = getSkylightConfig({
+  SKYLIGHT_API_BASE: "http://[::ffff:127.0.0.1]:3000",
+}).apiBaseUrl;
+if (mappedLoopback !== "http://[::ffff:7f00:1]:3000") {
+  throw new Error(`IPv4-mapped loopback API base was not accepted: ${mappedLoopback}`);
+}
+
 const originalTimezone = process.env.TZ;
 process.env.TZ = "UTC";
 try {
@@ -45,6 +52,7 @@ for (const [key, value] of [
   ["SKYLIGHT_API_BASE", "not-a-url"],
   ["SKYLIGHT_API_BASE", "ftp://example.com"],
   ["SKYLIGHT_API_BASE", "http://example.com"],
+  ["SKYLIGHT_API_BASE", "http://[::ffff:8.8.8.8]"],
   ["SKYLIGHT_API_BASE", "https://example.com/unexpected/path"],
   ["SKYLIGHT_API_VERSION", "bad"],
   ["SKYLIGHT_API_VERSION", "2026-02-30"],

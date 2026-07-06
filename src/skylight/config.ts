@@ -47,6 +47,7 @@ function normalizeApiBaseUrl(value: string): string {
     hostname === "localhost" ||
     hostname.endsWith(".localhost") ||
     hostname === "[::1]" ||
+    /^\[::ffff:7f[0-9a-f]{2}:[0-9a-f]{1,4}\]$/i.test(hostname) ||
     /^127(?:\.\d{1,3}){3}$/.test(hostname);
   if (url.protocol === "http:" && !loopbackHost) {
     throw new UserError(
