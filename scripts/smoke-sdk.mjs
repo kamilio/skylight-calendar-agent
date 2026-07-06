@@ -267,6 +267,15 @@ try {
     ],
     [
       () =>
+        sdk.calendar.eventCreate({
+          summary: "Event",
+          startsAt: "2026-07-05",
+          invitedEmails: ["Person@example.com", "person@example.com"],
+        }),
+      "invitedEmails must not contain duplicates",
+    ],
+    [
+      () =>
         sdk.calendar.eventEdit({
           eventId: "event-1",
           invitedEmails: ["a@example.com", "a@example.com"],

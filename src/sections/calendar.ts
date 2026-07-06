@@ -25,7 +25,7 @@ import {
 function uniqueInvitedEmails(emails: readonly string[] | undefined): string[] | undefined {
   if (emails === undefined) return undefined;
   const normalized = emails.map((email) => email.trim());
-  if (new Set(normalized).size !== normalized.length) {
+  if (new Set(normalized.map((email) => email.toLowerCase())).size !== normalized.length) {
     throw new UserError("invitedEmails must not contain duplicates.");
   }
   return normalized;
