@@ -47,7 +47,8 @@ function hasOversizedCommandOrOptionName(arguments_: string[]): boolean {
     }
   }
 
-  return arguments_.slice(2).some((argument) => {
+  const optionStart = arguments_[1]?.startsWith("-") ? 1 : 2;
+  return arguments_.slice(optionStart).some((argument) => {
     if (argument.startsWith("--")) {
       const equalsIndex = argument.indexOf("=");
       const optionName = equalsIndex < 0 ? argument : argument.slice(0, equalsIndex);

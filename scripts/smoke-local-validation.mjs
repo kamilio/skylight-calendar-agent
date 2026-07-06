@@ -230,6 +230,7 @@ if (jsonOptionCount < 25) {
 const oversizedPrivateValue = `private-${"x".repeat(9_000)}`;
 for (const args of [
   ["x".repeat(1_000)],
+  ["lists", `--${"x".repeat(1_000)}`],
   ["lists", "create", `--${"x".repeat(1_000)}`],
   ["lists", "create", `-${"x".repeat(1_000)}`],
 ]) {
