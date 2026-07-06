@@ -228,6 +228,17 @@ if (jsonOptionCount < 25) {
   throw new Error(`JSON redaction sweep covered too few options: ${jsonOptionCount}`);
 }
 const oversizedPrivateValue = `private-${"x".repeat(9_000)}`;
+for (const args of [
+  ["x".repeat(1_000)],
+  ["lists", "create", `--${"x".repeat(1_000)}`],
+  ["lists", "create", `-${"x".repeat(1_000)}`],
+]) {
+  await expectLocalError(
+    args,
+    "Command and option names must not exceed 128 characters",
+    "x".repeat(200)
+  );
+}
 await expectLocalError(
   ["tasks", "chores", "--after", oversizedPrivateValue],
   'Expected a string with length at most 10',
