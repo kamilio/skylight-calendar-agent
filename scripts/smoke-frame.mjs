@@ -23,6 +23,21 @@ try {
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes("Frame list response contains an invalid frame id")) throw error;
   }
+  try {
+    await listCalendarFrames({
+      fetch: async () => Response.json({ data: [{ id: "1" }, { id: " 1 " }] }),
+    });
+    throw new Error("Duplicate frame ids unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes('duplicate frame id "1"')) throw error;
+  }
+  const normalizedFrames = await listCalendarFrames({
+    fetch: async () => Response.json({ data: [{ id: " 42 " }] }),
+  });
+  if (normalizedFrames.data[0]?.id !== "42") {
+    throw new Error(`Frame response id was not normalized: ${JSON.stringify(normalizedFrames)}`);
+  }
 } finally {
   if (originalAuthHeader === undefined) delete process.env.SKYLIGHT_AUTH_HEADER;
   else process.env.SKYLIGHT_AUTH_HEADER = originalAuthHeader;

@@ -122,6 +122,8 @@ function validateFramesListResponse(value: unknown): FramesListResponse {
     throw new UserError("Frame list response is missing a data array.");
   }
   const data = (value as { data: unknown[] }).data;
+  const ids = new Set<string>();
+  const normalizedData: FramesListResponse["data"] = [];
   for (const frame of data) {
     if (
       frame === null ||
@@ -131,8 +133,20 @@ function validateFramesListResponse(value: unknown): FramesListResponse {
     ) {
       throw new UserError("Frame list response contains an invalid frame id.");
     }
+    let id: string;
+    try {
+      id = normalizeIdentifier((frame as { id: string }).id, "Frame list response id");
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new UserError(`Frame list response contains an invalid frame id: ${detail}`);
+    }
+    if (ids.has(id)) {
+      throw new UserError(`Frame list response contains duplicate frame id ${JSON.stringify(id)}.`);
+    }
+    ids.add(id);
+    normalizedData.push({ ...(frame as FramesListResponse["data"][number]), id });
   }
-  return value as FramesListResponse;
+  return { ...(value as FramesListResponse), data: normalizedData };
 }
 
 export async function listCalendarFrames(ctx: {
