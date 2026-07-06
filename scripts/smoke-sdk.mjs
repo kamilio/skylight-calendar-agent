@@ -247,6 +247,18 @@ try {
   if (calls !== 4 || requestBody?.category_id !== "7" || requestBody?.role !== "display") {
     throw new Error(`Typed body identifier was not normalized: ${JSON.stringify(requestBody)}`);
   }
+
+  process.env.SKYLIGHT_TIMEZONE = "Not/A_Timezone";
+  process.env.SKYLIGHT_CALENDAR_URL = "not-a-url";
+  await sdk.lists.list({});
+  if (calls !== 5) throw new Error("Unrelated calendar settings blocked a list request");
+
+  await sdk.calendar.events({
+    dateMin: "2026-07-01",
+    dateMax: "2026-07-31",
+    timezone: "UTC",
+  });
+  if (calls !== 6) throw new Error("Explicit timezone did not isolate calendar settings");
 } finally {
   for (const key of Object.keys(process.env)) {
     if (!(key in savedEnv)) delete process.env[key];

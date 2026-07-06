@@ -1,4 +1,8 @@
-import { getSkylightConfig } from "../dist/skylight/config.js";
+import {
+  getSkylightConfig,
+  getSkylightFrameConfig,
+  getSkylightRequestConfig,
+} from "../dist/skylight/config.js";
 
 const normalized = getSkylightConfig({
   SKYLIGHT_API_BASE: "https://app.ourskylight.com/api/",
@@ -80,4 +84,23 @@ const calendarUrl = getSkylightConfig({
 });
 if (calendarUrl.calendarShareId !== "1234567") {
   throw new Error(`Calendar share id was not parsed: ${calendarUrl.calendarShareId}`);
+}
+
+const requestOnly = getSkylightRequestConfig({
+  SKYLIGHT_API_BASE: "https://example.com",
+  SKYLIGHT_TIMEZONE: "Not/A_Timezone",
+  SKYLIGHT_CALENDAR_URL: "not-a-url",
+});
+if (requestOnly.apiBaseUrl !== "https://example.com") {
+  throw new Error(`Request config was blocked by unrelated settings: ${requestOnly.apiBaseUrl}`);
+}
+
+const explicitFrame = getSkylightFrameConfig({
+  SKYLIGHT_API_BASE: "https://example.com",
+  SKYLIGHT_FRAME_ID: "42",
+  SKYLIGHT_TIMEZONE: "Not/A_Timezone",
+  SKYLIGHT_CALENDAR_URL: "not-a-url",
+});
+if (explicitFrame.frameId !== "42" || explicitFrame.calendarShareId !== null) {
+  throw new Error(`Explicit frame config used unrelated fallbacks: ${JSON.stringify(explicitFrame)}`);
 }

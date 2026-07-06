@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
-import { getSkylightConfig } from "./config.js";
+import { getSkylightRequestConfig } from "./config.js";
 import { terminalSafeText, truncateText } from "./text.js";
 import { assertWellFormedUnicode } from "./validation.js";
 
@@ -138,7 +138,7 @@ async function login(opts: {
   email: string;
   password: string;
 }): Promise<string> {
-  const { apiBaseUrl, requestTimeoutMs } = getSkylightConfig(opts.env);
+  const { apiBaseUrl, requestTimeoutMs } = getSkylightRequestConfig(opts.env);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
   try {

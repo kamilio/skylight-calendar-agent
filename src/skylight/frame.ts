@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
-import { getSkylightConfig } from "./config.js";
+import { getSkylightFrameConfig } from "./config.js";
 import { requestJson, SkylightRequestError } from "./http.js";
 import { terminalSafeText, truncateText } from "./text.js";
 import { assertJsonCompatible, normalizeIdentifier, pathSegment } from "./validation.js";
@@ -20,7 +20,7 @@ const frameResolutions = new WeakMap<
   Map<string, Promise<string>>
 >();
 
-function frameResolutionKey(config: ReturnType<typeof getSkylightConfig>): string {
+function frameResolutionKey(config: ReturnType<typeof getSkylightFrameConfig>): string {
   const env = process.env;
   return createHash("sha256")
     .update(
@@ -188,7 +188,7 @@ export async function resolveFrameId(ctx: {
 }): Promise<string> {
   validateCommandParams(ctx.params);
   validateIdentifierParams(ctx.params);
-  const config = getSkylightConfig();
+  const config = getSkylightFrameConfig();
   const fromEnv = config.frameId?.trim();
   if (fromEnv) return pathSegment(fromEnv, "SKYLIGHT_FRAME_ID");
   const key = frameResolutionKey(config);

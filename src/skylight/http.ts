@@ -1,5 +1,5 @@
 import { UserError } from "toolcraft";
-import { getSkylightConfig } from "./config.js";
+import { getSkylightRequestConfig } from "./config.js";
 import { getAuthorizationHeader, refreshAuthorizationHeader } from "./auth.js";
 import { terminalSafeText, truncateText } from "./text.js";
 import { assertJsonCompatible, assertWellFormedUnicode } from "./validation.js";
@@ -126,7 +126,7 @@ export async function requestJson<TResponse>(opts: {
   body?: unknown;
 }): Promise<TResponse> {
   const env = opts.env ?? process.env;
-  const config = getSkylightConfig(env);
+  const config = getSkylightRequestConfig(env);
   let serializedBody: string | undefined;
   if (opts.body !== undefined) {
     try {

@@ -1,5 +1,5 @@
 import { defineCommand, defineGroup, S, UserError } from "toolcraft";
-import { getSkylightConfig } from "../skylight/config.js";
+import { getSkylightTimezone } from "../skylight/config.js";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
@@ -101,8 +101,7 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
-        const config = getSkylightConfig();
-        const timezone = normalizeTimezone(ctx.params.timezone ?? config.timezone);
+        const timezone = normalizeTimezone(ctx.params.timezone ?? getSkylightTimezone());
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -132,8 +131,7 @@ export const calendarGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const config = getSkylightConfig();
-        const timezone = normalizeTimezone(ctx.params.timezone ?? config.timezone);
+        const timezone = normalizeTimezone(ctx.params.timezone ?? getSkylightTimezone());
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -159,8 +157,7 @@ export const calendarGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const config = getSkylightConfig();
-        const timezone = normalizeTimezone(ctx.params.timezone ?? config.timezone);
+        const timezone = normalizeTimezone(ctx.params.timezone ?? getSkylightTimezone());
         const frameId = await resolveFrameId(ctx);
         return requestJson({
           fetch: ctx.fetch,
@@ -237,8 +234,7 @@ export const calendarGroup = defineGroup({
         if ((ctx.params.lat === undefined) !== (ctx.params.lng === undefined)) {
           throw new UserError("lat and lng must be provided together.");
         }
-        const config = getSkylightConfig();
-        const timezone = normalizeTimezone(ctx.params.timezone ?? config.timezone);
+        const timezone = normalizeTimezone(ctx.params.timezone ?? getSkylightTimezone());
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined

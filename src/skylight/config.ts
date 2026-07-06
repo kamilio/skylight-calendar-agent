@@ -11,6 +11,14 @@ export interface SkylightConfig {
   requestTimeoutMs: number;
 }
 
+export type SkylightRequestConfig = Pick<
+  SkylightConfig,
+  "apiBaseUrl" | "apiVersion" | "requestTimeoutMs"
+>;
+
+export type SkylightFrameConfig = SkylightRequestConfig &
+  Pick<SkylightConfig, "calendarShareId" | "frameId">;
+
 function firstNonEmpty(value: string | undefined, label: string): string | null {
   if (value === undefined) return null;
   assertWellFormedUnicode(value, label);
@@ -54,6 +62,13 @@ function systemTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 }
 
+export function getSkylightTimezone(env: NodeJS.ProcessEnv = process.env): string {
+  return normalizeTimezone(
+    firstNonEmpty(env.SKYLIGHT_TIMEZONE, "SKYLIGHT_TIMEZONE") ?? systemTimezone(),
+    "SKYLIGHT_TIMEZONE"
+  );
+}
+
 function normalizeApiVersion(value: string): string {
   const version = value.trim();
   assertValidDate(version, "SKYLIGHT_API_VERSION");
@@ -94,10 +109,9 @@ function parseCalendarShareId(calendarUrl: string): string | null {
   return match[1] ?? null;
 }
 
-export function getSkylightConfig(env: NodeJS.ProcessEnv = process.env): SkylightConfig {
-  const calendarUrl = firstNonEmpty(env.SKYLIGHT_CALENDAR_URL, "SKYLIGHT_CALENDAR_URL") ?? "";
-  const calendarShareId = parseCalendarShareId(calendarUrl);
-
+export function getSkylightRequestConfig(
+  env: NodeJS.ProcessEnv = process.env
+): SkylightRequestConfig {
   const rawApiBaseUrl =
     firstNonEmpty(env.SKYLIGHT_API_BASE, "SKYLIGHT_API_BASE") ??
     "https://app.ourskylight.com";
@@ -107,15 +121,34 @@ export function getSkylightConfig(env: NodeJS.ProcessEnv = process.env): Skyligh
     apiVersion: normalizeApiVersion(
       firstNonEmpty(env.SKYLIGHT_API_VERSION, "SKYLIGHT_API_VERSION") ?? "2026-03-01"
     ),
-    calendarUrl,
-    calendarShareId,
-    frameId: firstNonEmpty(env.SKYLIGHT_FRAME_ID, "SKYLIGHT_FRAME_ID"),
-    timezone: normalizeTimezone(
-      firstNonEmpty(env.SKYLIGHT_TIMEZONE, "SKYLIGHT_TIMEZONE") ?? systemTimezone(),
-      "SKYLIGHT_TIMEZONE"
-    ),
     requestTimeoutMs: parseRequestTimeout(
       firstNonEmpty(env.SKYLIGHT_REQUEST_TIMEOUT_MS, "SKYLIGHT_REQUEST_TIMEOUT_MS")
     ),
+  };
+}
+
+export function getSkylightFrameConfig(
+  env: NodeJS.ProcessEnv = process.env
+): SkylightFrameConfig {
+  const requestConfig = getSkylightRequestConfig(env);
+  const frameId = firstNonEmpty(env.SKYLIGHT_FRAME_ID, "SKYLIGHT_FRAME_ID");
+  if (frameId !== null) return { ...requestConfig, calendarShareId: null, frameId };
+  const calendarUrl = firstNonEmpty(env.SKYLIGHT_CALENDAR_URL, "SKYLIGHT_CALENDAR_URL") ?? "";
+  return {
+    ...requestConfig,
+    calendarShareId: parseCalendarShareId(calendarUrl),
+    frameId: null,
+  };
+}
+
+export function getSkylightConfig(env: NodeJS.ProcessEnv = process.env): SkylightConfig {
+  const requestConfig = getSkylightRequestConfig(env);
+  const calendarUrl = firstNonEmpty(env.SKYLIGHT_CALENDAR_URL, "SKYLIGHT_CALENDAR_URL") ?? "";
+  return {
+    ...requestConfig,
+    calendarUrl,
+    calendarShareId: parseCalendarShareId(calendarUrl),
+    frameId: firstNonEmpty(env.SKYLIGHT_FRAME_ID, "SKYLIGHT_FRAME_ID"),
+    timezone: getSkylightTimezone(env),
   };
 }
