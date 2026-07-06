@@ -135,13 +135,13 @@ export function parseNonEmptyJsonObject(value: unknown, label: string): Record<s
   return parsed;
 }
 
-export function assertJsonCompatible(
+function jsonCompatibleSnapshot(
   value: unknown,
   label: string,
   active = new WeakSet<object>(),
-  visited = new WeakSet<object>(),
+  visited = new WeakMap<object, unknown>(),
   depth = 0
-): void {
+): unknown {
   if (depth > MAX_REQUEST_JSON_DEPTH) {
     throw new UserError(
       `JSON input exceeds the maximum nesting depth of ${MAX_REQUEST_JSON_DEPTH}.`
@@ -149,7 +149,7 @@ export function assertJsonCompatible(
   }
   if (typeof value === "string") {
     assertWellFormedUnicode(value, label);
-    return;
+    return value;
   }
   if (typeof value === "number") {
     if (!Number.isFinite(value)) {
@@ -158,7 +158,7 @@ export function assertJsonCompatible(
     if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
       throw new UserError(`${label} contains an unsafe integer; use a string to preserve it exactly.`);
     }
-    return;
+    return value;
   }
   if (
     value === undefined ||
@@ -168,24 +168,52 @@ export function assertJsonCompatible(
   ) {
     throw new UserError(`${label} contains a non-JSON value.`);
   }
-  if (value === null || typeof value !== "object") return;
+  if (value === null || typeof value !== "object") return value;
   if (active.has(value)) {
     throw new UserError(`${label} contains a circular reference.`);
   }
-  if (visited.has(value)) return;
+  if (visited.has(value)) return visited.get(value);
 
   active.add(value);
   try {
     if (Array.isArray(value)) {
-      for (let index = 0; index < value.length; index += 1) {
-        const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
-        if (descriptor === undefined) {
-          throw new UserError(`${label} contains a sparse array entry at index ${index}.`);
+      const lengthDescriptor = Object.getOwnPropertyDescriptor(value, "length");
+      if (
+        lengthDescriptor === undefined ||
+        !("value" in lengthDescriptor) ||
+        !Number.isInteger(lengthDescriptor.value) ||
+        lengthDescriptor.value < 0 ||
+        lengthDescriptor.value > 4_294_967_295
+      ) {
+        throw new UserError(`${label} contains a non-JSON array property.`);
+      }
+      const length = lengthDescriptor.value as number;
+      const ownKeys = Reflect.ownKeys(value);
+      const indexes = new Set<number>();
+      for (const key of ownKeys) {
+        if (key === "length") continue;
+        if (
+          typeof key !== "string" ||
+          !/^(?:0|[1-9]\d*)$/.test(key) ||
+          Number(key) >= length
+        ) {
+          throw new UserError(`${label} contains a non-JSON array property.`);
         }
-        if (!("value" in descriptor)) {
+        indexes.add(Number(key));
+      }
+      if (indexes.size !== length) {
+        let missingIndex = 0;
+        while (indexes.has(missingIndex)) missingIndex += 1;
+        throw new UserError(`${label} contains a sparse array entry at index ${missingIndex}.`);
+      }
+      const snapshot: unknown[] = new Array(length);
+      visited.set(value, snapshot);
+      for (let index = 0; index < length; index += 1) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+        if (descriptor === undefined || !("value" in descriptor)) {
           throw new UserError(`${label} contains a non-JSON accessor at index ${index}.`);
         }
-        assertJsonCompatible(
+        snapshot[index] = jsonCompatibleSnapshot(
           descriptor.value,
           appendJsonPath(label, `[${index}]`),
           active,
@@ -193,23 +221,16 @@ export function assertJsonCompatible(
           depth + 1
         );
       }
-      for (const key of Reflect.ownKeys(value)) {
-        if (
-          key === "length" ||
-          (typeof key === "string" &&
-            /^(?:0|[1-9]\d*)$/.test(key) &&
-            Number(key) < value.length)
-        ) {
-          continue;
-        }
-        throw new UserError(`${label} contains a non-JSON array property.`);
-      }
+      return snapshot;
     } else {
       const prototype = Object.getPrototypeOf(value);
       if (prototype !== Object.prototype && prototype !== null) {
         throw new UserError(`${label} contains a non-JSON object.`);
       }
-      for (const key of Reflect.ownKeys(value)) {
+      const snapshot: Record<string, unknown> = {};
+      visited.set(value, snapshot);
+      const ownKeys = Reflect.ownKeys(value);
+      for (const key of ownKeys) {
         if (typeof key !== "string") {
           throw new UserError(`${label} contains a non-JSON symbol property.`);
         }
@@ -219,14 +240,20 @@ export function assertJsonCompatible(
         if (descriptor === undefined || !descriptor.enumerable || !("value" in descriptor)) {
           throw new UserError(`${label} contains a non-JSON property ${displayKey}.`);
         }
-        assertJsonCompatible(
-          descriptor.value,
-          appendJsonPath(label, `.${displayKey}`),
-          active,
-          visited,
-          depth + 1
-        );
+        Object.defineProperty(snapshot, key, {
+          value: jsonCompatibleSnapshot(
+            descriptor.value,
+            appendJsonPath(label, `.${displayKey}`),
+            active,
+            visited,
+            depth + 1
+          ),
+          enumerable: true,
+          configurable: true,
+          writable: true,
+        });
       }
+      return snapshot;
     }
   } catch (error) {
     if (error instanceof UserError) throw error;
@@ -234,7 +261,14 @@ export function assertJsonCompatible(
   } finally {
     active.delete(value);
   }
-  visited.add(value);
+}
+
+export function snapshotJsonCompatible(value: unknown, label: string): unknown {
+  return jsonCompatibleSnapshot(value, label);
+}
+
+export function assertJsonCompatible(value: unknown, label: string): void {
+  snapshotJsonCompatible(value, label);
 }
 
 export function assertWellFormedUnicode(value: string, label: string): void {

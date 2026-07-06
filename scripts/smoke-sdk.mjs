@@ -453,6 +453,22 @@ try {
     throw new Error("Calendar include resources were not normalized");
   }
 
+  const descriptorBackedJson = new Proxy(
+    { label: "Descriptor SDK JSON" },
+    {
+      get(_target, property) {
+        if (property === "label" || property === "toJSON") {
+          throw new Error("proxy-get-secret");
+        }
+        return Reflect.get(_target, property);
+      },
+    }
+  );
+  await sdk.lists.createRaw({ listJson: descriptorBackedJson });
+  if (calls !== 8 || requestBody?.label !== "Descriptor SDK JSON") {
+    throw new Error(`SDK JSON was not serialized from descriptors: ${JSON.stringify(requestBody)}`);
+  }
+
   const failingSdk = createSkylightSDK({
     fetch: async () => new Response("failed", { status: 500 }),
   });

@@ -2,7 +2,7 @@ import { UserError } from "toolcraft";
 import { getSkylightRequestConfig } from "./config.js";
 import { getAuthorizationHeader, refreshAuthorizationHeader } from "./auth.js";
 import { terminalSafeText, truncateText } from "./text.js";
-import { assertJsonCompatible, assertWellFormedUnicode } from "./validation.js";
+import { assertWellFormedUnicode, snapshotJsonCompatible } from "./validation.js";
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
 const MAX_RESPONSE_JSON_DEPTH = 100;
@@ -88,8 +88,8 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
 }
 
 function serializeJsonBody(value: unknown): string | undefined {
-  assertJsonCompatible(value, "Request body");
-  return JSON.stringify(value, (key, child) => {
+  const snapshot = snapshotJsonCompatible(value, "Request body");
+  return JSON.stringify(snapshot, (key, child) => {
     const location = key.length === 0 ? "the root value" : `property ${JSON.stringify(key)}`;
     if (key.length > 0) assertWellFormedUnicode(key, "Request body property name");
     if (typeof child === "string") assertWellFormedUnicode(child, `Request body ${location}`);
