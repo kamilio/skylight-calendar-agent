@@ -128,14 +128,14 @@ try {
         sdk.tasks.choreCreateSimple({
           summary: "Oversized rule",
           start: "2026-07-05",
-          recurrenceRrule: `FREQ=safe\u202E${"x".repeat(100_000)}`,
+          recurrenceRrule: `FREQ=safe\u202E${"x".repeat(5_000)}`,
         }),
       "recurrenceRrule contains an invalid FREQ value",
       ["\u202E", "x".repeat(1_000)],
     ],
     [
       () => {
-        const name = "X".repeat(100_000);
+        const name = "X".repeat(3_500);
         return sdk.tasks.choreCreateSimple({
           summary: "Unsupported component",
           start: "2026-07-05",
@@ -484,7 +484,7 @@ try {
   try {
     await failingSdk.lists.itemsCreate({
       listId: "1",
-      labels: [`safe\u202E${"x".repeat(100_000)}`],
+      labels: [`safe\u202E${"x".repeat(5_000)}`],
     });
     throw new Error("Oversized partial failure unexpectedly succeeded");
   } catch (error) {

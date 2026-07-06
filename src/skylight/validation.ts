@@ -2,6 +2,8 @@ import { S, UserError } from "toolcraft";
 import { terminalSafeText, truncateText } from "./text.js";
 
 const DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
+const MAX_GENERAL_STRING_LENGTH = 8_192;
+const MAX_DATETIME_STRING_LENGTH = 1_024;
 const MAX_REQUEST_JSON_DEPTH = 100;
 const MAX_RRULE_INTEGER = 2_147_483_647;
 const RRULE_COMPONENTS = new Set([
@@ -35,6 +37,7 @@ export function dateParam(options: { description: string; short?: string }) {
   return S.String({
     ...options,
     format: "date",
+    maxLength: 10,
     pattern: DATE_PATTERN,
   });
 }
@@ -43,6 +46,7 @@ export function nonBlankParam(options: { description: string; short?: string }) 
   return S.String({
     ...options,
     minLength: 1,
+    maxLength: MAX_GENERAL_STRING_LENGTH,
     pattern: "\\S",
   });
 }
@@ -52,6 +56,7 @@ export function emailParam(options: { description: string; short?: string }) {
     ...options,
     format: "email",
     minLength: 3,
+    maxLength: 320,
     pattern: "^[^\\s@\\u0000-\\u001F\\u007F-\\u009F]+@[^\\s@\\u0000-\\u001F\\u007F-\\u009F]+$",
   });
 }
@@ -59,6 +64,7 @@ export function emailParam(options: { description: string; short?: string }) {
 export function timeParam(options: { description: string; short?: string }) {
   return S.String({
     ...options,
+    maxLength: 5,
     pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
   });
 }
@@ -66,6 +72,7 @@ export function timeParam(options: { description: string; short?: string }) {
 export function monthDayParam(options: { description: string; short?: string }) {
   return S.String({
     ...options,
+    maxLength: 5,
     pattern: "^(?:0[1-9]|1[0-2])/(?:0[1-9]|[12]\\d|3[01])$",
   });
 }
@@ -73,6 +80,7 @@ export function monthDayParam(options: { description: string; short?: string }) 
 export function dateOrDateTimeParam(options: { description: string; short?: string }) {
   return S.String({
     ...options,
+    maxLength: MAX_DATETIME_STRING_LENGTH,
     pattern:
       "^\\d{4}-\\d{2}-\\d{2}(?:T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?(?:Z|[+-]\\d{2}:\\d{2})?)?$",
   });
@@ -81,6 +89,7 @@ export function dateOrDateTimeParam(options: { description: string; short?: stri
 export function dateTimeParam(options: { description: string; short?: string }) {
   return S.String({
     ...options,
+    maxLength: MAX_DATETIME_STRING_LENGTH,
     pattern:
       "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$",
   });
@@ -339,6 +348,7 @@ export function assertAtLeastOneDefined(
 export function positiveIntegerStringParam(options: { description: string; short?: string }) {
   return S.String({
     ...options,
+    maxLength: 16,
     pattern: "^[1-9]\\d*$",
   });
 }

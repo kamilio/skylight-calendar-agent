@@ -227,6 +227,30 @@ for (const group of root.children) {
 if (jsonOptionCount < 25) {
   throw new Error(`JSON redaction sweep covered too few options: ${jsonOptionCount}`);
 }
+const oversizedPrivateValue = `private-${"x".repeat(9_000)}`;
+await expectLocalError(
+  ["tasks", "chores", "--after", oversizedPrivateValue],
+  'Expected a string with length at most 10',
+  "private-"
+);
+await expectLocalError(
+  ["profiles", "forgot-password", "--email", oversizedPrivateValue],
+  'Expected a string with length at most 320',
+  "private-"
+);
+await expectLocalError(
+  [
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Test",
+    "--start",
+    "2026-07-05",
+    "--recurrence-rrule",
+    " ".repeat(9_000),
+  ],
+  'Expected a string with length at most 8192'
+);
 await expectLocalError(
   ["lists", "get", "--list-id", " "],
   'Invalid value for "listId": " " does not match pattern "\\S"'
@@ -346,5 +370,5 @@ await expectLocalError(
     "--after-item-id",
     "999999999999999999999",
   ],
-  "afterItemId must be a positive safe integer"
+  'Expected a string with length at most 16'
 );

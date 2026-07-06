@@ -77,6 +77,7 @@ export const listsGroup = defineGroup({
           S.String({
             description: "Six-digit hex color, for example A8D4D3 or #A8D4D3",
             short: "c",
+            maxLength: 7,
             pattern: "^#?[0-9A-Fa-f]{6}$",
           })
         ),
