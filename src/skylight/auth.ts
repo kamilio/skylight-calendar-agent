@@ -173,6 +173,11 @@ export async function getAuthorizationHeader(opts: {
     ? safeCredentialValue(env.SKYLIGHT_BASIC_TOKEN, "SKYLIGHT_BASIC_TOKEN")
     : "";
   if (existing) {
+    if (/^basic\s/i.test(existing)) {
+      throw new UserError(
+        "SKYLIGHT_BASIC_TOKEN must contain only the base64 token, without the Basic prefix. Use SKYLIGHT_AUTH_HEADER for a complete header value."
+      );
+    }
     return `Basic ${existing}`;
   }
 
@@ -180,6 +185,11 @@ export async function getAuthorizationHeader(opts: {
     ? safeCredentialValue(env.SKYLIGHT_BEARER_TOKEN, "SKYLIGHT_BEARER_TOKEN")
     : "";
   if (bearer) {
+    if (/^bearer\s/i.test(bearer)) {
+      throw new UserError(
+        "SKYLIGHT_BEARER_TOKEN must contain only the token, without the Bearer prefix. Use SKYLIGHT_AUTH_HEADER for a complete header value."
+      );
+    }
     return `Bearer ${bearer}`;
   }
 

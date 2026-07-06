@@ -20,6 +20,19 @@ for (const [name, value] of [
   }
 }
 
+for (const [name, value, expected] of [
+  ["SKYLIGHT_BASIC_TOKEN", "Basic abc", "without the Basic prefix"],
+  ["SKYLIGHT_BEARER_TOKEN", "Bearer abc", "without the Bearer prefix"],
+]) {
+  try {
+    await getAuthorizationHeader({ fetch: globalThis.fetch, env: { [name]: value } });
+    throw new Error(`${name} with a duplicated scheme unexpectedly succeeded`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes(expected) || !message.includes("SKYLIGHT_AUTH_HEADER")) throw error;
+  }
+}
+
 try {
   await getAuthorizationHeader({
     fetch: globalThis.fetch,
