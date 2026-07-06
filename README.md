@@ -107,7 +107,7 @@ If the package is globally installed, set `command` directly to `skylight-calend
 
 ## SDK
 
-The package exports a pre-bound, fully typed SDK factory:
+The package exports a pre-bound SDK factory with typed command names and parameters:
 
 ```sh
 npm install skylight-calendar-agent
@@ -121,7 +121,7 @@ const lists = await skylight.lists.list({});
 const created = await skylight.lists.create({ label: "Weekend" });
 ```
 
-The SDK uses the same environment configuration as the CLI and accepts native JSON values for `*Json` parameters.
+The SDK uses the same environment configuration as the CLI and accepts native JSON values for `*Json` parameters. Response types are `unknown` because the upstream API is undocumented and may change.
 
 ### MCP safety
 
