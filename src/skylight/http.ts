@@ -45,18 +45,18 @@ function errorBodyExcerpt(value: string): string {
   return `${truncated}… [truncated ${sanitized.length - truncated.length} characters]`;
 }
 
-function safeOutputText(value: string): string {
+function safeOutputText(value: string, cliSafety: boolean): string {
   assertWellFormedUnicode(value, "Response JSON string");
-  const safe = terminalSafeText(value, preserveResponseLayout);
-  if (preserveResponseLayout || safe.length <= MAX_CLI_RESPONSE_STRING_LENGTH) return safe;
+  const safe = terminalSafeText(value, !cliSafety);
+  if (!cliSafety || safe.length <= MAX_CLI_RESPONSE_STRING_LENGTH) return safe;
   const truncated = truncateText(safe, MAX_CLI_RESPONSE_STRING_LENGTH);
   return `${truncated}… [truncated ${safe.length - truncated.length} characters]`;
 }
 
-function safeOutputKey(value: string): string {
+function safeOutputKey(value: string, cliSafety: boolean): string {
   assertWellFormedUnicode(value, "Response JSON property name");
   const safe = terminalSafeText(value);
-  if (preserveResponseLayout || safe.length <= MAX_CLI_RESPONSE_KEY_LENGTH) return safe;
+  if (!cliSafety || safe.length <= MAX_CLI_RESPONSE_KEY_LENGTH) return safe;
   const truncated = truncateText(safe, MAX_CLI_RESPONSE_KEY_LENGTH);
   return `${truncated}… [truncated ${safe.length - truncated.length} characters]`;
 }
@@ -78,13 +78,13 @@ function requestContextMessage(message: string, method: string, path: string): s
   return `${message} Request: ${method} ${path}.`;
 }
 
-function sanitizeJsonValue(value: unknown, depth = 0): unknown {
+function sanitizeJsonValue(value: unknown, depth = 0, cliSafety = !preserveResponseLayout): unknown {
   if (depth > MAX_RESPONSE_JSON_DEPTH) {
     throw new UserError(
       `Response JSON exceeds the maximum nesting depth of ${MAX_RESPONSE_JSON_DEPTH}.`
     );
   }
-  if (typeof value === "string") return safeOutputText(value);
+  if (typeof value === "string") return safeOutputText(value, cliSafety);
   if (typeof value === "number") {
     if (!Number.isFinite(value)) {
       throw new UserError("Response JSON contains a non-finite number.");
@@ -97,12 +97,12 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
     return value;
   }
   if (Array.isArray(value)) {
-    const limit = preserveResponseLayout
+    const limit = !cliSafety
       ? value.length
       : Math.min(value.length, MAX_CLI_RESPONSE_COLLECTION_ITEMS);
     const sanitized = value
       .slice(0, limit)
-      .map((child) => sanitizeJsonValue(child, depth + 1));
+      .map((child) => sanitizeJsonValue(child, depth + 1, cliSafety));
     if (limit < value.length) {
       sanitized.push(`… [truncated ${value.length - limit} items]`);
     }
@@ -112,16 +112,16 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
 
   const sanitized: Record<string, unknown> = {};
   const entries = Object.entries(value);
-  const limit = preserveResponseLayout
+  const limit = !cliSafety
     ? entries.length
     : Math.min(entries.length, MAX_CLI_RESPONSE_COLLECTION_ITEMS);
   for (const [key, child] of entries.slice(0, limit)) {
-    const safeKey = safeOutputKey(key);
+    const safeKey = safeOutputKey(key, cliSafety);
     if (Object.prototype.hasOwnProperty.call(sanitized, safeKey)) {
       throw new UserError("Response contained duplicate keys after terminal sanitization.");
     }
     Object.defineProperty(sanitized, safeKey, {
-      value: sanitizeJsonValue(child, depth + 1),
+      value: sanitizeJsonValue(child, depth + 1, cliSafety),
       enumerable: true,
       configurable: true,
       writable: true,
@@ -133,6 +133,10 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
     sanitized[marker] = true;
   }
   return sanitized;
+}
+
+export function sanitizeJsonResponseForOutput<T>(value: T): T {
+  return sanitizeJsonValue(value) as T;
 }
 
 function serializeJsonBody(value: unknown): string | undefined {
@@ -191,6 +195,7 @@ export async function requestJson<TResponse>(opts: {
     | ReadonlyArray<string | number | boolean>
   >;
   body?: unknown;
+  preserveResponseForProcessing?: boolean;
 }): Promise<TResponse> {
   const env = opts.env ?? process.env;
   const config = getSkylightRequestConfig(env);
@@ -311,7 +316,7 @@ export async function requestJson<TResponse>(opts: {
       );
     }
     try {
-      return sanitizeJsonValue(parsed) as TResponse;
+      return sanitizeJsonValue(parsed, 0, opts.preserveResponseForProcessing === true ? false : undefined) as TResponse;
     } catch (error) {
       if (isUserError(error)) {
         throw new UserError(requestContextMessage(errorMessage(error), opts.method, opts.path));

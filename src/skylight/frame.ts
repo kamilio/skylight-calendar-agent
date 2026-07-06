@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
 import { getSkylightFrameConfig } from "./config.js";
-import { requestJson, SkylightRequestError } from "./http.js";
+import {
+  requestJson,
+  sanitizeJsonResponseForOutput,
+  SkylightRequestError,
+} from "./http.js";
 import { errorMessage, terminalSafeText, truncateText } from "./text.js";
 import { assertJsonCompatible, normalizeIdentifier, pathSegment } from "./validation.js";
 
@@ -109,21 +113,25 @@ function validateFramesListResponse(value: unknown): FramesListResponse {
 
 export async function listCalendarFrames(ctx: {
   fetch: typeof globalThis.fetch;
-}): Promise<FramesListResponse> {
+}, options: { forDiscovery?: boolean } = {}): Promise<FramesListResponse> {
+  let frames: FramesListResponse;
   try {
-    return validateFramesListResponse(await requestJson<unknown>({
+    frames = validateFramesListResponse(await requestJson<unknown>({
       fetch: ctx.fetch,
       method: "GET",
       path: "/api/frames/calendar",
+      preserveResponseForProcessing: true,
     }));
   } catch (error) {
     if (!(error instanceof SkylightRequestError) || error.status !== 404) throw error;
-    return validateFramesListResponse(await requestJson<unknown>({
+    frames = validateFramesListResponse(await requestJson<unknown>({
       fetch: ctx.fetch,
       method: "GET",
       path: "/api/frames",
+      preserveResponseForProcessing: true,
     }));
   }
+  return options.forDiscovery === true ? frames : sanitizeJsonResponseForOutput(frames);
 }
 
 async function discoverFrameId(
@@ -146,7 +154,7 @@ async function discoverFrameId(
     }
   }
 
-  const frames = await listCalendarFrames(ctx);
+  const frames = await listCalendarFrames(ctx, { forDiscovery: true });
 
   const ids = (frames.data ?? [])
     .map((frame) => {

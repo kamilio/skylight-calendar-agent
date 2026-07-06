@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import http from "node:http";
 import { listCalendarFrames, resolveFrameId } from "../dist/skylight/frame.js";
+import { flattenResponseLayoutForCli } from "../dist/skylight/http.js";
 
 const originalAuthHeader = process.env.SKYLIGHT_AUTH_HEADER;
 process.env.SKYLIGHT_AUTH_HEADER = "Bearer test";
@@ -311,6 +312,43 @@ try {
     throw new Error(
       `Login changed the frame cache identity: ${JSON.stringify(authenticatedPaths)}`
     );
+  }
+
+  flattenResponseLayoutForCli();
+  process.env.SKYLIGHT_AUTH_HEADER = "Bearer test";
+  delete process.env.SKYLIGHT_EMAIL;
+  delete process.env.SKYLIGHT_PASSWORD;
+  delete process.env.SKYLIGHT_FRAME_ID;
+  delete process.env.SKYLIGHT_CALENDAR_URL;
+  const manyFrames = Array.from({ length: 600 }, (_, index) => ({ id: String(index + 1) }));
+  const displayedFrames = await listCalendarFrames({
+    fetch: async () => Response.json({ data: manyFrames }),
+  });
+  if (
+    displayedFrames.data.length !== 501 ||
+    displayedFrames.data.at(-1) !== "… [truncated 100 items]"
+  ) {
+    throw new Error("CLI frame listing was not bounded after validation");
+  }
+  try {
+    await resolveFrameId({
+      fetch: async () => Response.json({ data: manyFrames }),
+    });
+    throw new Error("Large ambiguous frame discovery unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Multiple frames found") || !message.includes("and 590 more")) {
+      throw error;
+    }
+  }
+  try {
+    await listCalendarFrames({
+      fetch: async () => Response.json({ data: [{ id: "bad\nid" }] }),
+    });
+    throw new Error("Control-character frame id unexpectedly succeeded in CLI mode");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Frame list response contains an invalid frame id")) throw error;
   }
 } finally {
   for (const key of Object.keys(process.env)) {
