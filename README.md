@@ -137,7 +137,7 @@ Dynamic IDs are encoded as individual URL path segments, and typed commands reje
 
 ```sh
 npm run dev:cli -- lists --help
-npm run dev:mcp
+npm run --silent dev:mcp
 npm run check
 ```
 

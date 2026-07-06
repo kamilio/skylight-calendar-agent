@@ -33,3 +33,10 @@ if (
 if (!readme.includes("It does not load `.env` automatically")) {
   throw new Error("README.md must distinguish SDK process.env usage from CLI dotenv loading");
 }
+
+if (
+  !readme.includes("npm run --silent dev:mcp") ||
+  fs.readFileSync("docs/commands.md", "utf8").includes("MCP (stdio): `npm run dev:mcp`")
+) {
+  throw new Error("MCP development docs must suppress npm banners on stdout");
+}

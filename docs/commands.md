@@ -14,7 +14,7 @@ Top-level sections (groups):
 Entry points:
 
 - CLI: `npm run dev:cli -- --help`
-- MCP (stdio): `npm run dev:mcp`
+- MCP (stdio): `npm run --silent dev:mcp` (silent mode keeps npm banners off the JSON-RPC stream)
 
 ## Examples
 
