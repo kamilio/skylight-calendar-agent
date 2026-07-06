@@ -152,6 +152,10 @@ await expectLocalError(
   "Command arguments must not contain terminal control characters"
 );
 await expectLocalError(
+  ["lists", "create", "--label", "safe\u202Etxt"],
+  "Command arguments must not contain terminal control characters"
+);
+await expectLocalError(
   [
     "tasks",
     "chore-create-simple",
