@@ -128,12 +128,12 @@ try {
       () => {
         const name = "X".repeat(100_000);
         return sdk.tasks.choreCreateSimple({
-          summary: "Duplicate component",
+          summary: "Unsupported component",
           start: "2026-07-05",
           recurrenceRrule: `${name}=1;${name}=2;FREQ=DAILY`,
         });
       },
-      "recurrenceRrule must not repeat",
+      "recurrenceRrule contains an unsupported recurrence component",
       "X".repeat(1_000),
     ],
     [
