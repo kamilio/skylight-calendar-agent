@@ -144,7 +144,7 @@ try {
     "--clear-categories",
     "--clear-invited-emails",
     "--timezone",
-    " UTC ",
+    " utc ",
     "--apply-to",
     " future ",
   ]);

@@ -12,6 +12,11 @@ if (normalized.apiBaseUrl !== "https://app.ourskylight.com") {
   throw new Error(`API base was not normalized: ${normalized.apiBaseUrl}`);
 }
 
+const canonicalTimezone = getSkylightConfig({ SKYLIGHT_TIMEZONE: " us/central " });
+if (canonicalTimezone.timezone !== "America/Chicago") {
+  throw new Error(`Timezone was not canonicalized: ${canonicalTimezone.timezone}`);
+}
+
 for (const apiBaseUrl of ["http://localhost:3000", "http://127.0.0.1:3000", "http://[::1]:3000"]) {
   if (getSkylightConfig({ SKYLIGHT_API_BASE: apiBaseUrl }).apiBaseUrl !== apiBaseUrl) {
     throw new Error(`Loopback API base was not accepted: ${apiBaseUrl}`);

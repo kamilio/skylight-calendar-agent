@@ -524,11 +524,12 @@ export function normalizeTimezone(value: string, label = "timezone"): string {
   }
   const normalized = value.trim();
   try {
-    new Intl.DateTimeFormat("en-US", { timeZone: normalized }).format();
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: normalized,
+    }).resolvedOptions().timeZone;
   } catch {
     throw new UserError(`${label} must be a valid IANA timezone.`);
   }
-  return normalized;
 }
 
 export function assertValidTimezone(value: string, label = "timezone"): void {
