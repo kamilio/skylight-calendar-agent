@@ -30,6 +30,7 @@ const child = spawn(process.execPath, ["dist/mcp.js"], {
 
 let buffer = "";
 const responseMessages = new Map();
+const responseWaiters = new Map();
 child.stdout.setEncoding("utf8");
 child.stdout.on("data", (chunk) => {
   buffer += chunk;
@@ -39,12 +40,31 @@ child.stdout.on("data", (chunk) => {
     buffer = buffer.slice(newlineIndex + 1);
     if (!line) continue;
     const message = JSON.parse(line);
-    if (message.id !== undefined) responseMessages.set(message.id, message);
+    if (message.id !== undefined) {
+      responseMessages.set(message.id, message);
+      responseWaiters.get(message.id)?.(message);
+      responseWaiters.delete(message.id);
+    }
   }
 });
 
 function send(message) {
   child.stdin.write(`${JSON.stringify(message)}\n`);
+}
+
+function waitForResponse(id) {
+  const existing = responseMessages.get(id);
+  if (existing !== undefined) return Promise.resolve(existing);
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      responseWaiters.delete(id);
+      reject(new Error(`MCP response ${id} timed out`));
+    }, 5_000);
+    responseWaiters.set(id, (message) => {
+      clearTimeout(timeout);
+      resolve(message);
+    });
+  });
 }
 
 try {
@@ -58,7 +78,7 @@ try {
       clientInfo: { name: "smoke", version: "1.0.0" },
     },
   });
-  await new Promise((resolve) => setTimeout(resolve, 50));
+  await waitForResponse(1);
   send({ jsonrpc: "2.0", method: "notifications/initialized", params: {} });
   send({
     jsonrpc: "2.0",
@@ -79,10 +99,10 @@ try {
     },
   });
 
-  for (let attempt = 0; attempt < 100 && responseMessages.size < 3; attempt += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-  const responseMessage = responseMessages.get(2);
+  const [responseMessage, invalidJsonResponse] = await Promise.all([
+    waitForResponse(2),
+    waitForResponse(3),
+  ]);
   if (responseMessage?.error) {
     throw new Error(`Native MCP JSON call failed: ${JSON.stringify(responseMessage.error)}`);
   }
@@ -90,7 +110,6 @@ try {
   if (requestBody?.label !== "Native MCP JSON") {
     throw new Error(`Native MCP JSON body was not preserved: ${JSON.stringify(requestBody)}`);
   }
-  const invalidJsonResponse = responseMessages.get(3);
   const invalidJsonMessage = invalidJsonResponse?.error?.message;
   if (
     typeof invalidJsonMessage !== "string" ||

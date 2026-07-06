@@ -31,6 +31,16 @@ child.stdout.on("data", (chunk) => {
           `MCP version ${message.result?.serverInfo?.version} does not match package ${packageVersion}`
         );
       }
+      child.stdin.write(
+        `${JSON.stringify({
+          jsonrpc: "2.0",
+          method: "notifications/initialized",
+          params: {},
+        })}\n`
+      );
+      child.stdin.write(
+        `${JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} })}\n`
+      );
       continue;
     }
     if (message.id !== 2) continue;
@@ -167,19 +177,6 @@ child.stdin.write(
     },
   })}\n`
 );
-
-setTimeout(() => {
-  child.stdin.write(
-    `${JSON.stringify({
-      jsonrpc: "2.0",
-      method: "notifications/initialized",
-      params: {},
-    })}\n`
-  );
-  child.stdin.write(
-    `${JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} })}\n`
-  );
-}, 50);
 
 await new Promise((resolve, reject) => {
   child.on("exit", (code, signal) => {
