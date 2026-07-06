@@ -29,7 +29,7 @@ const child = spawn(process.execPath, ["dist/mcp.js"], {
 });
 
 let buffer = "";
-let responseMessage;
+const responseMessages = new Map();
 child.stdout.setEncoding("utf8");
 child.stdout.on("data", (chunk) => {
   buffer += chunk;
@@ -39,7 +39,7 @@ child.stdout.on("data", (chunk) => {
     buffer = buffer.slice(newlineIndex + 1);
     if (!line) continue;
     const message = JSON.parse(line);
-    if (message.id === 2) responseMessage = message;
+    if (message.id !== undefined) responseMessages.set(message.id, message);
   }
 });
 
@@ -69,16 +69,37 @@ try {
       arguments: { list_json: { label: "Native MCP JSON" } },
     },
   });
+  send({
+    jsonrpc: "2.0",
+    id: 3,
+    method: "tools/call",
+    params: {
+      name: "skylight__profiles__user_update",
+      arguments: { updates_json: "super-secret" },
+    },
+  });
 
-  for (let attempt = 0; attempt < 100 && responseMessage === undefined; attempt += 1) {
+  for (let attempt = 0; attempt < 100 && responseMessages.size < 3; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
+  const responseMessage = responseMessages.get(2);
   if (responseMessage?.error) {
     throw new Error(`Native MCP JSON call failed: ${JSON.stringify(responseMessage.error)}`);
   }
   if (responseMessage?.result === undefined) throw new Error("Native MCP JSON call timed out");
   if (requestBody?.label !== "Native MCP JSON") {
     throw new Error(`Native MCP JSON body was not preserved: ${JSON.stringify(requestBody)}`);
+  }
+  const invalidJsonResponse = responseMessages.get(3);
+  const invalidJsonMessage = invalidJsonResponse?.error?.message;
+  if (
+    typeof invalidJsonMessage !== "string" ||
+    !invalidJsonMessage.includes("The value was not displayed.")
+  ) {
+    throw new Error(`MCP invalid JSON error was not safely reported: ${invalidJsonMessage}`);
+  }
+  if (invalidJsonMessage.includes("super-secret")) {
+    throw new Error(`MCP invalid JSON error exposed a protected value: ${invalidJsonMessage}`);
   }
 } finally {
   child.kill();

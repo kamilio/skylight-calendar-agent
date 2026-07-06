@@ -65,9 +65,8 @@ export function parseJsonValue(value: unknown, label: string): unknown {
   if (typeof value !== "string") return value;
   try {
     return JSON.parse(value) as unknown;
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new UserError(`${label} must be valid JSON: ${detail}`);
+  } catch {
+    throw new UserError(`${label} must be valid JSON. The value was not displayed.`);
   }
 }
 

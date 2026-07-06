@@ -18,7 +18,12 @@ try {
     },
   });
 
-  for (const [invoke, expected] of [
+  for (const [invoke, expected, forbidden] of [
+    [
+      () => sdk.profiles.userUpdate({ updatesJson: "super-secret" }),
+      "updatesJson must be valid JSON. The value was not displayed.",
+      "super-secret",
+    ],
     [() => sdk.photos.list({ page: Infinity }), 'Invalid value for "page"'],
     [
       () => sdk.rewards.pointsAdd({ categoryIds: ["1"], points: Number.NaN }),
@@ -192,6 +197,9 @@ try {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (!message.includes(expected)) throw error;
+      if (forbidden !== undefined && message.includes(forbidden)) {
+        throw new Error(`Invalid SDK call exposed a protected value: ${message}`);
+      }
     }
   }
   if (calls !== 0) throw new Error(`Invalid SDK calls reached fetch ${calls} times`);
