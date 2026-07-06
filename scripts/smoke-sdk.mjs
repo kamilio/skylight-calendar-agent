@@ -120,6 +120,42 @@ try {
       "X".repeat(1_000),
     ],
     [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Invalid week number",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=MONTHLY;BYWEEKNO=2",
+        }),
+      "recurrenceRrule may only use BYWEEKNO with FREQ=YEARLY",
+    ],
+    [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Invalid month day",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=WEEKLY;BYMONTHDAY=2",
+        }),
+      "recurrenceRrule must not use BYMONTHDAY with FREQ=WEEKLY",
+    ],
+    [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Invalid ordinal weekday",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=WEEKLY;BYDAY=2MO",
+        }),
+      "recurrenceRrule may only use numeric BYDAY values",
+    ],
+    [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Invalid set position",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=MONTHLY;BYSETPOS=-1",
+        }),
+      "recurrenceRrule must use BYSETPOS with another BY rule component",
+    ],
+    [
       () => sdk.tasks.taskboxSave({ taskBoxItemJson: { id: Infinity, summary: "x" } }),
       "Numeric id must be a safe integer",
     ],

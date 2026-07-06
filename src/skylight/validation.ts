@@ -410,8 +410,54 @@ export function normalizeRrule(value: string, label = "rrule"): string {
       );
     }
   }
+
+  const normalizedFrequency = frequency.toUpperCase();
+  if (components.has("BYWEEKNO") && normalizedFrequency !== "YEARLY") {
+    throw new UserError(`${label} may only use BYWEEKNO with FREQ=YEARLY.`);
+  }
+  if (
+    components.has("BYYEARDAY") &&
+    ["DAILY", "WEEKLY", "MONTHLY"].includes(normalizedFrequency)
+  ) {
+    throw new UserError(
+      `${label} must not use BYYEARDAY with FREQ=${normalizedFrequency}.`
+    );
+  }
+  if (components.has("BYMONTHDAY") && normalizedFrequency === "WEEKLY") {
+    throw new UserError(`${label} must not use BYMONTHDAY with FREQ=WEEKLY.`);
+  }
+  const hasNumericByDay = byDay
+    ?.split(",")
+    .some((item) => /^[+-]?\d/.test(item));
+  if (
+    hasNumericByDay === true &&
+    !["MONTHLY", "YEARLY"].includes(normalizedFrequency)
+  ) {
+    throw new UserError(
+      `${label} may only use numeric BYDAY values with FREQ=MONTHLY or FREQ=YEARLY.`
+    );
+  }
+  if (
+    hasNumericByDay === true &&
+    normalizedFrequency === "YEARLY" &&
+    components.has("BYWEEKNO")
+  ) {
+    throw new UserError(
+      `${label} must not combine numeric BYDAY values with BYWEEKNO in a yearly rule.`
+    );
+  }
+  if (
+    components.has("BYSETPOS") &&
+    ![...components.keys()].some((name) => name.startsWith("BY") && name !== "BYSETPOS")
+  ) {
+    throw new UserError(`${label} must use BYSETPOS with another BY rule component.`);
+  }
+
   const uppercaseValues = new Set(["FREQ", "BYDAY", "WKST", "UNTIL"]);
-  const normalizedRule = [...components]
+  const normalizedRule = [
+    ["FREQ", frequency] as const,
+    ...[...components].filter(([name]) => name !== "FREQ"),
+  ]
     .map(([name, componentValue]) =>
       `${name}=${uppercaseValues.has(name) ? componentValue.toUpperCase() : componentValue}`
     )
