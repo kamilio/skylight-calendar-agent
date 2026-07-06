@@ -4,6 +4,7 @@ import { requestJson } from "../skylight/http.js";
 import {
   assertValidDate,
   assertValidDateRange,
+  boundedStringParam,
   dateParam,
   jsonParam,
   nonBlankParam,
@@ -108,7 +109,7 @@ export const tasksGroup = defineGroup({
             maximum: Number.MAX_SAFE_INTEGER,
           })
         ),
-        emojiIcon: S.Optional(S.String({ description: "Emoji icon" })),
+        emojiIcon: S.Optional(boundedStringParam({ description: "Emoji icon" })),
         recurrenceRrule: S.Optional(
           nonBlankParam({
             description: "RRULE string (e.g. FREQ=DAILY;INTERVAL=1)",

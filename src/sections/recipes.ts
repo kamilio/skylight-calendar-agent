@@ -3,6 +3,7 @@ import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
   assertAtLeastOneDefined,
+  boundedStringParam,
   nonBlankParam,
   normalizeIdentifier,
   pathSegment,
@@ -51,7 +52,7 @@ export const recipesGroup = defineGroup({
       params: S.Object({
         categoryId: nonBlankParam({ description: "Meal category id", short: "c" }),
         summary: nonBlankParam({ description: "Recipe title", short: "s" }),
-        description: S.Optional(S.String({ description: "Recipe description" })),
+        description: S.Optional(boundedStringParam({ description: "Recipe description" })),
       }),
       handler: async (ctx) => {
         const categoryId = normalizeIdentifier(ctx.params.categoryId, "categoryId");
@@ -77,7 +78,7 @@ export const recipesGroup = defineGroup({
         recipeId: nonBlankParam({ description: "Recipe id", short: "i" }),
         categoryId: S.Optional(nonBlankParam({ description: "Meal category id", short: "c" })),
         summary: S.Optional(nonBlankParam({ description: "Recipe title", short: "s" })),
-        description: S.Optional(S.String({ description: "Recipe description" })),
+        description: S.Optional(boundedStringParam({ description: "Recipe description" })),
       }),
       handler: async (ctx) => {
         assertAtLeastOneDefined(

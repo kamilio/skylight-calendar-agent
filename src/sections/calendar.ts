@@ -7,6 +7,8 @@ import {
   assertValidDateOrDateTime,
   assertValidDateOrDateTimeRange,
   assertValidDateRange,
+  boundedArrayParam,
+  boundedStringParam,
   dateOrDateTimeParam,
   dateParam,
   emailParam,
@@ -96,9 +98,9 @@ export const calendarGroup = defineGroup({
       params: S.Object({
         dateMin: dateParam({ description: "YYYY-MM-DD", short: "a" }),
         dateMax: dateParam({ description: "YYYY-MM-DD", short: "b" }),
-        timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
+        timezone: S.Optional(boundedStringParam({ description: "IANA timezone", short: "z" })),
         include: S.Optional(
-          S.String({
+          boundedStringParam({
             description: "Comma-separated related resources; defaults to categories,calendar_account,event_notification_setting",
           })
         ),
@@ -128,9 +130,9 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         searchQuery: nonBlankParam({ description: "Search query", short: "q" }),
-        timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
+        timezone: S.Optional(boundedStringParam({ description: "IANA timezone", short: "z" })),
         include: S.Optional(
-          S.String({
+          boundedStringParam({
             description: "Comma-separated related resources; defaults to categories,calendar_account,event_notification_setting",
           })
         ),
@@ -157,9 +159,9 @@ export const calendarGroup = defineGroup({
       description: "List countdown events",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
+        timezone: S.Optional(boundedStringParam({ description: "IANA timezone", short: "z" })),
         include: S.Optional(
-          S.String({ description: "Comma-separated related resources to include" })
+          boundedStringParam({ description: "Comma-separated related resources to include" })
         ),
       }),
       handler: async (ctx) => {
@@ -215,16 +217,16 @@ export const calendarGroup = defineGroup({
           nonBlankParam({ description: "Calendar account id" })
         ),
         categoryIds: S.Optional(
-          S.Array(nonBlankParam({ description: "Category id" }), { description: "Category ids" })
+          boundedArrayParam(nonBlankParam({ description: "Category id" }), { description: "Category ids" })
         ),
         invitedEmails: S.Optional(
-          S.Array(emailParam({ description: "Invite email" }), { description: "Invited emails" })
+          boundedArrayParam(emailParam({ description: "Invite email" }), { description: "Invited emails" })
         ),
-        location: S.Optional(S.String({ description: "Location" })),
+        location: S.Optional(boundedStringParam({ description: "Location" })),
         lat: S.Optional(S.Number({ description: "Latitude", minimum: -90, maximum: 90 })),
         lng: S.Optional(S.Number({ description: "Longitude", minimum: -180, maximum: 180 })),
-        description: S.Optional(S.String({ description: "Description" })),
-        timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
+        description: S.Optional(boundedStringParam({ description: "Description" })),
+        timezone: S.Optional(boundedStringParam({ description: "IANA timezone", short: "z" })),
         notificationSettingJson: S.Optional(
           jsonParam({ description: "event_notification_setting_attributes JSON", short: "n" })
         ),
@@ -306,7 +308,7 @@ export const calendarGroup = defineGroup({
         ),
         rrule: S.Optional(nonBlankParam({ description: "RRULE string" })),
         categoryIds: S.Optional(
-          S.Array(nonBlankParam({ description: "Category id" }), {
+          boundedArrayParam(nonBlankParam({ description: "Category id" }), {
             description: "Category ids",
           })
         ),
@@ -314,19 +316,19 @@ export const calendarGroup = defineGroup({
           S.Boolean({ description: "Remove all event categories" })
         ),
         invitedEmails: S.Optional(
-          S.Array(emailParam({ description: "Invite email" }), {
+          boundedArrayParam(emailParam({ description: "Invite email" }), {
             description: "Invited emails",
           })
         ),
         clearInvitedEmails: S.Optional(
           S.Boolean({ description: "Remove all invited emails" })
         ),
-        location: S.Optional(S.String({ description: "Location" })),
+        location: S.Optional(boundedStringParam({ description: "Location" })),
         lat: S.Optional(S.Number({ description: "Latitude", minimum: -90, maximum: 90 })),
         lng: S.Optional(S.Number({ description: "Longitude", minimum: -180, maximum: 180 })),
-        description: S.Optional(S.String({ description: "Description" })),
+        description: S.Optional(boundedStringParam({ description: "Description" })),
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
-        timezone: S.Optional(S.String({ description: "IANA timezone", short: "z" })),
+        timezone: S.Optional(boundedStringParam({ description: "IANA timezone", short: "z" })),
         notificationSettingJson: S.Optional(
           jsonParam({ description: "event_notification_setting_attributes JSON", short: "n" })
         ),
@@ -494,7 +496,7 @@ export const calendarGroup = defineGroup({
       params: S.Object({
         accountId: nonBlankParam({ description: "Calendar account id", short: "i" }),
         activeCalendars: S.Optional(
-          S.Array(nonBlankParam({ description: "Calendar id" }), {
+          boundedArrayParam(nonBlankParam({ description: "Calendar id" }), {
             description: "Active calendars",
           })
         ),

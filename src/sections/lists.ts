@@ -4,6 +4,8 @@ import { requestJson, sanitizeJsonResponseForOutput } from "../skylight/http.js"
 import { errorMessage, terminalSafeText, truncateText } from "../skylight/text.js";
 import {
   assertWellFormedUnicode,
+  boundedArrayParam,
+  boundedStringParam,
   jsonParam,
   nonBlankParam,
   parseNonEmptyJsonObject,
@@ -182,7 +184,7 @@ export const listsGroup = defineGroup({
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         label: nonBlankParam({ description: "To-do text", short: "l" }),
-        section: S.Optional(S.String({ description: "Optional section name", short: "s" })),
+        section: S.Optional(boundedStringParam({ description: "Optional section name", short: "s" })),
       }),
       handler: async (ctx) => {
         const section = normalizeSection(ctx.params.section);
@@ -204,11 +206,11 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
-        labels: S.Array(nonBlankParam({ description: "To-do text" }), {
+        labels: boundedArrayParam(nonBlankParam({ description: "To-do text" }), {
           description: "One or more to-do items",
           minItems: 1,
         }),
-        section: S.Optional(S.String({ description: "Optional section name", short: "s" })),
+        section: S.Optional(boundedStringParam({ description: "Optional section name", short: "s" })),
       }),
       handler: async (ctx) => {
         const section = normalizeSection(ctx.params.section);
@@ -329,11 +331,11 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
-        itemIds: S.Array(nonBlankParam({ description: "List item id" }), {
+        itemIds: boundedArrayParam(nonBlankParam({ description: "List item id" }), {
           description: "Item ids",
           minItems: 1,
         }),
-        section: S.Optional(S.String({ description: "Section name (omit to clear)" })),
+        section: S.Optional(boundedStringParam({ description: "Section name (omit to clear)" })),
       }),
       handler: async (ctx) => {
         const itemIds = uniqueIdentifiers(ctx.params.itemIds, "itemIds");
@@ -356,7 +358,7 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
-        itemIds: S.Array(nonBlankParam({ description: "List item id" }), {
+        itemIds: boundedArrayParam(nonBlankParam({ description: "List item id" }), {
           description: "Item ids",
           minItems: 1,
         }),

@@ -4,6 +4,7 @@ import { requestJson } from "../skylight/http.js";
 import {
   assertValidDateTime,
   assertValidDateTimeRange,
+  boundedArrayParam,
   dateTimeParam,
   jsonParam,
   nonBlankParam,
@@ -173,7 +174,7 @@ export const rewardsGroup = defineGroup({
       description: "Adjust reward points for categories (negative values subtract)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        categoryIds: S.Array(nonBlankParam({ description: "Category id" }), {
+        categoryIds: boundedArrayParam(nonBlankParam({ description: "Category id" }), {
           description: "Category ids",
           minItems: 1,
         }),

@@ -1,8 +1,9 @@
-import { S, UserError } from "toolcraft";
+import { S, UserError, type AnySchema } from "toolcraft";
 import { errorMessage, terminalSafeText, truncateText } from "./text.js";
 
 const DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
 const MAX_GENERAL_STRING_LENGTH = 8_192;
+const MAX_GENERAL_ARRAY_ITEMS = 500;
 const MAX_DATETIME_STRING_LENGTH = 1_024;
 const MAX_REQUEST_JSON_DEPTH = 100;
 const MAX_RRULE_INTEGER = 2_147_483_647;
@@ -62,6 +63,23 @@ export function nonBlankParam(options: { description: string; short?: string }) 
     minLength: 1,
     maxLength: MAX_GENERAL_STRING_LENGTH,
     pattern: "\\S",
+  });
+}
+
+export function boundedStringParam(options: { description: string; short?: string }) {
+  return S.String({
+    ...options,
+    maxLength: MAX_GENERAL_STRING_LENGTH,
+  });
+}
+
+export function boundedArrayParam<TItem extends AnySchema>(
+  item: TItem,
+  options: { description: string; short?: string; minItems?: number }
+) {
+  return S.Array(item, {
+    ...options,
+    maxItems: MAX_GENERAL_ARRAY_ITEMS,
   });
 }
 

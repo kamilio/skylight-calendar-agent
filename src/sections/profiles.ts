@@ -120,6 +120,8 @@ export const profilesGroup = defineGroup({
             description: "Current password; omit to use SKYLIGHT_PASSWORD",
             short: "p",
             minLength: 1,
+            maxLength: 16_384,
+            secret: true,
           })
         ),
       }),

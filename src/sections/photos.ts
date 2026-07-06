@@ -2,6 +2,8 @@ import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
+  boundedArrayParam,
+  boundedStringParam,
   jsonParam,
   nonBlankParam,
   normalizeIdentifier,
@@ -81,7 +83,7 @@ export const photosGroup = defineGroup({
       description: "Bulk delete messages",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageIds: S.Array(nonBlankParam({ description: "Message id" }), {
+        messageIds: boundedArrayParam(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
           minItems: 1,
         }),
@@ -102,11 +104,11 @@ export const photosGroup = defineGroup({
       description: "Copy messages to other frames",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        messageIds: S.Array(nonBlankParam({ description: "Message id" }), {
+        messageIds: boundedArrayParam(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
           minItems: 1,
         }),
-        newFrameIds: S.Array(nonBlankParam({ description: "New frame id" }), {
+        newFrameIds: boundedArrayParam(nonBlankParam({ description: "New frame id" }), {
           description: "Target frame ids",
           minItems: 1,
         }),
@@ -280,7 +282,7 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
-        caption: S.String({ description: "New caption", short: "c" }),
+        caption: boundedStringParam({ description: "New caption", short: "c" }),
       }),
       handler: async (ctx) => {
         const frameId = await resolveFrameId(ctx);
@@ -471,11 +473,11 @@ export const photosGroup = defineGroup({
       description: "Add messages to album(s)",
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
-        albumIds: S.Array(nonBlankParam({ description: "Album id" }), {
+        albumIds: boundedArrayParam(nonBlankParam({ description: "Album id" }), {
           description: "Album ids",
           minItems: 1,
         }),
-        messageIds: S.Array(nonBlankParam({ description: "Message id" }), {
+        messageIds: boundedArrayParam(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
           minItems: 1,
         }),
@@ -501,7 +503,7 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({
         albumId: nonBlankParam({ description: "Album id", short: "i" }),
-        messageIds: S.Array(nonBlankParam({ description: "Message id" }), {
+        messageIds: boundedArrayParam(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
           minItems: 1,
         }),
