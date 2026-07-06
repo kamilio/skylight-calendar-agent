@@ -35,6 +35,11 @@ function mayLoadDotEnvKey(key: string, method: ExternalCredentialMethod): boolea
   return method === "email-password" && (key === "SKYLIGHT_EMAIL" || key === "SKYLIGHT_PASSWORD");
 }
 
+function mayReplaceBlankCredential(key: string, value: string | undefined): boolean {
+  if (!CREDENTIAL_NAMES.has(key) || value === undefined) return false;
+  return key === "SKYLIGHT_PASSWORD" ? value.length === 0 : value.trim().length === 0;
+}
+
 function parseQuotedValue(
   value: string,
   quote: '"' | "'"
@@ -124,7 +129,7 @@ export function loadDotEnv(envPath = path.resolve(process.cwd(), ".env")): void 
   for (const [key, value] of Object.entries(parsed)) {
     if (
       key.startsWith("SKYLIGHT_") &&
-      process.env[key] === undefined &&
+      (process.env[key] === undefined || mayReplaceBlankCredential(key, process.env[key])) &&
       mayLoadDotEnvKey(key, credentialMethod)
     ) {
       process.env[key] = value;

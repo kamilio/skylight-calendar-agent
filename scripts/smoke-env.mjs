@@ -150,6 +150,15 @@ try {
     throw new Error("Whitespace-only exported credentials blocked a dotenv fallback");
   }
 
+  delete process.env.SKYLIGHT_BEARER_TOKEN;
+  process.env.SKYLIGHT_AUTH_HEADER = "";
+  const blankSameKeyPath = path.join(directory, "blank-same-key.env");
+  fs.writeFileSync(blankSameKeyPath, "SKYLIGHT_AUTH_HEADER=Bearer same-key-fallback\n");
+  loadDotEnv(blankSameKeyPath);
+  if (process.env.SKYLIGHT_AUTH_HEADER !== "Bearer same-key-fallback") {
+    throw new Error("Blank exported credentials blocked the same dotenv credential key");
+  }
+
   const whitespacePasswordPath = path.join(directory, "whitespace-password.env");
   fs.writeFileSync(
     whitespacePasswordPath,
