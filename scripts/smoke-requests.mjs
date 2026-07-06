@@ -187,6 +187,7 @@ try {
     "2026-07-01",
     "--before",
     "2026-07-31",
+    "--no-include-late",
   ]);
   await run([
     "calendar",
@@ -743,10 +744,10 @@ if (
 
 const choresList = requests.find((request) => request.url?.includes("/chores?"));
 if (
-  !choresList?.url?.includes("include_late=true") ||
+  !choresList?.url?.includes("include_late=false") ||
   !choresList?.url?.includes("include_up_for_grabs=false")
 ) {
-  throw new Error(`Chore list did not send captured defaults: ${choresList?.url}`);
+  throw new Error(`Chore list did not preserve explicit boolean values: ${choresList?.url}`);
 }
 
 const recipeDelete = requests.find((request) =>

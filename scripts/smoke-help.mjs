@@ -46,3 +46,15 @@ if (
 ) {
   throw new Error(`OAuth boolean help is misleading: ${oauthOutput}`);
 }
+
+const choresHelp = spawnSync(process.execPath, ["dist/cli.js", "tasks", "chores", "--help"], {
+  encoding: "utf8",
+});
+const choresOutput = `${choresHelp.stdout ?? ""}${choresHelp.stderr ?? ""}`;
+if (
+  !choresOutput.includes("--no-include-late") ||
+  !choresOutput.includes("Whether to include late chores") ||
+  choresOutput.includes("--no-include-late        Include late chores")
+) {
+  throw new Error(`Chores boolean help is misleading: ${choresOutput}`);
+}

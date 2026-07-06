@@ -26,7 +26,7 @@ export const tasksGroup = defineGroup({
         after: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "a" })),
         before: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "b" })),
         includeLate: S.Boolean({
-          description: "Include late chores",
+          description: "Whether to include late chores",
           short: "l",
           default: true,
         }),
