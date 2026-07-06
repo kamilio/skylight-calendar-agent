@@ -66,7 +66,7 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
 
   const sanitized: Record<string, unknown> = {};
   for (const [key, child] of Object.entries(value)) {
-    const safeKey = safeOutputText(key);
+    const safeKey = terminalSafeText(key);
     if (Object.prototype.hasOwnProperty.call(sanitized, safeKey)) {
       throw new UserError("Response contained duplicate keys after terminal sanitization.");
     }
