@@ -37,7 +37,12 @@ function retryAfterHint(response: Response): string {
   const retryAfter = response.headers.get("retry-after");
   if (retryAfter === null || retryAfter.trim().length === 0) return "";
   const safeRetryAfter = terminalSafeText(retryAfter).trim();
-  return safeRetryAfter.length === 0 ? "" : ` Retry after ${safeRetryAfter}.`;
+  if (safeRetryAfter.length === 0) return "";
+  const displayRetryAfter =
+    safeRetryAfter.length <= 200
+      ? safeRetryAfter
+      : `${truncateText(safeRetryAfter, 200)}…`;
+  return ` Retry after ${displayRetryAfter}.`;
 }
 
 function requestContextMessage(message: string, method: string, path: string): string {

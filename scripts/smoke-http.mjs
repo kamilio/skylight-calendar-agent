@@ -276,6 +276,25 @@ try {
 
 try {
   await requestJson({
+    fetch: async () =>
+      new Response("rate limited", {
+        status: 429,
+        headers: { "retry-after": "x".repeat(10_000) },
+      }),
+    env,
+    method: "GET",
+    path: "/api/test",
+  });
+  throw new Error("Oversized retry hint unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.length > 500 || !message.includes("Retry after") || !message.includes("…")) {
+    throw new Error(`Retry hint was not safely bounded: ${message.length}`);
+  }
+}
+
+try {
+  await requestJson({
     fetch: async () => new Response("\u001b[31mred\u001b[0m\rreplace", { status: 500 }),
     env,
     method: "GET",
