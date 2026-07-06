@@ -159,7 +159,7 @@ try {
     "calendar",
     "webcal-sync",
     "--calendar-url",
-    " https://example.com/family.ics ",
+    " HTTPS://EXAMPLE.COM:443/family calendar.ics ",
   ]);
   await run([
     "calendar",
@@ -676,7 +676,7 @@ if (
 const webcalSync = requests.find(
   (request) => request.url === "/api/frames/42/webcal_accounts"
 );
-if (webcalSync?.body?.sync_url !== "https://example.com/family.ics") {
+if (webcalSync?.body?.sync_url !== "https://example.com/family%20calendar.ics") {
   throw new Error(`Webcal URL was not normalized: ${JSON.stringify(webcalSync?.body)}`);
 }
 

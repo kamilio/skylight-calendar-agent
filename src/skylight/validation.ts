@@ -566,7 +566,7 @@ export function normalizeAbsoluteUrl(
   if (url.username.length > 0 || url.password.length > 0) {
     throw new UserError(`${label} must not include embedded username or password credentials.`);
   }
-  return normalized;
+  return url.toString();
 }
 
 export function assertValidAbsoluteUrl(
