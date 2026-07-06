@@ -131,6 +131,7 @@ const secretJson = '{"password":"super-secret",}';
 for (const args of [
   ["profiles", "user-update", "--updates-json", secretJson],
   ["profiles", "user-update", "-j", secretJson],
+  ["profiles", "user-update", `-j${secretJson}`],
   ["profiles", "user-update", `--updates-json=${secretJson}`],
 ]) {
   await expectLocalError(

@@ -42,6 +42,11 @@ function invalidJsonOption(arguments_: string[]): string | null {
           ? arguments_[index + 1]
           : argument.startsWith(inlinePrefix)
             ? argument.slice(inlinePrefix.length)
+            : option.startsWith("-") &&
+                !option.startsWith("--") &&
+                argument.startsWith(option) &&
+                argument.length > option.length
+              ? argument.slice(option.length)
             : undefined;
       if (value === undefined) continue;
       try {
