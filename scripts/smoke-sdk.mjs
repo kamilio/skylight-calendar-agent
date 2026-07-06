@@ -170,6 +170,18 @@ try {
         }),
       "invitedEmails must not contain duplicates",
     ],
+    [
+      () => sdk.lists.get({ listId: "\n42" }),
+      "listId must not contain control characters",
+    ],
+    [
+      () => sdk.calendar.webcalSync({ calendarUrl: "https://example.com/calendar.ics\n" }),
+      "calendarUrl must not contain control characters",
+    ],
+    [
+      () => sdk.calendar.eventEdit({ eventId: "event-1", rrule: "\nFREQ=DAILY" }),
+      "rrule must not contain control characters",
+    ],
   ]) {
     try {
       await invoke();

@@ -114,13 +114,14 @@ export function assertWellFormedUnicode(value: string, label: string): void {
 }
 
 export function normalizeIdentifier(value: string | number, label: string): string {
-  const normalized = String(value).trim();
+  const original = String(value);
+  assertWellFormedUnicode(original, label);
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(original)) {
+    throw new UserError(`${label} must not contain control characters.`);
+  }
+  const normalized = original.trim();
   if (normalized.length === 0) {
     throw new UserError(`${label} must not be blank.`);
-  }
-  assertWellFormedUnicode(normalized, label);
-  if (/[\u0000-\u001F\u007F-\u009F]/.test(normalized)) {
-    throw new UserError(`${label} must not contain control characters.`);
   }
   return normalized;
 }
@@ -162,6 +163,10 @@ export function parsePositiveSafeInteger(value: string, label: string): number {
 }
 
 export function normalizeRrule(value: string, label = "rrule"): string {
+  assertWellFormedUnicode(value, label);
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(value)) {
+    throw new UserError(`${label} must not contain control characters.`);
+  }
   const trimmed = value.trim();
   const rule = trimmed.replace(/^RRULE:/i, "").trim();
   if (rule.length === 0) {
@@ -303,11 +308,11 @@ export function assertValidDateOrDateTimeRange(
 }
 
 export function normalizeTimezone(value: string, label = "timezone"): string {
-  const normalized = value.trim();
-  assertWellFormedUnicode(normalized, label);
-  if (/[\u0000-\u001F\u007F-\u009F]/.test(normalized)) {
+  assertWellFormedUnicode(value, label);
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(value)) {
     throw new UserError(`${label} must not contain control characters.`);
   }
+  const normalized = value.trim();
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: normalized }).format();
   } catch {
@@ -325,11 +330,11 @@ export function normalizeAbsoluteUrl(
   label: string,
   allowedProtocols?: ReadonlyArray<string>
 ): string {
-  const normalized = value.trim();
-  assertWellFormedUnicode(normalized, label);
-  if (/[\u0000-\u001F\u007F-\u009F]/.test(normalized)) {
+  assertWellFormedUnicode(value, label);
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(value)) {
     throw new UserError(`${label} must not contain control characters.`);
   }
+  const normalized = value.trim();
   let url: URL;
   try {
     url = new URL(normalized);
