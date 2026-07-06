@@ -167,6 +167,9 @@ export function normalizeRrule(value: string, label = "rrule"): string {
   if (rule.length === 0) {
     throw new UserError(`${label} must contain a recurrence rule.`);
   }
+  if (!/(?:^|;)FREQ=[^;:\s]+(?:;|$)/i.test(rule)) {
+    throw new UserError(`${label} must include a non-empty FREQ component.`);
+  }
   return `RRULE:${rule}`;
 }
 

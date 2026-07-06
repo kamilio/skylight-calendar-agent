@@ -140,6 +140,19 @@ await expectLocalError(
 );
 await expectLocalError(
   [
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Test",
+    "--start",
+    "2026-07-05",
+    "--recurrence-rrule",
+    "INTERVAL=2",
+  ],
+  "recurrenceRrule must include a non-empty FREQ component"
+);
+await expectLocalError(
+  [
     "lists",
     "item-move",
     "--list-id",

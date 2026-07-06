@@ -38,6 +38,15 @@ try {
       "Numeric id must be a safe integer",
     ],
     [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Invalid recurrence",
+          start: "2026-07-05",
+          recurrenceRrule: "INTERVAL=2",
+        }),
+      "recurrenceRrule must include a non-empty FREQ component",
+    ],
+    [
       () => sdk.tasks.taskboxSave({ taskBoxItemJson: { id: Infinity, summary: "x" } }),
       "Numeric id must be a safe integer",
     ],
