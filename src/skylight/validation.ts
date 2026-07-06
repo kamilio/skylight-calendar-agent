@@ -484,13 +484,17 @@ export function normalizeRrule(value: string, label = "rrule"): string {
         `${label} contains an invalid UNTIL value: ${JSON.stringify(displayErrorValue(until))}.`
       );
     }
-    if (
-      match[4] !== undefined &&
-      (Number(match[4]) > 23 || Number(match[5]) > 59 || Number(match[6]) > 60)
-    ) {
-      throw new UserError(
-        `${label} contains an invalid UNTIL value: ${JSON.stringify(displayErrorValue(until))}.`
-      );
+    if (match[4] !== undefined) {
+      try {
+        assertValidDateTime(
+          `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}Z`,
+          `${label} UNTIL`
+        );
+      } catch {
+        throw new UserError(
+          `${label} contains an invalid UNTIL value: ${JSON.stringify(displayErrorValue(until))}.`
+        );
+      }
     }
   }
 
@@ -648,6 +652,17 @@ export function assertValidDateOrDateTime(value: string, label: string): void {
     !Number.isFinite(dateOrDateTimeOrder(value).seconds)
   ) {
     throw new UserError(`${label} must be a valid ISO datetime or YYYY-MM-DD date.`);
+  }
+  if (second === 60) {
+    const leapSecondEnd = new Date(dateOrDateTimeOrder(value).seconds * 1_000);
+    if (
+      leapSecondEnd.getUTCDate() !== 1 ||
+      leapSecondEnd.getUTCHours() !== 0 ||
+      leapSecondEnd.getUTCMinutes() !== 0 ||
+      leapSecondEnd.getUTCSeconds() !== 0
+    ) {
+      throw new UserError(`${label} must be a valid ISO datetime or YYYY-MM-DD date.`);
+    }
   }
 }
 

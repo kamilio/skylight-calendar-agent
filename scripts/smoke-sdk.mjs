@@ -72,6 +72,15 @@ try {
     [
       () =>
         sdk.tasks.choreCreateSimple({
+          summary: "Invalid leap second",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=DAILY;UNTIL=20260115T123460Z",
+        }),
+      "recurrenceRrule contains an invalid UNTIL value",
+    ],
+    [
+      () =>
+        sdk.tasks.choreCreateSimple({
           summary: "Invalid weekday",
           start: "2026-07-05",
           recurrenceRrule: "FREQ=WEEKLY;BYDAY=XX",

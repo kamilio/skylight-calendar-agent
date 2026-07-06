@@ -91,6 +91,14 @@ for (const value of ["2026-01-01T00:00+14:01", "2026-01-01T00:00-23:59"]) {
 }
 
 assertValidDateTime("2026-12-31T23:59:60Z", "redeemedAtMax");
+assertValidDateTime("2027-01-01T00:59:60+01:00", "redeemedAtMax");
+try {
+  assertValidDateTime("2026-01-15T12:34:60Z", "redeemedAtMax");
+  throw new Error("Non-boundary leap second unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("must be a valid ISO datetime")) throw error;
+}
 try {
   assertValidDateTime("2026-12-31T23:59Z", "redeemedAtMax");
   throw new Error("RFC3339 datetime without seconds unexpectedly succeeded");
