@@ -29,6 +29,15 @@ try {
     [() => sdk.photos.list({ page: Infinity }), 'Invalid value for "page"'],
     [
       () =>
+        sdk.calendar.events({
+          dateMin: "\u001b[31m\r\n",
+          dateMax: "2026-07-31",
+        }),
+      'Invalid value for "dateMin"',
+      ["\u001b", "\r", "\n"],
+    ],
+    [
+      () =>
         sdk.rewards.list({
           redeemedAtMin: "2026-12-31T23:59:60Z",
           redeemedAtMax: "2026-12-31T23:59:59Z",
