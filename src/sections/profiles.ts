@@ -323,7 +323,7 @@ export const profilesGroup = defineGroup({
       description: "Redeem a share token for this frame",
       scope: ["cli", "sdk"],
       params: S.Object({
-        shareToken: nonBlankParam({ description: "Share token", short: "t" }),
+        shareToken: nonBlankParam({ description: "Share token", short: "t", secret: true }),
       }),
       handler: async (ctx) => {
         const shareToken = normalizeIdentifier(ctx.params.shareToken, "shareToken");

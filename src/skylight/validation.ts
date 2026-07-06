@@ -59,7 +59,7 @@ export function dateParam(options: { description: string; short?: string }) {
   });
 }
 
-export function nonBlankParam(options: { description: string; short?: string }) {
+export function nonBlankParam(options: { description: string; short?: string; secret?: boolean }) {
   return S.String({
     ...options,
     minLength: 1,

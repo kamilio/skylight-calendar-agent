@@ -36,6 +36,14 @@ if (
   throw new Error("profiles.update-email.password must be bounded and marked secret");
 }
 
+const frameShareToken = root.children
+  .find((group) => group.name === "profiles")
+  ?.children.find((command) => command.name === "frame-share-token-redeem")
+  ?.params.shape.shareToken;
+if (frameShareToken?.kind !== "string" || frameShareToken.secret !== true) {
+  throw new Error("profiles.frame-share-token-redeem.shareToken must be marked secret");
+}
+
 function camelCase(value) {
   return value.replace(/-([a-z])/g, (_match, letter) => letter.toUpperCase());
 }
