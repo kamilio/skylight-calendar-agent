@@ -85,8 +85,13 @@ export function parseJsonValue(value: unknown, label: string): unknown {
 
 export function parseJsonObject(value: unknown, label: string): Record<string, unknown> {
   const parsed = parseJsonValue(value, label);
-  if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object") {
-    throw new UserError(`${label} must be a JSON object.`);
+  try {
+    if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object") {
+      throw new UserError(`${label} must be a JSON object.`);
+    }
+  } catch (error) {
+    if (error instanceof UserError) throw error;
+    throw new UserError(`${label} could not be inspected as JSON.`);
   }
   return parsed as Record<string, unknown>;
 }
@@ -96,16 +101,26 @@ export function parseJsonContainer(
   label: string
 ): Record<string, unknown> | unknown[] {
   const parsed = parseJsonValue(value, label);
-  if (parsed === null || typeof parsed !== "object") {
-    throw new UserError(`${label} must be a JSON array or object.`);
+  try {
+    if (parsed === null || typeof parsed !== "object") {
+      throw new UserError(`${label} must be a JSON array or object.`);
+    }
+  } catch (error) {
+    if (error instanceof UserError) throw error;
+    throw new UserError(`${label} could not be inspected as JSON.`);
   }
   return parsed as Record<string, unknown> | unknown[];
 }
 
 export function parseNonEmptyJsonObject(value: unknown, label: string): Record<string, unknown> {
   const parsed = parseJsonObject(value, label);
-  if (Object.keys(parsed).length === 0) {
-    throw new UserError(`${label} must contain at least one field.`);
+  try {
+    if (Object.keys(parsed).length === 0) {
+      throw new UserError(`${label} must contain at least one field.`);
+    }
+  } catch (error) {
+    if (error instanceof UserError) throw error;
+    throw new UserError(`${label} could not be inspected as JSON.`);
   }
   return parsed;
 }

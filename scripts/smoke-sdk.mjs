@@ -242,6 +242,14 @@ try {
       "super-secret",
     ],
     [
+      () =>
+        sdk.lists.createRaw({
+          listJson: new Proxy({}, { ownKeys: () => { throw new Error("root-secret"); } }),
+        }),
+      "listJson could not be inspected as JSON",
+      "root-secret",
+    ],
+    [
       () => sdk.lists.createRaw({ listJson: { label: "\uD800" } }),
       'Command parameter "listJson"."label" contains invalid Unicode',
     ],
