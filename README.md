@@ -133,6 +133,8 @@ The destructive CLI commands `profiles user-delete`, `profiles frame-hide`, `pro
 
 Dynamic IDs are encoded as individual URL path segments, and typed commands reject blank names, impossible dates, reversed date ranges, invalid page numbers, empty bulk operations, and non-object payloads where a JSON object is required.
 
+For terminal safety, the human-readable CLI flattens response line breaks/tabs and marks exceptionally large response fields or collections as truncated (500 properties/items, 500-character property names, or 10,000-character strings). These CLI-only layout and size limits do not apply to SDK or MCP responses.
+
 ## Development
 
 ```sh

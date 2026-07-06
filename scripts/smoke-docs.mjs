@@ -38,6 +38,14 @@ if (!readme.includes("It does not load `.env` automatically")) {
 }
 
 if (
+  !readme.includes("500 properties/items") ||
+  !readme.includes("10,000-character strings") ||
+  !readme.includes("do not apply to SDK or MCP responses")
+) {
+  throw new Error("README.md must explain CLI-only response safety limits");
+}
+
+if (
   !readme.includes("npm run --silent dev:mcp") ||
   fs.readFileSync("docs/commands.md", "utf8").includes("MCP (stdio): `npm run dev:mcp`")
 ) {
