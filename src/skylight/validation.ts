@@ -89,6 +89,10 @@ export function parseJsonObject(value: unknown, label: string): Record<string, u
     if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object") {
       throw new UserError(`${label} must be a JSON object.`);
     }
+    const prototype = Object.getPrototypeOf(parsed);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new UserError(`${label} must be a JSON object.`);
+    }
   } catch (error) {
     if (error instanceof UserError) throw error;
     throw new UserError(`${label} could not be inspected as JSON.`);
@@ -104,6 +108,12 @@ export function parseJsonContainer(
   try {
     if (parsed === null || typeof parsed !== "object") {
       throw new UserError(`${label} must be a JSON array or object.`);
+    }
+    if (!Array.isArray(parsed)) {
+      const prototype = Object.getPrototypeOf(parsed);
+      if (prototype !== Object.prototype && prototype !== null) {
+        throw new UserError(`${label} must be a JSON array or object.`);
+      }
     }
   } catch (error) {
     if (error instanceof UserError) throw error;

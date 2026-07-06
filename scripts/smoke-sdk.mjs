@@ -197,6 +197,14 @@ try {
       'Command parameter "listJson"."metadata"."values" contains a non-JSON object',
     ],
     [
+      () => sdk.lists.createRaw({ listJson: new Date("2026-07-05T12:00:00Z") }),
+      "listJson must be a JSON object",
+    ],
+    [
+      () => sdk.calendar.sourceCalendarLinkProfiles({ calendarId: "1", categorizationsJson: new Map() }),
+      "categorizationsJson must be a JSON array or object",
+    ],
+    [
       () => {
         const key = `safe\u202E${"x".repeat(100_000)}`;
         return sdk.lists.createRaw({ listJson: { [key]: Number.NaN } });
