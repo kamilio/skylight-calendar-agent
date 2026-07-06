@@ -124,6 +124,23 @@ try {
     throw new Error("Dotenv did not complete the exported email/password credential pair safely");
   }
 
+  const blankCredentialPath = path.join(directory, "blank-credential.env");
+  fs.writeFileSync(blankCredentialPath, "SKYLIGHT_BEARER_TOKEN=dotenv-fallback\n");
+  for (const name of [
+    "SKYLIGHT_AUTH_HEADER",
+    "SKYLIGHT_BASIC_TOKEN",
+    "SKYLIGHT_BEARER_TOKEN",
+    "SKYLIGHT_EMAIL",
+    "SKYLIGHT_PASSWORD",
+  ]) {
+    delete process.env[name];
+  }
+  process.env.SKYLIGHT_AUTH_HEADER = "   ";
+  loadDotEnv(blankCredentialPath);
+  if (process.env.SKYLIGHT_BEARER_TOKEN !== "dotenv-fallback") {
+    throw new Error("Whitespace-only exported credentials blocked a dotenv fallback");
+  }
+
   const unrelatedPath = path.join(directory, "unrelated.env");
   fs.writeFileSync(unrelatedPath, "TZ=Pacific/Kiritimati\nUNRELATED=value\n");
   delete process.env.TZ;

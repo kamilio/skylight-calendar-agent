@@ -11,13 +11,17 @@ const CREDENTIAL_NAMES = new Set([
 
 type ExternalCredentialMethod = "header" | "basic" | "bearer" | "email-password" | null;
 
+function hasNonBlankValue(value: string | undefined): boolean {
+  return (value?.trim().length ?? 0) > 0;
+}
+
 function externalCredentialMethod(): ExternalCredentialMethod {
-  if ((process.env.SKYLIGHT_AUTH_HEADER?.length ?? 0) > 0) return "header";
-  if ((process.env.SKYLIGHT_BASIC_TOKEN?.length ?? 0) > 0) return "basic";
-  if ((process.env.SKYLIGHT_BEARER_TOKEN?.length ?? 0) > 0) return "bearer";
+  if (hasNonBlankValue(process.env.SKYLIGHT_AUTH_HEADER)) return "header";
+  if (hasNonBlankValue(process.env.SKYLIGHT_BASIC_TOKEN)) return "basic";
+  if (hasNonBlankValue(process.env.SKYLIGHT_BEARER_TOKEN)) return "bearer";
   if (
-    (process.env.SKYLIGHT_EMAIL?.length ?? 0) > 0 ||
-    (process.env.SKYLIGHT_PASSWORD?.length ?? 0) > 0
+    hasNonBlankValue(process.env.SKYLIGHT_EMAIL) ||
+    hasNonBlankValue(process.env.SKYLIGHT_PASSWORD)
   ) {
     return "email-password";
   }
