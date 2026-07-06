@@ -55,6 +55,7 @@ for (const [env, expected] of [
   [{ SKYLIGHT_BEARER_TOKEN: "abc,def" }, "valid Bearer token characters"],
   [{ SKYLIGHT_AUTH_HEADER: "Bearer 😀" }, "valid Bearer token characters"],
   [{ SKYLIGHT_AUTH_HEADER: "Bearer abc,def" }, "valid Bearer token characters"],
+  [{ SKYLIGHT_AUTH_HEADER: "Bearer\u00A0abc" }, "complete Basic or Bearer header"],
 ]) {
   try {
     await getAuthorizationHeader({ fetch: globalThis.fetch, env });
@@ -63,6 +64,14 @@ for (const [env, expected] of [
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes(expected)) throw error;
   }
+}
+
+const normalizedHeader = await getAuthorizationHeader({
+  fetch: globalThis.fetch,
+  env: { SKYLIGHT_AUTH_HEADER: "bearer  abc" },
+});
+if (normalizedHeader !== "Bearer abc") {
+  throw new Error(`Authorization header spacing was not normalized: ${normalizedHeader}`);
 }
 
 try {

@@ -116,18 +116,19 @@ function bearerToken(value: string, label: string): string {
 }
 
 function authorizationHeader(value: string): string {
-  const match = /^(Basic|Bearer)\s+(\S+)$/i.exec(value);
+  const match = /^(Basic|Bearer) +(\S+)$/i.exec(value);
   if (!match) {
     throw new UserError(
       "SKYLIGHT_AUTH_HEADER must be a complete Basic or Bearer header with no whitespace in the token."
     );
   }
-  if (match[1]?.toLowerCase() === "basic") {
+  const scheme = match[1]?.toLowerCase() === "basic" ? "Basic" : "Bearer";
+  if (scheme === "Basic") {
     basicToken(match[2] ?? "", "SKYLIGHT_AUTH_HEADER Basic token");
   } else {
     bearerToken(match[2] ?? "", "SKYLIGHT_AUTH_HEADER Bearer token");
   }
-  return value;
+  return `${scheme} ${match[2] ?? ""}`;
 }
 
 function loginEmail(value: string | undefined): string {
