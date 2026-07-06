@@ -19,6 +19,10 @@ Credential precedence is `SKYLIGHT_AUTH_HEADER`, then `SKYLIGHT_BASIC_TOKEN`, th
 
 In `.env`, quote values that contain `#` or intentional leading/trailing spaces. Double-quoted values support `\\`, `\\"`, `\\n`, `\\r`, and `\\t` escapes.
 
+The CLI and MCP entry points load `.env` from the current working directory. The SDK reads `process.env` but does not load `.env` automatically; load it in the host application first when needed.
+
+An explicitly exported credential method takes precedence over credential methods in `.env`. While exported credentials are present, `SKYLIGHT_API_BASE` is not loaded from `.env`; export the custom API base explicitly if that combination is intentional. This prevents a working-directory file from redirecting shell-provided credentials.
+
 ## Frame scoping
 
 If `SKYLIGHT_FRAME_ID` is not set, the agent will:
