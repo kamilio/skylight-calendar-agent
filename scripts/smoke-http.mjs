@@ -202,6 +202,25 @@ for (const [body, expected] of [
   }
 }
 
+for (const body of [
+  { value: new Date("2026-07-05T12:00:00Z") },
+  { value: new Map([["key", "value"]]) },
+]) {
+  try {
+    await requestJson({
+      fetch: async () => Response.json({ ok: true }),
+      env,
+      method: "POST",
+      path: "/api/test",
+      body,
+    });
+    throw new Error("Non-JSON request body unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("contains a non-JSON object")) throw error;
+  }
+}
+
 try {
   await requestJson({
     fetch: async () =>

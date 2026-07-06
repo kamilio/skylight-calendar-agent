@@ -67,6 +67,32 @@ try {
       'Command parameter "listJson"."id" contains an unsafe integer',
     ],
     [
+      () => sdk.lists.createRaw({ listJson: { metadata: { when: new Date() } } }),
+      'Command parameter "listJson"."metadata"."when" contains a non-JSON object',
+    ],
+    [
+      () => sdk.lists.createRaw({ listJson: { metadata: { values: new Map() } } }),
+      'Command parameter "listJson"."metadata"."values" contains a non-JSON object',
+    ],
+    [
+      () => {
+        const values = [];
+        values[4_294_967_295] = "ignored";
+        return sdk.lists.createRaw({ listJson: { values } });
+      },
+      'Command parameter "listJson"."values" contains a non-JSON array property',
+    ],
+    [
+      () =>
+        sdk.lists.createRaw({
+          listJson: {
+            value: new Proxy({}, { ownKeys: () => { throw new Error("super-secret"); } }),
+          },
+        }),
+      'Command parameter "listJson"."value" could not be inspected as JSON',
+      "super-secret",
+    ],
+    [
       () => sdk.lists.createRaw({ listJson: { label: "\uD800" } }),
       'Command parameter "listJson"."label" contains invalid Unicode',
     ],

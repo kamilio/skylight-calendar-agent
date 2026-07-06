@@ -3,7 +3,7 @@ import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { requestJson, SkylightRequestError } from "./http.js";
 import { terminalSafeText, truncateText } from "./text.js";
-import { assertWellFormedUnicode, normalizeIdentifier, pathSegment } from "./validation.js";
+import { assertJsonCompatible, normalizeIdentifier, pathSegment } from "./validation.js";
 
 type FramesListResponse = {
   data: Array<{
@@ -60,56 +60,11 @@ function validateIdentifierParams(params: unknown): void {
   }
 }
 
-function validateJsonParameter(
-  value: unknown,
-  label: string,
-  active = new WeakSet<object>(),
-  visited = new WeakSet<object>()
-): void {
-  if (typeof value === "string") {
-    assertWellFormedUnicode(value, label);
-    return;
-  }
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) {
-      throw new UserError(`${label} contains a non-finite number.`);
-    }
-    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
-      throw new UserError(`${label} contains an unsafe integer; use a string to preserve it exactly.`);
-    }
-    return;
-  }
-  if (value === undefined || typeof value === "function" || typeof value === "symbol" || typeof value === "bigint") {
-    throw new UserError(`${label} contains a non-JSON value.`);
-  }
-  if (value === null || typeof value !== "object") return;
-  if (active.has(value)) {
-    throw new UserError(`${label} contains a circular reference.`);
-  }
-  if (visited.has(value)) return;
-  active.add(value);
-  if (Array.isArray(value)) {
-    for (let index = 0; index < value.length; index += 1) {
-      if (!Object.prototype.hasOwnProperty.call(value, index)) {
-        throw new UserError(`${label} contains a sparse array entry at index ${index}.`);
-      }
-      validateJsonParameter(value[index], `${label}[${index}]`, active, visited);
-    }
-  } else {
-    for (const [name, child] of Object.entries(value)) {
-      assertWellFormedUnicode(name, `${label} property name`);
-      validateJsonParameter(child, `${label}.${JSON.stringify(name)}`, active, visited);
-    }
-  }
-  active.delete(value);
-  visited.add(value);
-}
-
 function validateCommandParams(params: unknown): void {
   if (params === null || typeof params !== "object" || Array.isArray(params)) return;
   for (const [name, value] of Object.entries(params)) {
     if (value === undefined) continue;
-    validateJsonParameter(value, `Command parameter ${JSON.stringify(name)}`);
+    assertJsonCompatible(value, `Command parameter ${JSON.stringify(name)}`);
   }
 }
 

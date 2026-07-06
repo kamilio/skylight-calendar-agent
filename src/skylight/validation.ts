@@ -97,6 +97,89 @@ export function parseNonEmptyJsonObject(value: unknown, label: string): Record<s
   return parsed;
 }
 
+export function assertJsonCompatible(
+  value: unknown,
+  label: string,
+  active = new WeakSet<object>(),
+  visited = new WeakSet<object>()
+): void {
+  if (typeof value === "string") {
+    assertWellFormedUnicode(value, label);
+    return;
+  }
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      throw new UserError(`${label} contains a non-finite number.`);
+    }
+    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+      throw new UserError(`${label} contains an unsafe integer; use a string to preserve it exactly.`);
+    }
+    return;
+  }
+  if (
+    value === undefined ||
+    typeof value === "function" ||
+    typeof value === "symbol" ||
+    typeof value === "bigint"
+  ) {
+    throw new UserError(`${label} contains a non-JSON value.`);
+  }
+  if (value === null || typeof value !== "object") return;
+  if (active.has(value)) {
+    throw new UserError(`${label} contains a circular reference.`);
+  }
+  if (visited.has(value)) return;
+
+  active.add(value);
+  try {
+    if (Array.isArray(value)) {
+      for (let index = 0; index < value.length; index += 1) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+        if (descriptor === undefined) {
+          throw new UserError(`${label} contains a sparse array entry at index ${index}.`);
+        }
+        if (!("value" in descriptor)) {
+          throw new UserError(`${label} contains a non-JSON accessor at index ${index}.`);
+        }
+        assertJsonCompatible(descriptor.value, `${label}[${index}]`, active, visited);
+      }
+      for (const key of Reflect.ownKeys(value)) {
+        if (
+          key === "length" ||
+          (typeof key === "string" &&
+            /^(?:0|[1-9]\d*)$/.test(key) &&
+            Number(key) < value.length)
+        ) {
+          continue;
+        }
+        throw new UserError(`${label} contains a non-JSON array property.`);
+      }
+    } else {
+      const prototype = Object.getPrototypeOf(value);
+      if (prototype !== Object.prototype && prototype !== null) {
+        throw new UserError(`${label} contains a non-JSON object.`);
+      }
+      for (const key of Reflect.ownKeys(value)) {
+        if (typeof key !== "string") {
+          throw new UserError(`${label} contains a non-JSON symbol property.`);
+        }
+        assertWellFormedUnicode(key, `${label} property name`);
+        const descriptor = Object.getOwnPropertyDescriptor(value, key);
+        if (descriptor === undefined || !descriptor.enumerable || !("value" in descriptor)) {
+          throw new UserError(`${label} contains a non-JSON property ${JSON.stringify(key)}.`);
+        }
+        assertJsonCompatible(descriptor.value, `${label}.${JSON.stringify(key)}`, active, visited);
+      }
+    }
+  } catch (error) {
+    if (error instanceof UserError) throw error;
+    throw new UserError(`${label} could not be inspected as JSON.`);
+  } finally {
+    active.delete(value);
+  }
+  visited.add(value);
+}
+
 export function assertWellFormedUnicode(value: string, label: string): void {
   for (let index = 0; index < value.length; index += 1) {
     const code = value.charCodeAt(index);
