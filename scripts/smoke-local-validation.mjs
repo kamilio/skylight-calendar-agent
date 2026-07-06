@@ -5,6 +5,17 @@ import {
   assertValidDateOrDateTimeRange,
   pathSegment,
 } from "../dist/skylight/validation.js";
+import { root } from "../dist/root.js";
+
+function kebabCase(value) {
+  return value.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+function unwrap(schema) {
+  let current = schema;
+  while (current.kind === "optional") current = current.inner;
+  return current;
+}
 
 try {
   assertValidAbsoluteUrl("https://example.com/\uD800", "calendarUrl", ["https:"]);
@@ -139,6 +150,36 @@ for (const args of [
     "Invalid JSON for --updates-json. The value was not displayed.",
     "super-secret"
   );
+}
+
+let jsonOptionCount = 0;
+for (const group of root.children) {
+  if (group.kind !== "group") continue;
+  for (const command of group.children) {
+    if (command.kind !== "command") continue;
+    for (const [name, schema] of Object.entries(command.params.shape)) {
+      const jsonSchema = unwrap(schema);
+      if (jsonSchema.kind !== "json") continue;
+      const longOption = `--${kebabCase(name)}`;
+      await expectLocalError(
+        [group.name, command.name, longOption, secretJson],
+        `Invalid JSON for ${longOption}. The value was not displayed.`,
+        "super-secret"
+      );
+      if (jsonSchema.short !== undefined) {
+        await expectLocalError(
+          [group.name, command.name, `-${jsonSchema.short}${secretJson}`],
+          `Invalid JSON for ${longOption}. The value was not displayed.`,
+          "super-secret"
+        );
+      }
+      jsonOptionCount += 1;
+    }
+  }
+}
+
+if (jsonOptionCount < 25) {
+  throw new Error(`JSON redaction sweep covered too few options: ${jsonOptionCount}`);
 }
 await expectLocalError(
   ["lists", "get", "--list-id", " "],
