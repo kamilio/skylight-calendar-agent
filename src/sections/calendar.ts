@@ -578,10 +578,14 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const provider = normalizeIdentifier(ctx.params.provider, "provider");
-        const redirectUrl = normalizeAbsoluteUrl(ctx.params.redirectUrl, "redirectUrl");
+        const redirectUrl = normalizeAbsoluteUrl(ctx.params.redirectUrl, "redirectUrl", [
+          "http:",
+          "https:",
+        ]);
         const failureRedirectUrl = normalizeAbsoluteUrl(
           ctx.params.failureRedirectUrl,
-          "failureRedirectUrl"
+          "failureRedirectUrl",
+          ["http:", "https:"]
         );
         const frameId = await resolveFrameId(ctx);
         const twoWaySync = ctx.params.twoWaySync ?? true;

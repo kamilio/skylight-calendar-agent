@@ -306,6 +306,16 @@ try {
     "--provider",
     "google",
     "--redirect-url",
+    "ftp://example.com/success",
+    "--failure-redirect-url",
+    "https://example.com/failure",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "sync-oauth-url",
+    "--provider",
+    "google",
+    "--redirect-url",
     "https://example.com/success",
     "--failure-redirect-url",
     "https://example.com/failure",
