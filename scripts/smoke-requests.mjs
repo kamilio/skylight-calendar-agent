@@ -418,26 +418,6 @@ try {
     "--ends-at",
     "2026-07-10",
   ]);
-  await runExpectingFailure([
-    "calendar",
-    "event-create",
-    "--summary",
-    "Missing rule",
-    "--starts-at",
-    "2026-07-10",
-    "--recurring",
-  ]);
-  await runExpectingFailure([
-    "calendar",
-    "event-create",
-    "--summary",
-    "Contradictory rule",
-    "--starts-at",
-    "2026-07-10",
-    "--recurring=false",
-    "--rrule",
-    "FREQ=DAILY",
-  ]);
   await runExpectingFailure(["calendar", "event-edit", "--event-id", "event-1"]);
   await runExpectingFailure([
     "calendar",

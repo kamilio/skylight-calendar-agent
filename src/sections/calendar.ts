@@ -207,7 +207,6 @@ export const calendarGroup = defineGroup({
         ),
         allDay: S.Optional(S.Boolean({ description: "All day event" })),
         kind: S.Optional(nonBlankParam({ description: "Event kind (e.g., event)", short: "k" })),
-        recurring: S.Optional(S.Boolean({ description: "Recurring?" })),
         rrule: S.Optional(
           nonBlankParam({ description: "RRULE string (without 'RRULE:' prefix)" })
         ),
@@ -233,12 +232,6 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateOrDateTimeRange(ctx.params.startsAt, ctx.params.endsAt, "startsAt", "endsAt");
-        if (ctx.params.recurring === true && ctx.params.rrule === undefined) {
-          throw new UserError("rrule is required when recurring is true.");
-        }
-        if (ctx.params.recurring === false && ctx.params.rrule !== undefined) {
-          throw new UserError("rrule cannot be set when recurring is false.");
-        }
         if ((ctx.params.lat === undefined) !== (ctx.params.lng === undefined)) {
           throw new UserError("lat and lng must be provided together.");
         }

@@ -58,3 +58,13 @@ if (
 ) {
   throw new Error(`Chores boolean help is misleading: ${choresOutput}`);
 }
+
+const eventCreateHelp = spawnSync(
+  process.execPath,
+  ["dist/cli.js", "calendar", "event-create", "--help"],
+  { encoding: "utf8" }
+);
+const eventCreateOutput = `${eventCreateHelp.stdout ?? ""}${eventCreateHelp.stderr ?? ""}`;
+if (eventCreateOutput.includes("--recurring")) {
+  throw new Error(`Event creation advertises a no-op recurring flag: ${eventCreateOutput}`);
+}
