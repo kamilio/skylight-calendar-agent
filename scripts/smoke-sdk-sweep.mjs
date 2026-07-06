@@ -28,8 +28,12 @@ const updateEmailPassword = root.children
   .find((group) => group.name === "profiles")
   ?.children.find((command) => command.name === "update-email")
   ?.params.shape.password?.inner;
-if (updateEmailPassword?.kind !== "string" || updateEmailPassword.secret !== true) {
-  throw new Error("profiles.update-email.password must be marked secret");
+if (
+  updateEmailPassword?.kind !== "string" ||
+  updateEmailPassword.secret !== true ||
+  updateEmailPassword.maxLength !== 8_192
+) {
+  throw new Error("profiles.update-email.password must be bounded and marked secret");
 }
 
 function camelCase(value) {

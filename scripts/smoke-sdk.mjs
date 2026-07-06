@@ -281,7 +281,7 @@ try {
     ],
     [
       () => sdk.lists.createRaw({ listJson: { label: "x".repeat(8_193) } }),
-      'Command parameter "listJson"."label" exceeds the maximum string length of 8192',
+      'Command parameter "listJson"."label" must not exceed 8192 characters',
     ],
     [
       () => sdk.lists.createRaw({ listJson: { items: Array(501).fill(null) } }),
@@ -428,6 +428,19 @@ try {
     [
       () => sdk.lists.itemCreate({ listId: "1", label: "Item", section: "\nHouse" }),
       "section must not contain control characters",
+    ],
+    [
+      async () => {
+        const password = process.env.SKYLIGHT_PASSWORD;
+        process.env.SKYLIGHT_PASSWORD = "p".repeat(8_193);
+        try {
+          await sdk.profiles.updateEmail({ email: "new@example.com" });
+        } finally {
+          if (password === undefined) delete process.env.SKYLIGHT_PASSWORD;
+          else process.env.SKYLIGHT_PASSWORD = password;
+        }
+      },
+      "password must not exceed 8192 characters",
     ],
   ]) {
     try {

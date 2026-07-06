@@ -4,6 +4,7 @@ import { requestJson, sanitizeJsonResponseForOutput } from "../skylight/http.js"
 import { getAuthorizationHeader } from "../skylight/auth.js";
 import {
   assertAtLeastOneDefined,
+  assertBoundedString,
   assertValidMonthDay,
   emailParam,
   jsonParam,
@@ -120,7 +121,7 @@ export const profilesGroup = defineGroup({
             description: "Current password; omit to use SKYLIGHT_PASSWORD",
             short: "p",
             minLength: 1,
-            maxLength: 16_384,
+            maxLength: 8_192,
             secret: true,
           })
         ),
@@ -130,6 +131,7 @@ export const profilesGroup = defineGroup({
         if (password === undefined || password.length === 0) {
           throw new UserError("Set SKYLIGHT_PASSWORD or pass password to update the email.");
         }
+        assertBoundedString(password, "password");
         return requestJson({
           fetch: ctx.fetch,
           method: "PUT",

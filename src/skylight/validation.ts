@@ -207,12 +207,7 @@ function jsonCompatibleSnapshot(
     );
   }
   if (typeof value === "string") {
-    assertWellFormedUnicode(value, label);
-    if (value.length > MAX_GENERAL_STRING_LENGTH) {
-      throw new UserError(
-        `${label} exceeds the maximum string length of ${MAX_GENERAL_STRING_LENGTH}.`
-      );
-    }
+    assertBoundedString(value, label);
     return value;
   }
   if (typeof value === "number") {
@@ -362,6 +357,13 @@ export function assertWellFormedUnicode(value: string, label: string): void {
     } else if (code >= 0xdc00 && code <= 0xdfff) {
       throw new UserError(`${label} contains invalid Unicode.`);
     }
+  }
+}
+
+export function assertBoundedString(value: string, label: string): void {
+  assertWellFormedUnicode(value, label);
+  if (value.length > MAX_GENERAL_STRING_LENGTH) {
+    throw new UserError(`${label} must not exceed ${MAX_GENERAL_STRING_LENGTH} characters.`);
   }
 }
 

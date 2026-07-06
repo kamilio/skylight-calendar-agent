@@ -148,6 +148,24 @@ try {
   }
 }
 
+let oversizedPasswordCalls = 0;
+try {
+  await getAuthorizationHeader({
+    fetch: async () => {
+      oversizedPasswordCalls += 1;
+      return Response.json({ data: { id: "1", attributes: { token: "x" } } });
+    },
+    env: { ...credentials, SKYLIGHT_PASSWORD: "p".repeat(8_193) },
+  });
+  throw new Error("Oversized login password unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("SKYLIGHT_PASSWORD must not exceed 8192 characters")) throw error;
+  if (oversizedPasswordCalls !== 0) {
+    throw new Error("Oversized login password reached fetch");
+  }
+}
+
 try {
   await getAuthorizationHeader({
     fetch: async () => Response.json({ data: { id: "1", attributes: { token: "x" } } }),

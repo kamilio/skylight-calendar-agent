@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
 import { getSkylightRequestConfig } from "./config.js";
 import { errorMessage, terminalSafeText, truncateText } from "./text.js";
-import { assertWellFormedUnicode } from "./validation.js";
+import { assertBoundedString, assertWellFormedUnicode } from "./validation.js";
 
 interface SessionResponse {
   data?: {
@@ -279,7 +279,7 @@ export async function getAuthorizationHeader(opts: {
       "Missing credentials. Set SKYLIGHT_EMAIL and SKYLIGHT_PASSWORD (or SKYLIGHT_BASIC_TOKEN / SKYLIGHT_BEARER_TOKEN / SKYLIGHT_AUTH_HEADER)."
     );
   }
-  assertWellFormedUnicode(password, "SKYLIGHT_PASSWORD");
+  assertBoundedString(password, "SKYLIGHT_PASSWORD");
 
   const state = loginState(env, opts.fetch);
   const key = loginKey(env, email, password);
