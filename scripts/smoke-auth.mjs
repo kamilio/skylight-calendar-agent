@@ -187,6 +187,24 @@ try {
   if (!message.includes("Login response token contains invalid Unicode")) throw error;
 }
 
+for (const [field, response] of [
+  ["id", { data: { id: "user\nname", attributes: { token: "token" } } }],
+  ["token", { data: { id: "user", attributes: { token: "to\tken" } } }],
+]) {
+  try {
+    await getAuthorizationHeader({
+      fetch: async () => Response.json(response),
+      env: credentials,
+    });
+    throw new Error(`Control-character login ${field} unexpectedly succeeded`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes(`Login response ${field} must not contain control characters`)) {
+      throw error;
+    }
+  }
+}
+
 try {
   await getAuthorizationHeader({
     fetch: async () => new Response("\u001b[31mbad\u001b[0m\rreplace", { status: 401 }),

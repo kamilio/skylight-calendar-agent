@@ -167,10 +167,8 @@ async function login(opts: {
       throw new UserError("Login response missing valid string id/token values.");
     }
 
-    const normalizedId = id.trim();
-    const normalizedToken = token.trim();
-    assertWellFormedUnicode(normalizedId, "Login response id");
-    assertWellFormedUnicode(normalizedToken, "Login response token");
+    const normalizedId = safeCredentialValue(id, "Login response id");
+    const normalizedToken = safeCredentialValue(token, "Login response token");
 
     const computed = base64(`${normalizedId}:${normalizedToken}`);
     return `Basic ${computed}`;
