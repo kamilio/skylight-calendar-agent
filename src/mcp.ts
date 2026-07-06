@@ -23,6 +23,11 @@ const transport: SDKTransport = {
         transport.onmessage?.(JSON.parse(line) as JSONRPCMessage);
       } catch (error) {
         transport.onerror?.(error instanceof Error ? error : new Error("Invalid MCP input."));
+        void transport.send({
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32700, message: "Parse error" },
+        });
       }
     });
     lines.on("close", () => transport.onclose?.());

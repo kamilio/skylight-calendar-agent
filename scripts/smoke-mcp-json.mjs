@@ -107,11 +107,13 @@ try {
       arguments: { date_min: "\u001b[31m\r\n\u202e", date_max: "2026-07-31" },
     },
   });
+  child.stdin.write("{invalid json\n");
 
-  const [responseMessage, invalidJsonResponse, unsafeValidationResponse] = await Promise.all([
+  const [responseMessage, invalidJsonResponse, unsafeValidationResponse, parseErrorResponse] = await Promise.all([
     waitForResponse(2),
     waitForResponse(3),
     waitForResponse(4),
+    waitForResponse(null),
   ]);
   if (responseMessage?.error) {
     throw new Error(`Native MCP JSON call failed: ${JSON.stringify(responseMessage.error)}`);
@@ -136,6 +138,9 @@ try {
     /[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/.test(unsafeValidationMessage)
   ) {
     throw new Error(`MCP validation error retained terminal controls: ${JSON.stringify(unsafeValidationMessage)}`);
+  }
+  if (parseErrorResponse?.error?.code !== -32700) {
+    throw new Error(`Malformed MCP JSON did not receive a parse error: ${JSON.stringify(parseErrorResponse)}`);
   }
 } finally {
   child.kill();
