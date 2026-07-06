@@ -51,6 +51,51 @@ try {
       "recurrenceRrule must include a non-empty FREQ component",
     ],
     [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Invalid count",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=DAILY;COUNT=banana",
+        }),
+      "recurrenceRrule contains an invalid COUNT value",
+    ],
+    [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Invalid weekday",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=WEEKLY;BYDAY=XX",
+        }),
+      "recurrenceRrule contains an invalid BYDAY value",
+    ],
+    [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Invalid month",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=MONTHLY;BYMONTH=99",
+        }),
+      "recurrenceRrule contains an invalid BYMONTH value",
+    ],
+    [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Invalid interval",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=DAILY;INTERVAL=0",
+        }),
+      "recurrenceRrule contains an invalid INTERVAL value",
+    ],
+    [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Conflicting end",
+          start: "2026-07-05",
+          recurrenceRrule: "FREQ=DAILY;COUNT=2;UNTIL=20260731",
+        }),
+      "recurrenceRrule must not include both COUNT and UNTIL",
+    ],
+    [
       () => sdk.tasks.taskboxSave({ taskBoxItemJson: { id: Infinity, summary: "x" } }),
       "Numeric id must be a safe integer",
     ],

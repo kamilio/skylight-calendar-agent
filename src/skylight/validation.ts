@@ -282,6 +282,87 @@ export function normalizeRrule(value: string, label = "rrule"): string {
   if (!allowedFrequencies.includes(frequency.toUpperCase())) {
     throw new UserError(`${label} contains an invalid FREQ value: ${JSON.stringify(frequency)}.`);
   }
+  const integerList = (
+    name: string,
+    minimum: number,
+    maximum: number,
+    allowZero: boolean
+  ): void => {
+    const componentValue = components.get(name);
+    if (componentValue === undefined) return;
+    const values = componentValue.split(",");
+    const valid = values.every((item) => {
+      if (!/^[+-]?\d+$/.test(item)) return false;
+      const number = Number(item);
+      return (
+        Number.isSafeInteger(number) &&
+        number >= minimum &&
+        number <= maximum &&
+        (allowZero || number !== 0)
+      );
+    });
+    if (!valid) {
+      throw new UserError(
+        `${label} contains an invalid ${name} value: ${JSON.stringify(componentValue)}.`
+      );
+    }
+  };
+  for (const name of ["COUNT", "INTERVAL"]) {
+    const componentValue = components.get(name);
+    if (
+      componentValue !== undefined &&
+      (!/^[1-9]\d*$/.test(componentValue) || !Number.isSafeInteger(Number(componentValue)))
+    ) {
+      throw new UserError(
+        `${label} contains an invalid ${name} value: ${JSON.stringify(componentValue)}.`
+      );
+    }
+  }
+  if (components.has("COUNT") && components.has("UNTIL")) {
+    throw new UserError(`${label} must not include both COUNT and UNTIL.`);
+  }
+  integerList("BYSECOND", 0, 60, true);
+  integerList("BYMINUTE", 0, 59, true);
+  integerList("BYHOUR", 0, 23, true);
+  integerList("BYMONTHDAY", -31, 31, false);
+  integerList("BYYEARDAY", -366, 366, false);
+  integerList("BYWEEKNO", -53, 53, false);
+  integerList("BYMONTH", 1, 12, false);
+  integerList("BYSETPOS", -366, 366, false);
+
+  const byDay = components.get("BYDAY");
+  if (
+    byDay !== undefined &&
+    !byDay
+      .split(",")
+      .every((item) => /^(?:[+-]?(?:[1-9]|[1-4]\d|5[0-3]))?(?:MO|TU|WE|TH|FR|SA|SU)$/i.test(item))
+  ) {
+    throw new UserError(`${label} contains an invalid BYDAY value: ${JSON.stringify(byDay)}.`);
+  }
+
+  const weekStart = components.get("WKST");
+  if (weekStart !== undefined && !/^(?:MO|TU|WE|TH|FR|SA|SU)$/i.test(weekStart)) {
+    throw new UserError(`${label} contains an invalid WKST value: ${JSON.stringify(weekStart)}.`);
+  }
+
+  const until = components.get("UNTIL");
+  if (until !== undefined) {
+    const match = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?$/.exec(until);
+    if (match === null) {
+      throw new UserError(`${label} contains an invalid UNTIL value: ${JSON.stringify(until)}.`);
+    }
+    try {
+      assertValidDate(`${match[1]}-${match[2]}-${match[3]}`, `${label} UNTIL`);
+    } catch {
+      throw new UserError(`${label} contains an invalid UNTIL value: ${JSON.stringify(until)}.`);
+    }
+    if (
+      match[4] !== undefined &&
+      (Number(match[4]) > 23 || Number(match[5]) > 59 || Number(match[6]) > 60)
+    ) {
+      throw new UserError(`${label} contains an invalid UNTIL value: ${JSON.stringify(until)}.`);
+    }
+  }
   return `RRULE:${rule}`;
 }
 
