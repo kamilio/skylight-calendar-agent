@@ -131,6 +131,22 @@ try {
     ],
     [
       () => {
+        const key = `safe\u202E${"x".repeat(100_000)}`;
+        return sdk.lists.createRaw({ listJson: { [key]: Number.NaN } });
+      },
+      'Command parameter "listJson"."safe ',
+      ["\u202E", "x".repeat(1_000)],
+    ],
+    [
+      () => {
+        let value = {};
+        for (let depth = 0; depth < 101; depth += 1) value = { child: value };
+        return sdk.lists.createRaw({ listJson: value });
+      },
+      "JSON input exceeds the maximum nesting depth of 100",
+    ],
+    [
+      () => {
         const values = [];
         values[4_294_967_295] = "ignored";
         return sdk.lists.createRaw({ listJson: { values } });

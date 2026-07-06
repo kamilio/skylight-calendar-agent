@@ -2,6 +2,7 @@ import { S, UserError } from "toolcraft";
 import { terminalSafeText, truncateText } from "./text.js";
 
 const DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
+const MAX_REQUEST_JSON_DEPTH = 100;
 
 function displayErrorValue(value: string): string {
   const safe = terminalSafeText(value);
@@ -107,8 +108,14 @@ export function assertJsonCompatible(
   value: unknown,
   label: string,
   active = new WeakSet<object>(),
-  visited = new WeakSet<object>()
+  visited = new WeakSet<object>(),
+  depth = 0
 ): void {
+  if (depth > MAX_REQUEST_JSON_DEPTH) {
+    throw new UserError(
+      `JSON input exceeds the maximum nesting depth of ${MAX_REQUEST_JSON_DEPTH}.`
+    );
+  }
   if (typeof value === "string") {
     assertWellFormedUnicode(value, label);
     return;
@@ -147,7 +154,7 @@ export function assertJsonCompatible(
         if (!("value" in descriptor)) {
           throw new UserError(`${label} contains a non-JSON accessor at index ${index}.`);
         }
-        assertJsonCompatible(descriptor.value, `${label}[${index}]`, active, visited);
+        assertJsonCompatible(descriptor.value, `${label}[${index}]`, active, visited, depth + 1);
       }
       for (const key of Reflect.ownKeys(value)) {
         if (
@@ -171,10 +178,17 @@ export function assertJsonCompatible(
         }
         assertWellFormedUnicode(key, `${label} property name`);
         const descriptor = Object.getOwnPropertyDescriptor(value, key);
+        const displayKey = JSON.stringify(displayErrorValue(key));
         if (descriptor === undefined || !descriptor.enumerable || !("value" in descriptor)) {
-          throw new UserError(`${label} contains a non-JSON property ${JSON.stringify(key)}.`);
+          throw new UserError(`${label} contains a non-JSON property ${displayKey}.`);
         }
-        assertJsonCompatible(descriptor.value, `${label}.${JSON.stringify(key)}`, active, visited);
+        assertJsonCompatible(
+          descriptor.value,
+          `${label}.${displayKey}`,
+          active,
+          visited,
+          depth + 1
+        );
       }
     }
   } catch (error) {
