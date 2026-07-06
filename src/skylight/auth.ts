@@ -17,6 +17,7 @@ interface SessionResponse {
 }
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
+const MAX_CREDENTIAL_LENGTH = 16_384;
 interface LoginState {
   requests: Map<string, Promise<string>>;
   authorizations: Map<string, string>;
@@ -73,7 +74,11 @@ function safeCredentialValue(value: string, label: string): string {
   if (/[\u0000-\u001F\u007F-\u009F]/.test(value)) {
     throw new UserError(`${label} must not contain control characters.`);
   }
-  return value.trim();
+  const normalized = value.trim();
+  if (normalized.length > MAX_CREDENTIAL_LENGTH) {
+    throw new UserError(`${label} must not exceed ${MAX_CREDENTIAL_LENGTH} characters.`);
+  }
+  return normalized;
 }
 
 function basicToken(value: string, label: string): string {

@@ -87,6 +87,20 @@ try {
 
 try {
   await getAuthorizationHeader({
+    fetch: globalThis.fetch,
+    env: { SKYLIGHT_BEARER_TOKEN: "a".repeat(20_000) },
+  });
+  throw new Error("Oversized Bearer token unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("SKYLIGHT_BEARER_TOKEN must not exceed 16384 characters")) throw error;
+  if (message.includes("a".repeat(1_000))) {
+    throw new Error("Oversized Bearer token was exposed in its validation error");
+  }
+}
+
+try {
+  await getAuthorizationHeader({
     fetch: async () => Response.json({ data: { id: "1", attributes: { token: "x" } } }),
     env: { ...credentials, SKYLIGHT_PASSWORD: "\uD800" },
   });
