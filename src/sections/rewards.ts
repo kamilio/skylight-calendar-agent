@@ -3,6 +3,7 @@ import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
 import {
   assertValidDateTime,
+  assertValidDateTimeRange,
   dateTimeParam,
   jsonParam,
   nonBlankParam,
@@ -29,11 +30,12 @@ export const rewardsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         if (ctx.params.redeemedAtMin !== undefined && ctx.params.redeemedAtMax !== undefined) {
-          assertValidDateTime(ctx.params.redeemedAtMin, "redeemedAtMin");
-          assertValidDateTime(ctx.params.redeemedAtMax, "redeemedAtMax");
-          if (Date.parse(ctx.params.redeemedAtMin) > Date.parse(ctx.params.redeemedAtMax)) {
-            throw new UserError("redeemedAtMin must not be after redeemedAtMax.");
-          }
+          assertValidDateTimeRange(
+            ctx.params.redeemedAtMin,
+            ctx.params.redeemedAtMax,
+            "redeemedAtMin",
+            "redeemedAtMax"
+          );
         } else if (ctx.params.redeemedAtMin !== undefined) {
           assertValidDateTime(ctx.params.redeemedAtMin, "redeemedAtMin");
         } else if (ctx.params.redeemedAtMax !== undefined) {

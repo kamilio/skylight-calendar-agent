@@ -559,6 +559,19 @@ export function assertValidDateTime(value: string, label: string): void {
   assertValidDateOrDateTime(value, label);
 }
 
+export function assertValidDateTimeRange(
+  minimum: string,
+  maximum: string,
+  minimumLabel: string,
+  maximumLabel: string
+): void {
+  assertValidDateTime(minimum, minimumLabel);
+  assertValidDateTime(maximum, maximumLabel);
+  if (dateOrDateTimeTimestamp(minimum) > dateOrDateTimeTimestamp(maximum)) {
+    throw new UserError(`${minimumLabel} must not be after ${maximumLabel}.`);
+  }
+}
+
 export function assertValidDateOrDateTimeRange(
   start: string,
   end: string | undefined,
