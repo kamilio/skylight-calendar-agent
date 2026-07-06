@@ -1,5 +1,5 @@
 import { S, UserError } from "toolcraft";
-import { terminalSafeText, truncateText } from "./text.js";
+import { errorMessage, terminalSafeText, truncateText } from "./text.js";
 
 const DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
 const MAX_GENERAL_STRING_LENGTH = 8_192;
@@ -22,6 +22,20 @@ const RRULE_COMPONENTS = new Set([
   "BYSETPOS",
   "WKST",
 ]);
+
+function isUserError(value: unknown): value is UserError {
+  try {
+    return value instanceof UserError;
+  } catch {
+    return false;
+  }
+}
+
+function rethrowInspectableUserError(value: unknown): void {
+  if (!isUserError(value)) return;
+  const message = errorMessage(value);
+  if (message !== "Unknown error") throw new UserError(message);
+}
 
 function displayErrorValue(value: string): string {
   const safe = terminalSafeText(value);
@@ -119,7 +133,7 @@ export function parseJsonObject(value: unknown, label: string): Record<string, u
       throw new UserError(`${label} must be a JSON object.`);
     }
   } catch (error) {
-    if (error instanceof UserError) throw error;
+    rethrowInspectableUserError(error);
     throw new UserError(`${label} could not be inspected as JSON.`);
   }
   return parsed as Record<string, unknown>;
@@ -141,7 +155,7 @@ export function parseJsonContainer(
       }
     }
   } catch (error) {
-    if (error instanceof UserError) throw error;
+    rethrowInspectableUserError(error);
     throw new UserError(`${label} could not be inspected as JSON.`);
   }
   return parsed as Record<string, unknown> | unknown[];
@@ -154,7 +168,7 @@ export function parseNonEmptyJsonObject(value: unknown, label: string): Record<s
       throw new UserError(`${label} must contain at least one field.`);
     }
   } catch (error) {
-    if (error instanceof UserError) throw error;
+    rethrowInspectableUserError(error);
     throw new UserError(`${label} could not be inspected as JSON.`);
   }
   return parsed;
@@ -281,7 +295,7 @@ function jsonCompatibleSnapshot(
       return snapshot;
     }
   } catch (error) {
-    if (error instanceof UserError) throw error;
+    rethrowInspectableUserError(error);
     throw new UserError(`${label} could not be inspected as JSON.`);
   } finally {
     active.delete(value);

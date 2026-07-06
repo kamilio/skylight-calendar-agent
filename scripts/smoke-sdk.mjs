@@ -186,6 +186,15 @@ try {
       "Numeric id must be a safe integer",
     ],
     [
+      () => {
+        const revoked = Proxy.revocable({}, {});
+        revoked.revoke();
+        const value = new Proxy({}, { ownKeys: () => { throw revoked.proxy; } });
+        return sdk.lists.createRaw({ listJson: value });
+      },
+      "listJson could not be inspected as JSON",
+    ],
+    [
       () => sdk.tasks.taskboxSave({ taskBoxItemJson: { id: 9_007_199_254_740_992, summary: "x" } }),
       "Numeric id must be a safe integer",
     ],
