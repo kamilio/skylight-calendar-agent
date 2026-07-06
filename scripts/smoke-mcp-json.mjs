@@ -98,10 +98,20 @@ try {
       arguments: { updates_json: "super-secret" },
     },
   });
+  send({
+    jsonrpc: "2.0",
+    id: 4,
+    method: "tools/call",
+    params: {
+      name: "skylight__calendar__events",
+      arguments: { date_min: "\u001b[31m\r\n\u202e", date_max: "2026-07-31" },
+    },
+  });
 
-  const [responseMessage, invalidJsonResponse] = await Promise.all([
+  const [responseMessage, invalidJsonResponse, unsafeValidationResponse] = await Promise.all([
     waitForResponse(2),
     waitForResponse(3),
+    waitForResponse(4),
   ]);
   if (responseMessage?.error) {
     throw new Error(`Native MCP JSON call failed: ${JSON.stringify(responseMessage.error)}`);
@@ -119,6 +129,13 @@ try {
   }
   if (invalidJsonMessage.includes("super-secret")) {
     throw new Error(`MCP invalid JSON error exposed a protected value: ${invalidJsonMessage}`);
+  }
+  const unsafeValidationMessage = unsafeValidationResponse?.error?.message;
+  if (
+    typeof unsafeValidationMessage !== "string" ||
+    /[\u0000-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/.test(unsafeValidationMessage)
+  ) {
+    throw new Error(`MCP validation error retained terminal controls: ${JSON.stringify(unsafeValidationMessage)}`);
   }
 } finally {
   child.kill();
