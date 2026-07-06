@@ -97,6 +97,25 @@ try {
       throw new Error("Malformed Unicode parameter reached frame discovery");
     }
   }
+  let invalidJsonCalls = 0;
+  try {
+    await resolveFrameId({
+      params: { bodyJson: { value: Number.NaN } },
+      fetch: async () => {
+        invalidJsonCalls += 1;
+        return Response.json({ data: [{ id: "42" }] });
+      },
+    });
+    throw new Error("Non-finite JSON parameter unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes('Command parameter "bodyJson"."value" contains a non-finite number')) {
+      throw error;
+    }
+    if (invalidJsonCalls !== 0) {
+      throw new Error("Non-finite JSON parameter reached frame discovery");
+    }
+  }
   try {
     await resolveFrameId({
       fetch: async () =>

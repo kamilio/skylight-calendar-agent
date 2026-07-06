@@ -60,25 +60,51 @@ function validateIdentifierParams(params: unknown): void {
   }
 }
 
-function validateParamUnicode(
+function validateJsonParameter(
   value: unknown,
-  label = "Command parameter",
-  seen = new WeakSet<object>()
+  label: string,
+  active = new WeakSet<object>(),
+  visited = new WeakSet<object>()
 ): void {
   if (typeof value === "string") {
     assertWellFormedUnicode(value, label);
     return;
   }
-  if (value === null || typeof value !== "object") return;
-  if (seen.has(value)) return;
-  seen.add(value);
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => validateParamUnicode(item, `${label}[${index}]`, seen));
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      throw new UserError(`${label} contains a non-finite number.`);
+    }
+    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+      throw new UserError(`${label} contains an unsafe integer; use a string to preserve it exactly.`);
+    }
     return;
   }
-  for (const [name, child] of Object.entries(value)) {
-    assertWellFormedUnicode(name, "Command parameter name");
-    validateParamUnicode(child, `Command parameter ${JSON.stringify(name)}`, seen);
+  if (value === undefined || typeof value === "function" || typeof value === "symbol" || typeof value === "bigint") {
+    throw new UserError(`${label} contains a non-JSON value.`);
+  }
+  if (value === null || typeof value !== "object") return;
+  if (active.has(value)) {
+    throw new UserError(`${label} contains a circular reference.`);
+  }
+  if (visited.has(value)) return;
+  active.add(value);
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => validateJsonParameter(item, `${label}[${index}]`, active, visited));
+  } else {
+    for (const [name, child] of Object.entries(value)) {
+      assertWellFormedUnicode(name, `${label} property name`);
+      validateJsonParameter(child, `${label}.${JSON.stringify(name)}`, active, visited);
+    }
+  }
+  active.delete(value);
+  visited.add(value);
+}
+
+function validateCommandParams(params: unknown): void {
+  if (params === null || typeof params !== "object" || Array.isArray(params)) return;
+  for (const [name, value] of Object.entries(params)) {
+    if (value === undefined) continue;
+    validateJsonParameter(value, `Command parameter ${JSON.stringify(name)}`);
   }
 }
 
@@ -186,7 +212,7 @@ export async function resolveFrameId(ctx: {
   fetch: typeof globalThis.fetch;
   params?: unknown;
 }): Promise<string> {
-  validateParamUnicode(ctx.params);
+  validateCommandParams(ctx.params);
   validateIdentifierParams(ctx.params);
   const config = getSkylightConfig();
   const fromEnv = config.frameId?.trim();

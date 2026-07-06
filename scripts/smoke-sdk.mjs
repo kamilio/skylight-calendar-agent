@@ -56,15 +56,15 @@ try {
     ],
     [
       () => sdk.lists.createRaw({ listJson: { label: Number.NaN } }),
-      "Request body contains a non-finite number",
+      'Command parameter "listJson"."label" contains a non-finite number',
     ],
     [
       () => sdk.lists.createRaw({ listJson: { id: 9_007_199_254_740_992 } }),
-      "Request body contains an unsafe integer",
+      'Command parameter "listJson"."id" contains an unsafe integer',
     ],
     [
       () => sdk.lists.createRaw({ listJson: { label: "\uD800" } }),
-      "Command parameter \"label\" contains invalid Unicode",
+      'Command parameter "listJson"."label" contains invalid Unicode',
     ],
     [
       () => sdk.profiles.ownerProfileUpdate({ birthday: "02/31" }),
