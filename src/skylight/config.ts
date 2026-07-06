@@ -1,6 +1,8 @@
 import { UserError } from "toolcraft";
 import { assertValidDate, assertWellFormedUnicode, normalizeTimezone } from "./validation.js";
 
+const MAX_CONFIG_VALUE_LENGTH = 8_192;
+
 export interface SkylightConfig {
   apiBaseUrl: string;
   apiVersion: string;
@@ -24,6 +26,9 @@ function firstNonEmpty(value: string | undefined, label: string): string | null 
   assertWellFormedUnicode(value, label);
   if (/[\u0000-\u001F\u007F-\u009F]/.test(value)) {
     throw new UserError(`${label} must not contain control characters.`);
+  }
+  if (value.length > MAX_CONFIG_VALUE_LENGTH) {
+    throw new UserError(`${label} must not exceed ${MAX_CONFIG_VALUE_LENGTH} characters.`);
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;

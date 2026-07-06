@@ -88,6 +88,17 @@ try {
 try {
   await getAuthorizationHeader({
     fetch: globalThis.fetch,
+    env: { SKYLIGHT_EMAIL: `${"a".repeat(321)}@example.com`, SKYLIGHT_PASSWORD: "secret" },
+  });
+  throw new Error("Oversized login email unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("SKYLIGHT_EMAIL must not exceed 320 characters")) throw error;
+}
+
+try {
+  await getAuthorizationHeader({
+    fetch: globalThis.fetch,
     env: { SKYLIGHT_BEARER_TOKEN: "a".repeat(20_000) },
   });
   throw new Error("Oversized Bearer token unexpectedly succeeded");

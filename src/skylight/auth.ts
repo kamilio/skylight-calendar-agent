@@ -144,6 +144,9 @@ function loginEmail(value: string | undefined): string {
   }
   const email = value.trim();
   if (email.length === 0) return "";
+  if (email.length > 320) {
+    throw new UserError("SKYLIGHT_EMAIL must not exceed 320 characters.");
+  }
   if (!/^[^\s@]+@[^\s@]+$/.test(email)) {
     throw new UserError("SKYLIGHT_EMAIL must be a valid email address.");
   }

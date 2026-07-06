@@ -74,6 +74,8 @@ for (const [key, value] of [
   ["SKYLIGHT_TIMEZONE", "UTC\n"],
   ["SKYLIGHT_REQUEST_TIMEOUT_MS", "1000\n"],
   ["SKYLIGHT_CALENDAR_URL", "https://ourskylight.com/calendar/123\n"],
+  ["SKYLIGHT_FRAME_ID", "x".repeat(8_193)],
+  ["SKYLIGHT_FRAME_ID", " ".repeat(8_193)],
 ]) {
   try {
     getSkylightConfig({
