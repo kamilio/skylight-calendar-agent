@@ -33,6 +33,21 @@ for (const [name, value, expected] of [
   }
 }
 
+for (const [env, expected] of [
+  [{ SKYLIGHT_AUTH_HEADER: "abc" }, "complete Basic or Bearer header"],
+  [{ SKYLIGHT_AUTH_HEADER: "Basic not-base64!" }, "valid base64-encoded"],
+  [{ SKYLIGHT_BASIC_TOKEN: "bm8tY29sb24=" }, "separated by a colon"],
+  [{ SKYLIGHT_BEARER_TOKEN: "abc def" }, "must not contain whitespace"],
+]) {
+  try {
+    await getAuthorizationHeader({ fetch: globalThis.fetch, env });
+    throw new Error(`Malformed auth value unexpectedly succeeded: ${JSON.stringify(env)}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes(expected)) throw error;
+  }
+}
+
 try {
   await getAuthorizationHeader({
     fetch: globalThis.fetch,

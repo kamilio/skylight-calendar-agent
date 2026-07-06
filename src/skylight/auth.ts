@@ -77,6 +77,35 @@ function safeCredentialValue(value: string, label: string): string {
   return trimmed;
 }
 
+function basicToken(value: string, label: string): string {
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value) || value.length % 4 === 1) {
+    throw new UserError(`${label} must be a valid base64-encoded user-id/token pair.`);
+  }
+  let decoded: string;
+  try {
+    decoded = Buffer.from(value, "base64").toString("utf8");
+  } catch {
+    throw new UserError(`${label} must be a valid base64-encoded user-id/token pair.`);
+  }
+  if (!decoded.includes(":")) {
+    throw new UserError(`${label} must encode a user-id/token pair separated by a colon.`);
+  }
+  return value;
+}
+
+function authorizationHeader(value: string): string {
+  const match = /^(Basic|Bearer)\s+(\S+)$/i.exec(value);
+  if (!match) {
+    throw new UserError(
+      "SKYLIGHT_AUTH_HEADER must be a complete Basic or Bearer header with no whitespace in the token."
+    );
+  }
+  if (match[1]?.toLowerCase() === "basic") {
+    basicToken(match[2] ?? "", "SKYLIGHT_AUTH_HEADER Basic token");
+  }
+  return value;
+}
+
 function loginEmail(value: string | undefined): string {
   const email = value?.trim() ?? "";
   if (email.length === 0) return "";
@@ -166,7 +195,7 @@ export async function getAuthorizationHeader(opts: {
     ? safeCredentialValue(env.SKYLIGHT_AUTH_HEADER, "SKYLIGHT_AUTH_HEADER")
     : "";
   if (explicit) {
-    return explicit;
+    return authorizationHeader(explicit);
   }
 
   const existing = env.SKYLIGHT_BASIC_TOKEN
@@ -178,7 +207,7 @@ export async function getAuthorizationHeader(opts: {
         "SKYLIGHT_BASIC_TOKEN must contain only the base64 token, without the Basic prefix. Use SKYLIGHT_AUTH_HEADER for a complete header value."
       );
     }
-    return `Basic ${existing}`;
+    return `Basic ${basicToken(existing, "SKYLIGHT_BASIC_TOKEN")}`;
   }
 
   const bearer = env.SKYLIGHT_BEARER_TOKEN
@@ -189,6 +218,9 @@ export async function getAuthorizationHeader(opts: {
       throw new UserError(
         "SKYLIGHT_BEARER_TOKEN must contain only the token, without the Bearer prefix. Use SKYLIGHT_AUTH_HEADER for a complete header value."
       );
+    }
+    if (/\s/.test(bearer)) {
+      throw new UserError("SKYLIGHT_BEARER_TOKEN must not contain whitespace.");
     }
     return `Bearer ${bearer}`;
   }
