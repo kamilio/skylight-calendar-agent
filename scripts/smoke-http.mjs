@@ -144,6 +144,7 @@ const sanitizedSuccess = await requestJson({
         nested: ["ok\u009bunsafe"],
         direction: "safe\u202Etxt",
         layout: "safe\n■ forged failure\tvalue",
+        large: "x".repeat(20_000),
         ["__proto__"]: "safe",
       }),
       { status: 200 }
@@ -161,6 +162,7 @@ if (
   sanitizedSuccess["line break"] !== "safe key" ||
   sanitizedSuccess.direction !== "safe txt" ||
   sanitizedSuccess.layout !== "safe\n■ forged failure\tvalue" ||
+  sanitizedSuccess.large.length !== 20_000 ||
   !Object.prototype.hasOwnProperty.call(sanitizedSuccess, "__proto__")
 ) {
   throw new Error(`Successful response retained terminal controls: ${sanitizedText}`);
@@ -168,13 +170,27 @@ if (
 
 flattenResponseLayoutForCli();
 const flattenedSuccess = await requestJson({
-  fetch: async () => Response.json({ layout: "safe\n■ forged failure\tvalue" }),
+  fetch: async () =>
+    Response.json({
+      layout: "safe\n■ forged failure\tvalue",
+      large: "x".repeat(20_000),
+      ["k".repeat(1_000)]: true,
+    }),
   env,
   method: "GET",
   path: "/api/test",
 });
 if (flattenedSuccess.layout !== "safe ■ forged failure value") {
   throw new Error(`CLI response layout was not flattened: ${JSON.stringify(flattenedSuccess)}`);
+}
+if (
+  flattenedSuccess.large.length > 10_100 ||
+  !flattenedSuccess.large.includes("[truncated 10000 characters]") ||
+  !Object.keys(flattenedSuccess).some(
+    (key) => key.length < 600 && key.includes("[truncated 500 characters]")
+  )
+) {
+  throw new Error(`CLI response strings were not safely bounded: ${JSON.stringify(flattenedSuccess)}`);
 }
 
 let deeplyNested = "0";

@@ -14,7 +14,9 @@ const server = http.createServer((incoming, response) => {
       url: incoming.url,
     };
     response.setHeader("content-type", "application/json");
-    response.end(JSON.stringify({ message: "safe\n■ forged failure\tvalue" }));
+    response.end(
+      JSON.stringify({ message: `safe\n■ forged failure\tvalue${"x".repeat(20_000)}` })
+    );
   });
 });
 
@@ -66,6 +68,9 @@ try {
   }
   if (stdout.includes("\n■ forged failure") || stdout.includes("\t")) {
     throw new Error(`CLI response rendered unsafe layout: ${JSON.stringify(stdout)}`);
+  }
+  if (stdout.length > 13_000 || !stdout.includes("[truncated")) {
+    throw new Error(`CLI response was not safely bounded: ${stdout.length}`);
   }
 } finally {
   server.close();

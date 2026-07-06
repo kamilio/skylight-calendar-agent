@@ -5,6 +5,8 @@ import { terminalSafeText, truncateText } from "./text.js";
 import { assertWellFormedUnicode, snapshotJsonCompatible } from "./validation.js";
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
+const MAX_CLI_RESPONSE_KEY_LENGTH = 500;
+const MAX_CLI_RESPONSE_STRING_LENGTH = 10_000;
 const MAX_RESPONSE_JSON_DEPTH = 100;
 let preserveResponseLayout = true;
 
@@ -34,7 +36,18 @@ function errorBodyExcerpt(value: string): string {
 
 function safeOutputText(value: string): string {
   assertWellFormedUnicode(value, "Response JSON string");
-  return terminalSafeText(value, preserveResponseLayout);
+  const safe = terminalSafeText(value, preserveResponseLayout);
+  if (preserveResponseLayout || safe.length <= MAX_CLI_RESPONSE_STRING_LENGTH) return safe;
+  const truncated = truncateText(safe, MAX_CLI_RESPONSE_STRING_LENGTH);
+  return `${truncated}… [truncated ${safe.length - truncated.length} characters]`;
+}
+
+function safeOutputKey(value: string): string {
+  assertWellFormedUnicode(value, "Response JSON property name");
+  const safe = terminalSafeText(value);
+  if (preserveResponseLayout || safe.length <= MAX_CLI_RESPONSE_KEY_LENGTH) return safe;
+  const truncated = truncateText(safe, MAX_CLI_RESPONSE_KEY_LENGTH);
+  return `${truncated}… [truncated ${safe.length - truncated.length} characters]`;
 }
 
 function retryAfterHint(response: Response): string {
@@ -77,8 +90,7 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
 
   const sanitized: Record<string, unknown> = {};
   for (const [key, child] of Object.entries(value)) {
-    assertWellFormedUnicode(key, "Response JSON property name");
-    const safeKey = terminalSafeText(key);
+    const safeKey = safeOutputKey(key);
     if (Object.prototype.hasOwnProperty.call(sanitized, safeKey)) {
       throw new UserError("Response contained duplicate keys after terminal sanitization.");
     }
