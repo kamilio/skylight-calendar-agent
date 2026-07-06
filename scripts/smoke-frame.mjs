@@ -199,6 +199,20 @@ try {
       throw error;
     }
   }
+  try {
+    await resolveFrameId({
+      fetch: async () =>
+        Response.json({
+          data: Array.from({ length: 10_000 }, (_, index) => ({ id: String(index) })),
+        }),
+    });
+    throw new Error("Oversized ambiguous frame discovery unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.length > 5_000 || !message.includes("and 9990 more")) {
+      throw new Error(`Ambiguous frame error was not safely bounded: ${message.length}`);
+    }
+  }
   let calls = 0;
   let release;
   const gate = new Promise((resolve) => {

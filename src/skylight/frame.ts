@@ -19,6 +19,7 @@ const frameResolutions = new WeakMap<
   typeof globalThis.fetch,
   Map<string, Promise<string>>
 >();
+const MAX_DISPLAYED_FRAMES = 10;
 
 function frameResolutionKey(config: ReturnType<typeof getSkylightFrameConfig>): string {
   const env = process.env;
@@ -174,11 +175,14 @@ async function discoverFrameId(
     throw new UserError("No frames returned for this account.");
   }
 
-  const lines = ids.map((frame) => {
+  const lines = ids.slice(0, MAX_DISPLAYED_FRAMES).map((frame) => {
     const id = displayValue(frame.id);
     const name = displayValue(frame.name);
     return `- ${id}${name ? ` (${name})` : ""}`;
   });
+  if (ids.length > lines.length) {
+    lines.push(`- … and ${ids.length - lines.length} more`);
+  }
   throw new UserError(
     `Multiple frames found. Set SKYLIGHT_FRAME_ID.\n${lines.join("\n")}`
   );
