@@ -146,15 +146,23 @@ await expectLocalError(
 );
 await expectLocalError(
   ["lists", "get", "--list-id", "\u001b"],
-  "Command arguments must not contain terminal control characters"
+  "Command arguments must not contain unsafe terminal formatting characters"
 );
 await expectLocalError(
   ["profiles", "forgot-password", "--email", "x\u001b[31m@example.com"],
-  "Command arguments must not contain terminal control characters"
+  "Command arguments must not contain unsafe terminal formatting characters"
 );
 await expectLocalError(
   ["lists", "create", "--label", "safe\u202Etxt"],
-  "Command arguments must not contain terminal control characters"
+  "Command arguments must not contain unsafe terminal formatting characters"
+);
+await expectLocalError(
+  ["lists", "create", "--label", "safe\nInjected"],
+  "Command arguments must not contain unsafe terminal formatting characters"
+);
+await expectLocalError(
+  ["lists", "create", "--label", "safe\tInjected"],
+  "Command arguments must not contain unsafe terminal formatting characters"
 );
 await expectLocalError(
   [

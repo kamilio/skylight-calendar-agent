@@ -61,12 +61,12 @@ function invalidJsonOption(arguments_: string[]): string | null {
 
 const commandArguments = process.argv.slice(2);
 const unsafeArgument = commandArguments.some(
-  (argument) => terminalSafeText(argument, true) !== argument
+  (argument) => terminalSafeText(argument) !== argument
 );
 const invalidJson = unsafeArgument ? null : invalidJsonOption(commandArguments);
 
 if (unsafeArgument) {
-  process.stderr.write("Command arguments must not contain terminal control characters.\n");
+  process.stderr.write("Command arguments must not contain unsafe terminal formatting characters.\n");
   process.exitCode = 1;
 } else if (invalidJson !== null) {
   process.stderr.write(`Invalid JSON for ${invalidJson}. The value was not displayed.\n`);
