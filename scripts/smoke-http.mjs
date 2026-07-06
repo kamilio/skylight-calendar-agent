@@ -175,6 +175,10 @@ const flattenedSuccess = await requestJson({
       layout: "safe\n■ forged failure\tvalue",
       large: "x".repeat(20_000),
       ["k".repeat(1_000)]: true,
+      wideArray: Array.from({ length: 2_000 }, (_, index) => index),
+      wideObject: Object.fromEntries(
+        Array.from({ length: 2_000 }, (_, index) => [`property-${index}`, index])
+      ),
     }),
   env,
   method: "GET",
@@ -188,6 +192,12 @@ if (
   !flattenedSuccess.large.includes("[truncated 10000 characters]") ||
   !Object.keys(flattenedSuccess).some(
     (key) => key.length < 600 && key.includes("[truncated 500 characters]")
+  ) ||
+  flattenedSuccess.wideArray.length !== 1_001 ||
+  flattenedSuccess.wideArray.at(-1) !== "… [truncated 1000 items]" ||
+  Object.keys(flattenedSuccess.wideObject).length !== 1_001 ||
+  !Object.keys(flattenedSuccess.wideObject).some((key) =>
+    key.includes("[truncated 1000 properties]")
   )
 ) {
   throw new Error(`CLI response strings were not safely bounded: ${JSON.stringify(flattenedSuccess)}`);

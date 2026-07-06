@@ -6,6 +6,7 @@ import { assertWellFormedUnicode, snapshotJsonCompatible } from "./validation.js
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
 const MAX_CLI_RESPONSE_KEY_LENGTH = 500;
+const MAX_CLI_RESPONSE_COLLECTION_ITEMS = 1_000;
 const MAX_CLI_RESPONSE_STRING_LENGTH = 10_000;
 const MAX_RESPONSE_JSON_DEPTH = 100;
 let preserveResponseLayout = true;
@@ -85,11 +86,26 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
     }
     return value;
   }
-  if (Array.isArray(value)) return value.map((child) => sanitizeJsonValue(child, depth + 1));
+  if (Array.isArray(value)) {
+    const limit = preserveResponseLayout
+      ? value.length
+      : Math.min(value.length, MAX_CLI_RESPONSE_COLLECTION_ITEMS);
+    const sanitized = value
+      .slice(0, limit)
+      .map((child) => sanitizeJsonValue(child, depth + 1));
+    if (limit < value.length) {
+      sanitized.push(`… [truncated ${value.length - limit} items]`);
+    }
+    return sanitized;
+  }
   if (value === null || typeof value !== "object") return value;
 
   const sanitized: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(value)) {
+  const entries = Object.entries(value);
+  const limit = preserveResponseLayout
+    ? entries.length
+    : Math.min(entries.length, MAX_CLI_RESPONSE_COLLECTION_ITEMS);
+  for (const [key, child] of entries.slice(0, limit)) {
     const safeKey = safeOutputKey(key);
     if (Object.prototype.hasOwnProperty.call(sanitized, safeKey)) {
       throw new UserError("Response contained duplicate keys after terminal sanitization.");
@@ -100,6 +116,11 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
       configurable: true,
       writable: true,
     });
+  }
+  if (limit < entries.length) {
+    let marker = `… [truncated ${entries.length - limit} properties]`;
+    while (Object.prototype.hasOwnProperty.call(sanitized, marker)) marker = ` ${marker}`;
+    sanitized[marker] = true;
   }
   return sanitized;
 }
