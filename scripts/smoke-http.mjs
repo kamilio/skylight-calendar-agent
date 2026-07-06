@@ -193,11 +193,11 @@ if (
   !Object.keys(flattenedSuccess).some(
     (key) => key.length < 600 && key.includes("[truncated 500 characters]")
   ) ||
-  flattenedSuccess.wideArray.length !== 1_001 ||
-  flattenedSuccess.wideArray.at(-1) !== "… [truncated 1000 items]" ||
-  Object.keys(flattenedSuccess.wideObject).length !== 1_001 ||
+  flattenedSuccess.wideArray.length !== 501 ||
+  flattenedSuccess.wideArray.at(-1) !== "… [truncated 1500 items]" ||
+  Object.keys(flattenedSuccess.wideObject).length !== 501 ||
   !Object.keys(flattenedSuccess.wideObject).some((key) =>
-    key.includes("[truncated 1000 properties]")
+    key.includes("[truncated 1500 properties]")
   )
 ) {
   throw new Error(`CLI response strings were not safely bounded: ${JSON.stringify(flattenedSuccess)}`);
