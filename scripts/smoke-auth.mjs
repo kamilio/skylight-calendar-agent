@@ -229,6 +229,18 @@ for (const body of ["null", "[]", '"unexpected"']) {
 try {
   await getAuthorizationHeader({
     fetch: async () =>
+      Response.json({ data: { id: "user:other", attributes: { token: "secret" } } }),
+    env: credentials,
+  });
+  throw new Error("Colon-bearing login id unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("Login response id must not contain a colon")) throw error;
+}
+
+try {
+  await getAuthorizationHeader({
+    fetch: async () =>
       new Response('{"data":{"id":"user","attributes":{"token":"\\ud800"}}}', {
         status: 200,
       }),
