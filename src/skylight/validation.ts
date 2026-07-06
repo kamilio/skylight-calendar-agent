@@ -1,6 +1,12 @@
 import { S, UserError } from "toolcraft";
+import { terminalSafeText, truncateText } from "./text.js";
 
 const DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
+
+function displayErrorValue(value: string): string {
+  const safe = terminalSafeText(value);
+  return safe.length <= 200 ? safe : `${truncateText(safe, 200)}…`;
+}
 
 export function dateParam(options: { description: string; short?: string }) {
   return S.String({
@@ -258,7 +264,9 @@ export function normalizeRrule(value: string, label = "rrule"): string {
   for (const component of rule.split(";")) {
     const match = /^([A-Za-z][A-Za-z0-9-]*)=([^;:\s]+)$/.exec(component);
     if (!match) {
-      throw new UserError(`${label} contains an invalid recurrence component: ${JSON.stringify(component)}.`);
+      throw new UserError(
+        `${label} contains an invalid recurrence component: ${JSON.stringify(displayErrorValue(component))}.`
+      );
     }
     const name = (match[1] ?? "").toUpperCase();
     if (components.has(name)) {
@@ -280,7 +288,9 @@ export function normalizeRrule(value: string, label = "rrule"): string {
     "YEARLY",
   ];
   if (!allowedFrequencies.includes(frequency.toUpperCase())) {
-    throw new UserError(`${label} contains an invalid FREQ value: ${JSON.stringify(frequency)}.`);
+    throw new UserError(
+      `${label} contains an invalid FREQ value: ${JSON.stringify(displayErrorValue(frequency))}.`
+    );
   }
   const integerList = (
     name: string,
@@ -303,7 +313,7 @@ export function normalizeRrule(value: string, label = "rrule"): string {
     });
     if (!valid) {
       throw new UserError(
-        `${label} contains an invalid ${name} value: ${JSON.stringify(componentValue)}.`
+        `${label} contains an invalid ${name} value: ${JSON.stringify(displayErrorValue(componentValue))}.`
       );
     }
   };
@@ -314,7 +324,7 @@ export function normalizeRrule(value: string, label = "rrule"): string {
       (!/^[1-9]\d*$/.test(componentValue) || !Number.isSafeInteger(Number(componentValue)))
     ) {
       throw new UserError(
-        `${label} contains an invalid ${name} value: ${JSON.stringify(componentValue)}.`
+        `${label} contains an invalid ${name} value: ${JSON.stringify(displayErrorValue(componentValue))}.`
       );
     }
   }
@@ -337,30 +347,40 @@ export function normalizeRrule(value: string, label = "rrule"): string {
       .split(",")
       .every((item) => /^(?:[+-]?(?:[1-9]|[1-4]\d|5[0-3]))?(?:MO|TU|WE|TH|FR|SA|SU)$/i.test(item))
   ) {
-    throw new UserError(`${label} contains an invalid BYDAY value: ${JSON.stringify(byDay)}.`);
+    throw new UserError(
+      `${label} contains an invalid BYDAY value: ${JSON.stringify(displayErrorValue(byDay))}.`
+    );
   }
 
   const weekStart = components.get("WKST");
   if (weekStart !== undefined && !/^(?:MO|TU|WE|TH|FR|SA|SU)$/i.test(weekStart)) {
-    throw new UserError(`${label} contains an invalid WKST value: ${JSON.stringify(weekStart)}.`);
+    throw new UserError(
+      `${label} contains an invalid WKST value: ${JSON.stringify(displayErrorValue(weekStart))}.`
+    );
   }
 
   const until = components.get("UNTIL");
   if (until !== undefined) {
     const match = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?$/.exec(until);
     if (match === null) {
-      throw new UserError(`${label} contains an invalid UNTIL value: ${JSON.stringify(until)}.`);
+      throw new UserError(
+        `${label} contains an invalid UNTIL value: ${JSON.stringify(displayErrorValue(until))}.`
+      );
     }
     try {
       assertValidDate(`${match[1]}-${match[2]}-${match[3]}`, `${label} UNTIL`);
     } catch {
-      throw new UserError(`${label} contains an invalid UNTIL value: ${JSON.stringify(until)}.`);
+      throw new UserError(
+        `${label} contains an invalid UNTIL value: ${JSON.stringify(displayErrorValue(until))}.`
+      );
     }
     if (
       match[4] !== undefined &&
       (Number(match[4]) > 23 || Number(match[5]) > 59 || Number(match[6]) > 60)
     ) {
-      throw new UserError(`${label} contains an invalid UNTIL value: ${JSON.stringify(until)}.`);
+      throw new UserError(
+        `${label} contains an invalid UNTIL value: ${JSON.stringify(displayErrorValue(until))}.`
+      );
     }
   }
   return `RRULE:${rule}`;

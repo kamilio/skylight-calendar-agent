@@ -96,6 +96,16 @@ try {
       "recurrenceRrule must not include both COUNT and UNTIL",
     ],
     [
+      () =>
+        sdk.tasks.choreCreateSimple({
+          summary: "Oversized rule",
+          start: "2026-07-05",
+          recurrenceRrule: `FREQ=safe\u202E${"x".repeat(100_000)}`,
+        }),
+      "recurrenceRrule contains an invalid FREQ value",
+      ["\u202E", "x".repeat(1_000)],
+    ],
+    [
       () => sdk.tasks.taskboxSave({ taskBoxItemJson: { id: Infinity, summary: "x" } }),
       "Numeric id must be a safe integer",
     ],
@@ -268,8 +278,10 @@ try {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (!message.includes(expected)) throw error;
-      if (forbidden !== undefined && message.includes(forbidden)) {
-        throw new Error(`Invalid SDK call exposed a protected value: ${message}`);
+      const forbiddenValues =
+        forbidden === undefined ? [] : Array.isArray(forbidden) ? forbidden : [forbidden];
+      if (forbiddenValues.some((value) => message.includes(value))) {
+        throw new Error(`Invalid SDK call exposed an unsafe value: ${message}`);
       }
     }
   }
