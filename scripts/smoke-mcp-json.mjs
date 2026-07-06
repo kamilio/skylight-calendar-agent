@@ -10,7 +10,7 @@ const server = http.createServer((request, response) => {
   request.on("end", () => {
     requestBody = JSON.parse(body);
     response.setHeader("content-type", "application/json");
-    response.end('{"ok":true}');
+    response.end('{"ok":true,"layout":"safe\\nkeep"}');
   });
 });
 
@@ -119,6 +119,10 @@ try {
     throw new Error(`Native MCP JSON call failed: ${JSON.stringify(responseMessage.error)}`);
   }
   if (responseMessage?.result === undefined) throw new Error("Native MCP JSON call timed out");
+  const responsePayload = JSON.parse(responseMessage.result?.content?.[0]?.text ?? "null");
+  if (responsePayload?.layout !== "safe\nkeep") {
+    throw new Error(`Successful MCP response layout was altered: ${JSON.stringify(responseMessage.result)}`);
+  }
   if (requestBody?.label !== "Native MCP JSON") {
     throw new Error(`Native MCP JSON body was not preserved: ${JSON.stringify(requestBody)}`);
   }
