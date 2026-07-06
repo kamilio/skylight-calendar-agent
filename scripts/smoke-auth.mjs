@@ -238,6 +238,22 @@ try {
   if (!message.includes("Login response id must not contain a colon")) throw error;
 }
 
+for (const response of [
+  { data: { id: " user", attributes: { token: "secret" } } },
+  { data: { id: "user", attributes: { token: "secret " } } },
+]) {
+  try {
+    await getAuthorizationHeader({
+      fetch: async () => Response.json(response),
+      env: credentials,
+    });
+    throw new Error("Whitespace-bearing login credentials unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("must not have surrounding whitespace")) throw error;
+  }
+}
+
 try {
   await getAuthorizationHeader({
     fetch: async () =>

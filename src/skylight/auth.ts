@@ -199,6 +199,9 @@ async function login(opts: {
 
     const normalizedId = safeCredentialValue(id, "Login response id");
     const normalizedToken = safeCredentialValue(token, "Login response token");
+    if (normalizedId !== id || normalizedToken !== token) {
+      throw new UserError("Login response id/token values must not have surrounding whitespace.");
+    }
     if (normalizedId.includes(":")) {
       throw new UserError("Login response id must not contain a colon.");
     }
