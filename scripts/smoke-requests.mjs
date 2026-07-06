@@ -132,6 +132,14 @@ try {
     "calendar",
     "event-edit",
     "--event-id",
+    "event-recurring",
+    "--rrule",
+    " FREQ=WEEKLY;BYDAY=MO ",
+  ]);
+  await run([
+    "calendar",
+    "event-edit",
+    "--event-id",
     "event-clear",
     "--clear-categories",
     "--clear-invited-emails",
@@ -424,6 +432,14 @@ try {
     "event-edit",
     "--event-id",
     "event-1",
+    "--rrule",
+    "INTERVAL=2",
+  ]);
+  await runExpectingFailure([
+    "calendar",
+    "event-edit",
+    "--event-id",
+    "event-1",
     "--category-ids",
     "category-1",
     "--clear-categories",
@@ -640,6 +656,13 @@ if (
   clearedEvent.body.invited_emails.length !== 0
 ) {
   throw new Error("Event edit did not clear categories and invited emails");
+}
+
+const recurringEvent = requests.find(
+  (request) => request.url === "/api/frames/42/calendar_events/event-recurring"
+);
+if (recurringEvent?.body?.rrule !== "RRULE:FREQ=WEEKLY;BYDAY=MO") {
+  throw new Error(`Event recurrence rule was not normalized: ${JSON.stringify(recurringEvent)}`);
 }
 if (clearedEvent.body.timezone !== "UTC") {
   throw new Error(`Event timezone was not normalized: ${JSON.stringify(clearedEvent.body)}`);

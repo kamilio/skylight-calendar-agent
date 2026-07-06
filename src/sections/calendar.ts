@@ -307,7 +307,7 @@ export const calendarGroup = defineGroup({
         allDay: S.Optional(
           S.Boolean({ description: "All day event; use --all-day=false to disable" })
         ),
-        rrule: S.Optional(S.String({ description: "RRULE string (server format)" })),
+        rrule: S.Optional(nonBlankParam({ description: "RRULE string" })),
         categoryIds: S.Optional(
           S.Array(nonBlankParam({ description: "Category id" }), {
             description: "Category ids",
@@ -394,6 +394,8 @@ export const calendarGroup = defineGroup({
           ctx.params.timezone === undefined
             ? undefined
             : normalizeTimezone(ctx.params.timezone);
+        const recurrenceRule =
+          ctx.params.rrule === undefined ? undefined : normalizeRrule(ctx.params.rrule);
         const applyTo =
           ctx.params.applyTo === undefined
             ? undefined
@@ -415,7 +417,7 @@ export const calendarGroup = defineGroup({
             ...(ctx.params.startsAt === undefined ? {} : { starts_at: ctx.params.startsAt }),
             ...(ctx.params.endsAt === undefined ? {} : { ends_at: ctx.params.endsAt }),
             ...(ctx.params.allDay === undefined ? {} : { all_day: ctx.params.allDay }),
-            ...(ctx.params.rrule === undefined ? {} : { rrule: ctx.params.rrule }),
+            ...(recurrenceRule === undefined ? {} : { rrule: recurrenceRule }),
             ...(categoryIds === undefined ? {} : { category_ids: categoryIds }),
             ...(invitedEmails === undefined ? {} : { invited_emails: invitedEmails }),
             ...(ctx.params.location === undefined ? {} : { location: ctx.params.location }),
