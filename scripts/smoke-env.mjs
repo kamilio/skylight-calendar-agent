@@ -67,6 +67,15 @@ try {
   }
   delete process.env.SKYLIGHT_PASSWORD;
 
+  const bomPath = path.join(directory, "bom.env");
+  fs.writeFileSync(bomPath, "\uFEFFSKYLIGHT_BEARER_TOKEN=bom-token\r\n");
+  delete process.env.SKYLIGHT_BEARER_TOKEN;
+  loadDotEnv(bomPath);
+  if (process.env.SKYLIGHT_BEARER_TOKEN !== "bom-token") {
+    throw new Error("Dotenv ignored the first variable after a UTF-8 BOM");
+  }
+  delete process.env.SKYLIGHT_BEARER_TOKEN;
+
   const malformedPath = path.join(directory, "malformed.env");
   fs.writeFileSync(malformedPath, 'SKYLIGHT_PASSWORD="secret"junk\n');
   loadDotEnv(malformedPath);

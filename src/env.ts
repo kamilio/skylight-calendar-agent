@@ -67,7 +67,7 @@ function parseQuotedValue(
 function parseDotEnv(contents: string): Record<string, string> {
   const out: Record<string, string> = {};
 
-  for (const rawLine of contents.split(/\r?\n/)) {
+  for (const rawLine of contents.replace(/^\uFEFF/, "").split(/\r?\n/)) {
     let line = rawLine.trim();
     if (line.length === 0 || line.startsWith("#")) {
       continue;
