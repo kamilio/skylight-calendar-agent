@@ -42,11 +42,12 @@ function normalizeApiBaseUrl(value: string): string {
   if (url.protocol !== "https:" && url.protocol !== "http:") {
     throw new UserError("SKYLIGHT_API_BASE must use http or https.");
   }
+  const hostname = url.hostname.endsWith(".") ? url.hostname.slice(0, -1) : url.hostname;
   const loopbackHost =
-    url.hostname === "localhost" ||
-    url.hostname.endsWith(".localhost") ||
-    url.hostname === "[::1]" ||
-    /^127(?:\.\d{1,3}){3}$/.test(url.hostname);
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname === "[::1]" ||
+    /^127(?:\.\d{1,3}){3}$/.test(hostname);
   if (url.protocol === "http:" && !loopbackHost) {
     throw new UserError(
       "SKYLIGHT_API_BASE must use https unless it points to localhost or a loopback address."
