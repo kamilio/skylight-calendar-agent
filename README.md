@@ -42,6 +42,8 @@ Instead of email and password, you may set one of:
 
 If multiple methods are set, precedence is full auth header, Basic token, Bearer token, then email/password login. Unset an expired token to fall back to email/password.
 
+An explicitly exported credential method takes precedence over credential methods in `.env`. When shell credentials are present, `SKYLIGHT_API_BASE` is also not loaded from `.env`; export it explicitly if you intentionally use a custom API host. This prevents a stale or untrusted working-directory file from redirecting exported credentials.
+
 `profiles update-email` uses `SKYLIGHT_PASSWORD` by default, so the current password does not need to appear in shell history. Pass `--password` only to override it.
 
 See `.env.example` for optional API, calendar URL, and timezone settings. Credentials and captured traffic files are ignored by Git and excluded from the npm package.

@@ -1,6 +1,36 @@
 import fs from "node:fs";
 import path from "node:path";
 
+const CREDENTIAL_NAMES = new Set([
+  "SKYLIGHT_AUTH_HEADER",
+  "SKYLIGHT_BASIC_TOKEN",
+  "SKYLIGHT_BEARER_TOKEN",
+  "SKYLIGHT_EMAIL",
+  "SKYLIGHT_PASSWORD",
+]);
+
+type ExternalCredentialMethod = "header" | "basic" | "bearer" | "email-password" | null;
+
+function externalCredentialMethod(): ExternalCredentialMethod {
+  if ((process.env.SKYLIGHT_AUTH_HEADER?.length ?? 0) > 0) return "header";
+  if ((process.env.SKYLIGHT_BASIC_TOKEN?.length ?? 0) > 0) return "basic";
+  if ((process.env.SKYLIGHT_BEARER_TOKEN?.length ?? 0) > 0) return "bearer";
+  if (
+    (process.env.SKYLIGHT_EMAIL?.length ?? 0) > 0 ||
+    (process.env.SKYLIGHT_PASSWORD?.length ?? 0) > 0
+  ) {
+    return "email-password";
+  }
+  return null;
+}
+
+function mayLoadDotEnvKey(key: string, method: ExternalCredentialMethod): boolean {
+  if (method === null) return true;
+  if (key === "SKYLIGHT_API_BASE") return false;
+  if (!CREDENTIAL_NAMES.has(key)) return true;
+  return method === "email-password" && (key === "SKYLIGHT_EMAIL" || key === "SKYLIGHT_PASSWORD");
+}
+
 function parseQuotedValue(
   value: string,
   quote: '"' | "'"
@@ -85,9 +115,10 @@ export function loadDotEnv(envPath = path.resolve(process.cwd(), ".env")): void 
     return;
   }
   const parsed = parseDotEnv(contents);
+  const credentialMethod = externalCredentialMethod();
 
   for (const [key, value] of Object.entries(parsed)) {
-    if (process.env[key] === undefined) {
+    if (process.env[key] === undefined && mayLoadDotEnvKey(key, credentialMethod)) {
       process.env[key] = value;
     }
   }

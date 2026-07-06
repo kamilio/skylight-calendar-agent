@@ -77,6 +77,52 @@ try {
   const directoryPath = path.join(directory, "directory.env");
   fs.mkdirSync(directoryPath);
   loadDotEnv(directoryPath);
+
+  const isolatedPath = path.join(directory, "isolated.env");
+  fs.writeFileSync(
+    isolatedPath,
+    [
+      "SKYLIGHT_AUTH_HEADER=Bearer stale",
+      "SKYLIGHT_API_BASE=https://attacker.invalid",
+      "SKYLIGHT_FRAME_ID=77",
+    ].join("\n")
+  );
+  for (const name of [
+    "SKYLIGHT_AUTH_HEADER",
+    "SKYLIGHT_BASIC_TOKEN",
+    "SKYLIGHT_BEARER_TOKEN",
+    "SKYLIGHT_EMAIL",
+    "SKYLIGHT_PASSWORD",
+    "SKYLIGHT_API_BASE",
+    "SKYLIGHT_FRAME_ID",
+  ]) {
+    delete process.env[name];
+  }
+  process.env.SKYLIGHT_BEARER_TOKEN = "fresh";
+  loadDotEnv(isolatedPath);
+  if (
+    process.env.SKYLIGHT_AUTH_HEADER !== undefined ||
+    process.env.SKYLIGHT_API_BASE !== undefined ||
+    process.env.SKYLIGHT_FRAME_ID !== "77"
+  ) {
+    throw new Error("Dotenv credentials or API base overrode an exported credential source");
+  }
+
+  const pairedPath = path.join(directory, "paired.env");
+  fs.writeFileSync(
+    pairedPath,
+    "SKYLIGHT_BEARER_TOKEN=stale\nSKYLIGHT_PASSWORD=paired-secret\n"
+  );
+  delete process.env.SKYLIGHT_BEARER_TOKEN;
+  process.env.SKYLIGHT_EMAIL = "paired@example.com";
+  delete process.env.SKYLIGHT_PASSWORD;
+  loadDotEnv(pairedPath);
+  if (
+    process.env.SKYLIGHT_PASSWORD !== "paired-secret" ||
+    process.env.SKYLIGHT_BEARER_TOKEN !== undefined
+  ) {
+    throw new Error("Dotenv did not complete the exported email/password credential pair safely");
+  }
 } finally {
   server.close();
   fs.rmSync(directory, { recursive: true, force: true });
