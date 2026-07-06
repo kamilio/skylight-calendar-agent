@@ -66,7 +66,7 @@ export function dateTimeParam(options: { description: string; short?: string }) 
   return S.String({
     ...options,
     pattern:
-      "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?(?:Z|[+-]\\d{2}:\\d{2})$",
+      "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$",
   });
 }
 
@@ -609,11 +609,8 @@ export function assertValidDateOrDateTime(value: string, label: string): void {
 }
 
 export function assertValidDateTime(value: string, label: string): void {
-  if (!value.includes("T")) {
-    throw new UserError(`${label} must be a valid ISO datetime.`);
-  }
-  if (!/(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
-    throw new UserError(`${label} must include Z or an explicit UTC offset.`);
+  if (!/T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    throw new UserError(`${label} must be a valid RFC3339 datetime with seconds.`);
   }
   assertValidDateOrDateTime(value, label);
 }

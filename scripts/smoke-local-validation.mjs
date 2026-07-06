@@ -90,6 +90,13 @@ for (const value of ["2026-01-01T00:00+14:01", "2026-01-01T00:00-23:59"]) {
 }
 
 assertValidDateTime("2026-12-31T23:59:60Z", "redeemedAtMax");
+try {
+  assertValidDateTime("2026-12-31T23:59Z", "redeemedAtMax");
+  throw new Error("RFC3339 datetime without seconds unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("must be a valid RFC3339 datetime with seconds")) throw error;
+}
 assertValidDateOrDateTimeRange(
   "2026-12-31T23:59:60Z",
   "2027-01-01T00:00:00Z",
