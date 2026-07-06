@@ -4,6 +4,7 @@ import { root } from "./root.js";
 import { errorMessage, terminalSafeText } from "./skylight/text.js";
 
 export { root };
+export { SkylightRequestError } from "./skylight/http.js";
 
 function sanitizeSdkErrors<T extends object>(sdk: T): T {
   const clones = new WeakMap<object, object>();

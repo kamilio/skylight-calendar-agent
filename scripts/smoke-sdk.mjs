@@ -1,5 +1,4 @@
-import { createSkylightSDK } from "../dist/index.js";
-import { SkylightRequestError } from "../dist/skylight/http.js";
+import { createSkylightSDK, SkylightRequestError } from "../dist/index.js";
 
 const savedEnv = { ...process.env };
 let calls = 0;
