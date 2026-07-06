@@ -143,6 +143,7 @@ const sanitizedSuccess = await requestJson({
         "line\nbreak": "safe key",
         nested: ["ok\u009bunsafe"],
         direction: "safe\u202Etxt",
+        layout: "safe\n■ forged failure\tvalue",
         ["__proto__"]: "safe",
       }),
       { status: 200 }
@@ -156,9 +157,10 @@ if (
   sanitizedText.includes("\u001b") ||
   sanitizedText.includes("\u009b") ||
   sanitizedText.includes("\\r") ||
-  sanitizedSuccess["bad key"] !== "red replace\nkeep-newline" ||
+  sanitizedSuccess["bad key"] !== "red replace keep-newline" ||
   sanitizedSuccess["line break"] !== "safe key" ||
   sanitizedSuccess.direction !== "safe txt" ||
+  sanitizedSuccess.layout !== "safe ■ forged failure value" ||
   !Object.prototype.hasOwnProperty.call(sanitizedSuccess, "__proto__")
 ) {
   throw new Error(`Successful response retained terminal controls: ${sanitizedText}`);

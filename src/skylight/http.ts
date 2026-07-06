@@ -29,7 +29,7 @@ function errorBodyExcerpt(value: string): string {
 
 function safeOutputText(value: string): string {
   assertWellFormedUnicode(value, "Response JSON string");
-  return terminalSafeText(value, true);
+  return terminalSafeText(value);
 }
 
 function retryAfterHint(response: Response): string {
