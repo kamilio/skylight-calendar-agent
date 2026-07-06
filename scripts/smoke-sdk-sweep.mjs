@@ -54,8 +54,12 @@ try {
     SKYLIGHT_PASSWORD: "secret",
   });
 
+  const requests = [];
   const sdk = createSDK(root, {
-    fetch: async () => Response.json({ ok: true, data: [] }),
+    fetch: async (url, init) => {
+      requests.push({ url: String(url), init });
+      return Response.json({ ok: true, data: [] });
+    },
   });
   let commandCount = 0;
 
@@ -69,7 +73,29 @@ try {
           argumentsForCommand[name] = minimalValue(name, schema);
         }
       }
+      const requestCount = requests.length;
       await sdk[camelCase(group.name)][camelCase(command.name)](argumentsForCommand);
+      const expectedRequests = group.name === "profiles" && command.name === "token" ? 0 : 1;
+      const commandRequests = requests.slice(requestCount);
+      if (commandRequests.length !== expectedRequests) {
+        throw new Error(
+          `${group.name}.${command.name} made ${commandRequests.length} requests; expected ${expectedRequests}`
+        );
+      }
+      for (const request of commandRequests) {
+        const url = new URL(request.url);
+        if (
+          url.origin !== "https://example.invalid" ||
+          !url.pathname.startsWith("/api/") ||
+          request.url.includes("undefined") ||
+          request.url.includes("[object%20Object]")
+        ) {
+          throw new Error(
+            `${group.name}.${command.name} produced an invalid request URL: ${request.url}`
+          );
+        }
+        if (request.init?.body !== undefined) JSON.parse(String(request.init.body));
+      }
       commandCount += 1;
     }
   }
