@@ -8,8 +8,11 @@ const credentials = {
 
 for (const [name, value] of [
   ["SKYLIGHT_AUTH_HEADER", "Bearer good\nInjected: x"],
+  ["SKYLIGHT_AUTH_HEADER", "Bearer good\n"],
   ["SKYLIGHT_BASIC_TOKEN", "good\rbad"],
+  ["SKYLIGHT_BASIC_TOKEN", "good\r"],
   ["SKYLIGHT_BEARER_TOKEN", "good\u0000bad"],
+  ["SKYLIGHT_BEARER_TOKEN", "good\t"],
 ]) {
   try {
     await getAuthorizationHeader({ fetch: globalThis.fetch, env: { [name]: value } });
@@ -37,6 +40,16 @@ for (const [env, expected] of [
   [{ SKYLIGHT_AUTH_HEADER: "abc" }, "complete Basic or Bearer header"],
   [{ SKYLIGHT_AUTH_HEADER: "Basic not-base64!" }, "valid base64-encoded"],
   [{ SKYLIGHT_BASIC_TOKEN: "bm8tY29sb24=" }, "separated by a colon"],
+  [{ SKYLIGHT_BASIC_TOKEN: Buffer.from(":").toString("base64") }, "non-blank user-id/token"],
+  [{ SKYLIGHT_BASIC_TOKEN: Buffer.from("user:").toString("base64") }, "non-blank user-id/token"],
+  [
+    { SKYLIGHT_BASIC_TOKEN: Buffer.from("user:\ntoken").toString("base64") },
+    "SKYLIGHT_BASIC_TOKEN token must not contain control characters",
+  ],
+  [
+    { SKYLIGHT_BASIC_TOKEN: Buffer.from("\u0000user:token").toString("base64") },
+    "SKYLIGHT_BASIC_TOKEN user id must not contain control characters",
+  ],
   [{ SKYLIGHT_BEARER_TOKEN: "abc def" }, "must not contain whitespace"],
 ]) {
   try {

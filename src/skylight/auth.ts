@@ -69,26 +69,38 @@ function base64(value: string): string {
 }
 
 function safeCredentialValue(value: string, label: string): string {
-  const trimmed = value.trim();
-  assertWellFormedUnicode(trimmed, label);
-  if (/[\u0000-\u001F\u007F-\u009F]/.test(trimmed)) {
+  assertWellFormedUnicode(value, label);
+  if (/[\u0000-\u001F\u007F-\u009F]/.test(value)) {
     throw new UserError(`${label} must not contain control characters.`);
   }
-  return trimmed;
+  return value.trim();
 }
 
 function basicToken(value: string, label: string): string {
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value) || value.length % 4 === 1) {
     throw new UserError(`${label} must be a valid base64-encoded user-id/token pair.`);
   }
-  let decoded: string;
+  let bytes: Buffer;
   try {
-    decoded = Buffer.from(value, "base64").toString("utf8");
+    bytes = Buffer.from(value, "base64");
   } catch {
     throw new UserError(`${label} must be a valid base64-encoded user-id/token pair.`);
   }
-  if (!decoded.includes(":")) {
-    throw new UserError(`${label} must encode a user-id/token pair separated by a colon.`);
+  const decoded = bytes.toString("utf8");
+  if (!Buffer.from(decoded, "utf8").equals(bytes)) {
+    throw new UserError(`${label} must decode to valid UTF-8 user-id/token values.`);
+  }
+  const separator = decoded.indexOf(":");
+  if (separator <= 0 || separator === decoded.length - 1) {
+    throw new UserError(`${label} must encode non-blank user-id/token values separated by a colon.`);
+  }
+  const id = decoded.slice(0, separator);
+  const token = decoded.slice(separator + 1);
+  if (
+    safeCredentialValue(id, `${label} user id`) !== id ||
+    safeCredentialValue(token, `${label} token`) !== token
+  ) {
+    throw new UserError(`${label} user-id/token values must not have surrounding whitespace.`);
   }
   return value;
 }
