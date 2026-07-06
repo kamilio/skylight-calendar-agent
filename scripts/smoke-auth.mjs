@@ -107,6 +107,17 @@ try {
 
 try {
   await getAuthorizationHeader({
+    fetch: globalThis.fetch,
+    env: { SKYLIGHT_EMAIL: "person@example.com\n", SKYLIGHT_PASSWORD: "secret" },
+  });
+  throw new Error("Trailing-control login email unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("SKYLIGHT_EMAIL must not contain control characters")) throw error;
+}
+
+try {
+  await getAuthorizationHeader({
     fetch: async (_url, init) =>
       await new Promise((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
