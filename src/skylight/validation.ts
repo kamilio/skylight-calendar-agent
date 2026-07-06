@@ -167,8 +167,33 @@ export function normalizeRrule(value: string, label = "rrule"): string {
   if (rule.length === 0) {
     throw new UserError(`${label} must contain a recurrence rule.`);
   }
-  if (!/(?:^|;)FREQ=[^;:\s]+(?:;|$)/i.test(rule)) {
+  const components = new Map<string, string>();
+  for (const component of rule.split(";")) {
+    const match = /^([A-Za-z][A-Za-z0-9-]*)=([^;:\s]+)$/.exec(component);
+    if (!match) {
+      throw new UserError(`${label} contains an invalid recurrence component: ${JSON.stringify(component)}.`);
+    }
+    const name = (match[1] ?? "").toUpperCase();
+    if (components.has(name)) {
+      throw new UserError(`${label} must not repeat the ${name} component.`);
+    }
+    components.set(name, match[2] ?? "");
+  }
+  const frequency = components.get("FREQ");
+  if (frequency === undefined) {
     throw new UserError(`${label} must include a non-empty FREQ component.`);
+  }
+  const allowedFrequencies = [
+    "SECONDLY",
+    "MINUTELY",
+    "HOURLY",
+    "DAILY",
+    "WEEKLY",
+    "MONTHLY",
+    "YEARLY",
+  ];
+  if (!allowedFrequencies.includes(frequency.toUpperCase())) {
+    throw new UserError(`${label} contains an invalid FREQ value: ${JSON.stringify(frequency)}.`);
   }
   return `RRULE:${rule}`;
 }

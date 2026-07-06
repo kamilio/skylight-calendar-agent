@@ -163,6 +163,45 @@ await expectLocalError(
 );
 await expectLocalError(
   [
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Test",
+    "--start",
+    "2026-07-05",
+    "--recurrence-rrule",
+    "FREQ=NEVER",
+  ],
+  "recurrenceRrule contains an invalid FREQ value"
+);
+await expectLocalError(
+  [
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Test",
+    "--start",
+    "2026-07-05",
+    "--recurrence-rrule",
+    "FREQ=DAILY;BROKEN",
+  ],
+  "recurrenceRrule contains an invalid recurrence component"
+);
+await expectLocalError(
+  [
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Test",
+    "--start",
+    "2026-07-05",
+    "--recurrence-rrule",
+    "FREQ=DAILY;FREQ=WEEKLY",
+  ],
+  "recurrenceRrule must not repeat the FREQ component"
+);
+await expectLocalError(
+  [
     "lists",
     "item-move",
     "--list-id",
