@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
 import { getSkylightRequestConfig } from "./config.js";
-import { terminalSafeText, truncateText } from "./text.js";
+import { errorMessage, terminalSafeText, truncateText } from "./text.js";
 import { assertWellFormedUnicode } from "./validation.js";
 
 interface SessionResponse {
@@ -221,7 +221,7 @@ async function login(opts: {
     if (controller.signal.aborted) {
       throw new UserError(`Login request timed out after ${requestTimeoutMs}ms.`);
     }
-    const detail = errorBodyExcerpt(error instanceof Error ? error.message : String(error));
+    const detail = errorBodyExcerpt(errorMessage(error));
     throw new UserError(`Login request failed: ${detail}`);
   } finally {
     clearTimeout(timeout);

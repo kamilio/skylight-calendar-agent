@@ -62,6 +62,30 @@ try {
   }
 }
 
+for (const rejection of [
+  { toString: () => { throw new Error("toString-secret"); } },
+  new Proxy(new Error("message-secret"), {
+    get(target, property, receiver) {
+      if (property === "message") throw new Error("message-getter-secret");
+      return Reflect.get(target, property, receiver);
+    },
+  }),
+]) {
+  try {
+    await requestJson({
+      fetch: async () => { throw rejection; },
+      env,
+      method: "GET",
+      path: "/api/hostile-rejection",
+    });
+    throw new Error("Hostile fetch rejection unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Request failed GET /api/hostile-rejection: Unknown error")) throw error;
+    if (message.includes("secret")) throw new Error(`Hostile rejection detail leaked: ${message}`);
+  }
+}
+
 const concurrentRefreshEnv = {
   SKYLIGHT_API_BASE: "https://example.invalid",
   SKYLIGHT_EMAIL: "concurrent-refresh@example.com",

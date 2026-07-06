@@ -24,3 +24,14 @@ export function truncateText(value: string, maximumLength: number): string {
   }
   return value.slice(0, end);
 }
+
+export function errorMessage(value: unknown): string {
+  try {
+    if (value instanceof Error) {
+      return typeof value.message === "string" ? value.message : String(value.message);
+    }
+    return String(value);
+  } catch {
+    return "Unknown error";
+  }
+}

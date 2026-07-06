@@ -1,7 +1,7 @@
 import { UserError } from "toolcraft";
 import { getSkylightRequestConfig } from "./config.js";
 import { getAuthorizationHeader, refreshAuthorizationHeader } from "./auth.js";
-import { terminalSafeText, truncateText } from "./text.js";
+import { errorMessage, terminalSafeText, truncateText } from "./text.js";
 import { assertWellFormedUnicode, snapshotJsonCompatible } from "./validation.js";
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
@@ -189,7 +189,7 @@ export async function requestJson<TResponse>(opts: {
     try {
       serializedBody = serializeJsonBody(opts.body);
     } catch (error) {
-      const detail = errorBodyExcerpt(error instanceof Error ? error.message : String(error));
+      const detail = errorBodyExcerpt(errorMessage(error));
       throw new UserError(`Request body is not JSON-serializable for ${opts.method} ${opts.path}: ${detail}`);
     }
     if (serializedBody === undefined) {
@@ -315,7 +315,7 @@ export async function requestJson<TResponse>(opts: {
         `Request timed out after ${config.requestTimeoutMs}ms ${opts.method} ${opts.path}`
       );
     }
-    const detail = errorBodyExcerpt(error instanceof Error ? error.message : String(error));
+    const detail = errorBodyExcerpt(errorMessage(error));
     throw new UserError(`Request failed ${opts.method} ${opts.path}: ${detail}`);
   } finally {
     clearTimeout(timeout);

@@ -87,6 +87,21 @@ try {
 
 try {
   await getAuthorizationHeader({
+    fetch: async () => {
+      throw { toString: () => { throw new Error("login-coercion-secret"); } };
+    },
+    env: credentials,
+  });
+  throw new Error("Hostile login rejection unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("Login request failed: Unknown error") || message.includes("secret")) {
+    throw error;
+  }
+}
+
+try {
+  await getAuthorizationHeader({
     fetch: globalThis.fetch,
     env: { SKYLIGHT_EMAIL: `${"a".repeat(321)}@example.com`, SKYLIGHT_PASSWORD: "secret" },
   });

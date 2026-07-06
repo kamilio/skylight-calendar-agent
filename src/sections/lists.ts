@@ -1,7 +1,7 @@
 import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
 import { requestJson } from "../skylight/http.js";
-import { terminalSafeText, truncateText } from "../skylight/text.js";
+import { errorMessage, terminalSafeText, truncateText } from "../skylight/text.js";
 import {
   assertWellFormedUnicode,
   jsonParam,
@@ -228,7 +228,7 @@ export const listsGroup = defineGroup({
               })
             );
           } catch (error) {
-            const detail = error instanceof Error ? error.message : String(error);
+            const detail = errorMessage(error);
             throw new UserError(
               `Created ${index} of ${ctx.params.labels.length} items. Failed on item ${index + 1} (${JSON.stringify(displayLabel(label))}): ${detail}`
             );

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
 import { getSkylightFrameConfig } from "./config.js";
 import { requestJson, SkylightRequestError } from "./http.js";
-import { terminalSafeText, truncateText } from "./text.js";
+import { errorMessage, terminalSafeText, truncateText } from "./text.js";
 import { assertJsonCompatible, normalizeIdentifier, pathSegment } from "./validation.js";
 
 type FramesListResponse = {
@@ -93,7 +93,7 @@ function validateFramesListResponse(value: unknown): FramesListResponse {
     try {
       id = normalizeIdentifier((frame as { id: string }).id, "Frame list response id");
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
+      const detail = errorMessage(error);
       throw new UserError(`Frame list response contains an invalid frame id: ${detail}`);
     }
     if (ids.has(id)) {
