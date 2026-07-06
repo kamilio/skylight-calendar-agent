@@ -89,7 +89,12 @@ function validateJsonParameter(
   if (visited.has(value)) return;
   active.add(value);
   if (Array.isArray(value)) {
-    value.forEach((item, index) => validateJsonParameter(item, `${label}[${index}]`, active, visited));
+    for (let index = 0; index < value.length; index += 1) {
+      if (!Object.prototype.hasOwnProperty.call(value, index)) {
+        throw new UserError(`${label} contains a sparse array entry at index ${index}.`);
+      }
+      validateJsonParameter(value[index], `${label}[${index}]`, active, visited);
+    }
   } else {
     for (const [name, child] of Object.entries(value)) {
       assertWellFormedUnicode(name, `${label} property name`);

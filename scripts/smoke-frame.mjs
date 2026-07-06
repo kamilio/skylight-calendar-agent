@@ -116,6 +116,27 @@ try {
       throw new Error("Non-finite JSON parameter reached frame discovery");
     }
   }
+  let sparseArrayCalls = 0;
+  const sparseArray = [];
+  sparseArray.length = 1;
+  try {
+    await resolveFrameId({
+      params: { bodyJson: { items: sparseArray } },
+      fetch: async () => {
+        sparseArrayCalls += 1;
+        return Response.json({ data: [{ id: "42" }] });
+      },
+    });
+    throw new Error("Sparse JSON array unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes('Command parameter "bodyJson"."items" contains a sparse array entry')) {
+      throw error;
+    }
+    if (sparseArrayCalls !== 0) {
+      throw new Error("Sparse JSON array reached frame discovery");
+    }
+  }
   try {
     await resolveFrameId({
       fetch: async () =>
