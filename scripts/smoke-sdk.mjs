@@ -161,6 +161,17 @@ try {
     ],
     [
       () => {
+        let value = { invalid: Number.NaN };
+        for (let depth = 0; depth < 95; depth += 1) {
+          value = { ["x".repeat(200)]: value };
+        }
+        return sdk.lists.createRaw({ listJson: value });
+      },
+      "contains a non-finite number",
+      "x".repeat(1_000),
+    ],
+    [
+      () => {
         const values = [];
         values[4_294_967_295] = "ignored";
         return sdk.lists.createRaw({ listJson: { values } });

@@ -9,6 +9,11 @@ function displayErrorValue(value: string): string {
   return safe.length <= 200 ? safe : `${truncateText(safe, 200)}…`;
 }
 
+function appendJsonPath(label: string, suffix: string): string {
+  const path = `${label}${suffix}`;
+  return path.length <= 500 ? path : `${truncateText(path, 500)}…`;
+}
+
 export function dateParam(options: { description: string; short?: string }) {
   return S.String({
     ...options,
@@ -154,7 +159,13 @@ export function assertJsonCompatible(
         if (!("value" in descriptor)) {
           throw new UserError(`${label} contains a non-JSON accessor at index ${index}.`);
         }
-        assertJsonCompatible(descriptor.value, `${label}[${index}]`, active, visited, depth + 1);
+        assertJsonCompatible(
+          descriptor.value,
+          appendJsonPath(label, `[${index}]`),
+          active,
+          visited,
+          depth + 1
+        );
       }
       for (const key of Reflect.ownKeys(value)) {
         if (
@@ -184,7 +195,7 @@ export function assertJsonCompatible(
         }
         assertJsonCompatible(
           descriptor.value,
-          `${label}.${displayKey}`,
+          appendJsonPath(label, `.${displayKey}`),
           active,
           visited,
           depth + 1
