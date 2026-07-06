@@ -3,6 +3,7 @@ import {
   assertValidAbsoluteUrl,
   assertValidDate,
   assertValidDateOrDateTimeRange,
+  assertValidDateTime,
   pathSegment,
 } from "../dist/skylight/validation.js";
 import { root } from "../dist/root.js";
@@ -87,6 +88,14 @@ for (const value of ["2026-01-01T00:00+14:01", "2026-01-01T00:00-23:59"]) {
     if (!message.includes("startsAt must be a valid ISO datetime")) throw error;
   }
 }
+
+assertValidDateTime("2026-12-31T23:59:60Z", "redeemedAtMax");
+assertValidDateOrDateTimeRange(
+  "2026-12-31T23:59:60Z",
+  "2027-01-01T00:00:00Z",
+  "redeemedAtMin",
+  "redeemedAtMax"
+);
 
 const env = { ...process.env, SKYLIGHT_FRAME_ID: "42" };
 for (const name of [

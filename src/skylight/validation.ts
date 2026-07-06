@@ -498,10 +498,11 @@ function dateOrDateTimeTimestamp(value: string): number {
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return Date.parse(`${value}T00:00:00Z`);
   }
-  if (!/(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
-    return Date.parse(`${value}Z`);
-  }
-  return Date.parse(value);
+  const hasOffset = /(?:Z|[+-]\d{2}:\d{2})$/.test(value);
+  const leapSecond = /:60(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/.test(value);
+  const parseable = leapSecond ? value.replace(/:60(?=(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$)/, ":59") : value;
+  const timestamp = Date.parse(hasOffset ? parseable : `${parseable}Z`);
+  return leapSecond ? timestamp + 1_000 : timestamp;
 }
 
 export function assertValidDateRange(
@@ -538,7 +539,7 @@ export function assertValidDateOrDateTime(value: string, label: string): void {
   if (
     hour > 23 ||
     minute > 59 ||
-    second > 59 ||
+    second > 60 ||
     offsetHour > 14 ||
     (offsetHour === 14 && offsetMinute > 0) ||
     offsetMinute > 59 ||
