@@ -108,6 +108,20 @@ function serializeJsonBody(value: unknown): string | undefined {
   });
 }
 
+function queryParameterText(value: string | number | boolean, key: string): string {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      throw new UserError(`Query parameter ${JSON.stringify(key)} contains a non-finite number.`);
+    }
+    if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+      throw new UserError(`Query parameter ${JSON.stringify(key)} contains an unsafe integer.`);
+    }
+  }
+  const text = String(value);
+  assertWellFormedUnicode(text, `Query parameter ${JSON.stringify(key)}`);
+  return text;
+}
+
 export async function requestJson<TResponse>(opts: {
   fetch: typeof globalThis.fetch;
   env?: NodeJS.ProcessEnv;
@@ -146,15 +160,14 @@ export async function requestJson<TResponse>(opts: {
     if (value === undefined || value === null) continue;
     if (Array.isArray(value)) {
       for (const item of value) {
-        const text = String(item);
-        assertWellFormedUnicode(text, `Query parameter ${JSON.stringify(key)}`);
-        url.searchParams.append(key, text);
+        url.searchParams.append(key, queryParameterText(item, key));
       }
       continue;
     }
-    const text = String(value);
-    assertWellFormedUnicode(text, `Query parameter ${JSON.stringify(key)}`);
-    url.searchParams.set(key, text);
+    url.searchParams.set(
+      key,
+      queryParameterText(value as string | number | boolean, key)
+    );
   }
 
   const headers: Record<string, string> = {

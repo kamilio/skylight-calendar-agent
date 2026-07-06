@@ -417,6 +417,28 @@ if (malformedQueryCalls !== 0) {
   throw new Error(`Malformed Unicode query reached fetch ${malformedQueryCalls} times`);
 }
 
+for (const value of [Number.NaN, Number.POSITIVE_INFINITY, 9_007_199_254_740_992]) {
+  try {
+    await requestJson({
+      fetch: async () => {
+        malformedQueryCalls += 1;
+        return Response.json({ ok: true });
+      },
+      env,
+      method: "GET",
+      path: "/api/test",
+      query: { page: value },
+    });
+    throw new Error("Invalid numeric query unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes('Query parameter "page" contains')) throw error;
+  }
+}
+if (malformedQueryCalls !== 0) {
+  throw new Error(`Invalid numeric query reached fetch ${malformedQueryCalls} times`);
+}
+
 try {
   await requestJson({
     fetch: async () => Response.json({ ok: true }),
