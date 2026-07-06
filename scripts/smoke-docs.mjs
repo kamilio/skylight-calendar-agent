@@ -1,6 +1,7 @@
 import fs from "node:fs";
 
 const actions = fs.readFileSync("docs/actions.md", "utf8");
+const config = fs.readFileSync("docs/config.md", "utf8");
 const sectionFiles = fs
   .readdirSync("src/sections")
   .filter((file) => file.endsWith(".ts"));
@@ -17,4 +18,13 @@ for (const file of sectionFiles) {
       throw new Error(`docs/actions.md is missing ${group} ${name}`);
     }
   }
+}
+
+if (
+  !config.includes("without the `Basic` scheme prefix") ||
+  !config.includes("without the `Bearer` scheme prefix") ||
+  config.includes("`Authorization: Basic <base64(id:token)>` value") ||
+  config.includes("`Authorization: Bearer <token>` value")
+) {
+  throw new Error("docs/config.md must describe token-only credential variables accurately");
 }

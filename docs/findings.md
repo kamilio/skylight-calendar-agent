@@ -13,7 +13,7 @@ PR #1 adds `POST /api/sessions` which returns an `id` and `token`. The API expec
 2. Base64 encode
 3. Send `Authorization: Basic <base64>`
 
-The CLI scaffolding auto-logs-in using `SKYLIGHT_EMAIL`/`SKYLIGHT_PASSWORD` when `SKYLIGHT_BASIC_TOKEN` is not set.
+The CLI scaffolding auto-logs-in using `SKYLIGHT_EMAIL`/`SKYLIGHT_PASSWORD` when no explicit auth header, Basic token, or Bearer token is set.
 
 The web app also uses a Bearer token (`Authorization: Bearer <accessToken>`) stored in local storage; you can provide it via `SKYLIGHT_BEARER_TOKEN`.
 

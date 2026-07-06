@@ -5,8 +5,8 @@ You may set `SKYLIGHT_FRAME_ID` directly or provide a public `SKYLIGHT_CALENDAR_
 ## Environment variables
 
 - `SKYLIGHT_EMAIL` / `SKYLIGHT_PASSWORD` — used to call `POST /api/sessions` when no explicit header, Basic token, or Bearer token is set.
-- `SKYLIGHT_BASIC_TOKEN` — optional precomputed `Authorization: Basic <base64(id:token)>` value.
-- `SKYLIGHT_BEARER_TOKEN` — optional `Authorization: Bearer <token>` value (matches the web app’s accessToken).
+- `SKYLIGHT_BASIC_TOKEN` — optional base64-encoded `id:token` value, without the `Basic` scheme prefix.
+- `SKYLIGHT_BEARER_TOKEN` — optional web-app access token, without the `Bearer` scheme prefix.
 - `SKYLIGHT_AUTH_HEADER` — optional full `Authorization` header value (wins over BASIC/BEARER).
 - `SKYLIGHT_API_BASE` — defaults to `https://app.ourskylight.com`; plain HTTP is accepted only for localhost or loopback development servers.
 - `SKYLIGHT_API_VERSION` — valid `YYYY-MM-DD` value sent as `Skylight-Api-Version` (default `2026-03-01`).
