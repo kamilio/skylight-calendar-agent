@@ -33,6 +33,35 @@ if (sessionCalls !== 2 || resourceCalls !== 3) {
   throw new Error(`Expired session was not refreshed once: ${sessionCalls} logins, ${resourceCalls} requests`);
 }
 
+let failedRefreshSessions = 0;
+try {
+  await requestJson({
+    fetch: async (url) => {
+      if (new URL(url).pathname === "/api/sessions") {
+        failedRefreshSessions += 1;
+        if (failedRefreshSessions === 1) {
+          return Response.json({ data: { id: "user", attributes: { token: "expired" } } });
+        }
+        return new Response("login rejected", { status: 401 });
+      }
+      return new Response("expired", { status: 401 });
+    },
+    env: {
+      SKYLIGHT_API_BASE: "https://example.invalid",
+      SKYLIGHT_EMAIL: "failed-refresh@example.com",
+      SKYLIGHT_PASSWORD: "secret",
+    },
+    method: "GET",
+    path: "/api/refresh-context",
+  });
+  throw new Error("Failed refresh unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("Login failed (401)") || !message.includes("GET /api/refresh-context")) {
+    throw error;
+  }
+}
+
 const concurrentRefreshEnv = {
   SKYLIGHT_API_BASE: "https://example.invalid",
   SKYLIGHT_EMAIL: "concurrent-refresh@example.com",

@@ -39,6 +39,10 @@ function retryAfterHint(response: Response): string {
   return safeRetryAfter.length === 0 ? "" : ` Retry after ${safeRetryAfter}.`;
 }
 
+function requestContextMessage(message: string, method: string, path: string): string {
+  return `${message} Request: ${method} ${path}.`;
+}
+
 function sanitizeJsonValue(value: unknown, depth = 0): unknown {
   if (depth > MAX_RESPONSE_JSON_DEPTH) {
     throw new UserError(
@@ -155,7 +159,14 @@ export async function requestJson<TResponse>(opts: {
     "Skylight-Api-Version": config.apiVersion,
   };
   if (opts.authenticated !== false) {
-    headers.authorization = await getAuthorizationHeader({ fetch: opts.fetch, env });
+    try {
+      headers.authorization = await getAuthorizationHeader({ fetch: opts.fetch, env });
+    } catch (error) {
+      if (error instanceof UserError) {
+        throw new UserError(requestContextMessage(error.message, opts.method, opts.path));
+      }
+      throw error;
+    }
   }
 
   const init: RequestInit = {
@@ -176,13 +187,21 @@ export async function requestJson<TResponse>(opts: {
     let text = await response.text();
 
     if (response.status === 401 && opts.authenticated !== false) {
-      const refreshedAuthorization = await refreshAuthorizationHeader({
-        fetch: opts.fetch,
-        env,
-        ...(headers.authorization === undefined
-          ? {}
-          : { rejectedAuthorization: headers.authorization }),
-      });
+      let refreshedAuthorization: string | null;
+      try {
+        refreshedAuthorization = await refreshAuthorizationHeader({
+          fetch: opts.fetch,
+          env,
+          ...(headers.authorization === undefined
+            ? {}
+            : { rejectedAuthorization: headers.authorization }),
+        });
+      } catch (error) {
+        if (error instanceof UserError) {
+          throw new UserError(requestContextMessage(error.message, opts.method, opts.path));
+        }
+        throw error;
+      }
       if (refreshedAuthorization !== null) {
         headers.authorization = refreshedAuthorization;
         response = await opts.fetch(url.toString(), init);
@@ -226,7 +245,7 @@ export async function requestJson<TResponse>(opts: {
       return sanitizeJsonValue(parsed) as TResponse;
     } catch (error) {
       if (error instanceof UserError) {
-        throw new UserError(`${error.message} Request: ${opts.method} ${opts.path}.`);
+        throw new UserError(requestContextMessage(error.message, opts.method, opts.path));
       }
       throw error;
     }
