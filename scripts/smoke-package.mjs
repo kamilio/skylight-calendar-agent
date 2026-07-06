@@ -15,6 +15,10 @@ try {
   );
   const [{ files }] = JSON.parse(stdout);
   const names = new Set(files.map((file) => file.path));
+  const metadata = JSON.parse(await fs.readFile("package.json", "utf8"));
+  if (metadata.directories?.doc !== undefined && !names.has(metadata.directories.doc)) {
+    throw new Error(`Published package declares missing docs directory ${metadata.directories.doc}`);
+  }
 
   for (const required of [
     "dist/cli.js",
