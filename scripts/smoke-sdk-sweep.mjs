@@ -84,6 +84,8 @@ try {
       }
       for (const request of commandRequests) {
         const url = new URL(request.url);
+        const method = request.init?.method;
+        const headers = new Headers(request.init?.headers);
         if (
           url.origin !== "https://example.invalid" ||
           !url.pathname.startsWith("/api/") ||
@@ -94,7 +96,28 @@ try {
             `${group.name}.${command.name} produced an invalid request URL: ${request.url}`
           );
         }
-        if (request.init?.body !== undefined) JSON.parse(String(request.init.body));
+        if (!["GET", "POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+          throw new Error(`${group.name}.${command.name} used an invalid HTTP method: ${method}`);
+        }
+        if (method === "GET" && request.init?.body !== undefined) {
+          throw new Error(`${group.name}.${command.name} sent a body with GET`);
+        }
+        if (headers.get("accept") !== "application/json") {
+          throw new Error(`${group.name}.${command.name} omitted the JSON accept header`);
+        }
+        if (headers.get("skylight-api-version") !== "2026-03-01") {
+          throw new Error(`${group.name}.${command.name} omitted the API version header`);
+        }
+        const publicRequest = group.name === "profiles" && command.name === "forgot-password";
+        if ((headers.has("authorization")) === publicRequest) {
+          throw new Error(`${group.name}.${command.name} used the wrong authentication mode`);
+        }
+        if (request.init?.body !== undefined) {
+          if (headers.get("content-type") !== "application/json") {
+            throw new Error(`${group.name}.${command.name} omitted the JSON content type`);
+          }
+          JSON.parse(String(request.init.body));
+        }
       }
       commandCount += 1;
     }
