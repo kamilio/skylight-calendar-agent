@@ -6,6 +6,11 @@ import { assertWellFormedUnicode, snapshotJsonCompatible } from "./validation.js
 
 const MAX_ERROR_BODY_LENGTH = 2_000;
 const MAX_RESPONSE_JSON_DEPTH = 100;
+let preserveResponseLayout = true;
+
+export function flattenResponseLayoutForCli(): void {
+  preserveResponseLayout = false;
+}
 
 export class SkylightRequestError extends UserError {
   readonly status: number;
@@ -29,7 +34,7 @@ function errorBodyExcerpt(value: string): string {
 
 function safeOutputText(value: string): string {
   assertWellFormedUnicode(value, "Response JSON string");
-  return terminalSafeText(value);
+  return terminalSafeText(value, preserveResponseLayout);
 }
 
 function retryAfterHint(response: Response): string {

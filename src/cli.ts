@@ -2,10 +2,12 @@
 import { runCLI } from "toolcraft/cli";
 import { root } from "./root.js";
 import { loadDotEnv } from "./env.js";
+import { flattenResponseLayoutForCli } from "./skylight/http.js";
 import { terminalSafeText } from "./skylight/text.js";
 import { packageVersion } from "./version.js";
 
 loadDotEnv();
+flattenResponseLayoutForCli();
 
 function kebabCase(value: string): string {
   return value.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();

@@ -1,4 +1,4 @@
-import { requestJson } from "../dist/skylight/http.js";
+import { flattenResponseLayoutForCli, requestJson } from "../dist/skylight/http.js";
 import { assertWellFormedUnicode } from "../dist/skylight/validation.js";
 
 const env = {
@@ -157,13 +157,24 @@ if (
   sanitizedText.includes("\u001b") ||
   sanitizedText.includes("\u009b") ||
   sanitizedText.includes("\\r") ||
-  sanitizedSuccess["bad key"] !== "red replace keep-newline" ||
+  sanitizedSuccess["bad key"] !== "red replace\nkeep-newline" ||
   sanitizedSuccess["line break"] !== "safe key" ||
   sanitizedSuccess.direction !== "safe txt" ||
-  sanitizedSuccess.layout !== "safe ■ forged failure value" ||
+  sanitizedSuccess.layout !== "safe\n■ forged failure\tvalue" ||
   !Object.prototype.hasOwnProperty.call(sanitizedSuccess, "__proto__")
 ) {
   throw new Error(`Successful response retained terminal controls: ${sanitizedText}`);
+}
+
+flattenResponseLayoutForCli();
+const flattenedSuccess = await requestJson({
+  fetch: async () => Response.json({ layout: "safe\n■ forged failure\tvalue" }),
+  env,
+  method: "GET",
+  path: "/api/test",
+});
+if (flattenedSuccess.layout !== "safe ■ forged failure value") {
+  throw new Error(`CLI response layout was not flattened: ${JSON.stringify(flattenedSuccess)}`);
 }
 
 let deeplyNested = "0";
