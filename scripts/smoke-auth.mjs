@@ -210,6 +210,22 @@ try {
   if (!message.includes("missing valid string id/token values")) throw error;
 }
 
+for (const body of ["null", "[]", '"unexpected"']) {
+  try {
+    await getAuthorizationHeader({
+      fetch: async () => new Response(body, { status: 200 }),
+      env: credentials,
+    });
+    throw new Error(`Primitive login response unexpectedly succeeded: ${body}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("missing valid string id/token values")) throw error;
+    if (message.includes("Cannot read properties")) {
+      throw new Error(`Primitive login response leaked an internal TypeError: ${message}`);
+    }
+  }
+}
+
 try {
   await getAuthorizationHeader({
     fetch: async () =>

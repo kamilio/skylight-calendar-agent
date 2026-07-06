@@ -173,15 +173,19 @@ async function login(opts: {
       );
     }
 
-    let json: SessionResponse;
+    let parsed: unknown;
     try {
-      json = JSON.parse(text) as SessionResponse;
+      parsed = JSON.parse(text) as unknown;
     } catch {
       const excerpt = errorBodyExcerpt(text);
       throw new UserError(
         `Login response was not valid JSON${excerpt.length > 0 ? `: ${excerpt}` : "."}`
       );
     }
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new UserError("Login response missing valid string id/token values.");
+    }
+    const json = parsed as SessionResponse;
     const id = json.data?.id;
     const token = json.data?.attributes?.token;
     if (
