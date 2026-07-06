@@ -123,7 +123,7 @@ const lists = await skylight.lists.list({});
 const created = await skylight.lists.create({ label: "Weekend" });
 ```
 
-The SDK uses the same environment configuration as the CLI and accepts native JSON values for `*Json` parameters. Response types are `unknown` because the upstream API is undocumented and may change.
+The SDK reads the same `SKYLIGHT_*` variables from `process.env` and accepts native JSON values for `*Json` parameters. It does not load `.env` automatically; load that file in your application before creating the SDK if needed. Response types are `unknown` because the upstream API is undocumented and may change.
 
 ### MCP safety
 
