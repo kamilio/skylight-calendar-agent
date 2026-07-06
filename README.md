@@ -109,6 +109,10 @@ If the package is globally installed, set `command` directly to `skylight-calend
 
 The package exports both the typed command tree and Toolcraft's SDK factory:
 
+```sh
+npm install skylight-calendar-agent
+```
+
 ```js
 import { createSDK, root } from "skylight-calendar-agent";
 
