@@ -25,15 +25,19 @@ export const tasksGroup = defineGroup({
       params: S.Object({
         after: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "a" })),
         before: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "b" })),
-        includeLate: S.Boolean({
-          description: "Whether to include late chores",
-          short: "l",
-          default: true,
-        }),
-        includeUpForGrabs: S.Boolean({
-          description: "Include up-for-grabs chores",
-          default: false,
-        }),
+        includeLate: S.Optional(
+          S.Boolean({
+            description: "Whether to include late chores",
+            short: "l",
+            default: true,
+          })
+        ),
+        includeUpForGrabs: S.Optional(
+          S.Boolean({
+            description: "Include up-for-grabs chores",
+            default: false,
+          })
+        ),
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.after, ctx.params.before, "after", "before");
@@ -45,8 +49,8 @@ export const tasksGroup = defineGroup({
           query: {
             after: ctx.params.after,
             before: ctx.params.before,
-            include_late: ctx.params.includeLate,
-            include_up_for_grabs: ctx.params.includeUpForGrabs,
+            include_late: ctx.params.includeLate ?? true,
+            include_up_for_grabs: ctx.params.includeUpForGrabs ?? false,
             filter: "linked_to_profile",
           },
         });

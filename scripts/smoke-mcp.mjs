@@ -134,6 +134,16 @@ child.stdout.on("data", (chunk) => {
       throw new Error("Reward points must use the JavaScript safe integer range");
     }
 
+    const chores = tools.find((tool) => tool.name === "skylight__tasks__chores");
+    if (
+      chores?.inputSchema?.required?.includes("include_late") ||
+      chores?.inputSchema?.required?.includes("include_up_for_grabs") ||
+      chores?.inputSchema?.properties?.include_late?.default !== true ||
+      chores?.inputSchema?.properties?.include_up_for_grabs?.default !== false
+    ) {
+      throw new Error("Chore filter defaults must remain optional in MCP");
+    }
+
     const mealInstance = tools.find((tool) => tool.name === "skylight__meals__delete")
       ?.inputSchema?.properties?.instance_iso;
     if (mealInstance?.type !== "string") {
