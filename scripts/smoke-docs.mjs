@@ -38,6 +38,14 @@ if (!readme.includes("It does not load `.env` automatically")) {
 }
 
 if (
+  !readme.includes("structured `SkylightRequestError` type") ||
+  !readme.includes("`status`, `method`, and `path` fields") ||
+  !readme.includes("SDK error messages are stripped of terminal control characters")
+) {
+  throw new Error("README.md must explain SDK error safety and structure");
+}
+
+if (
   !readme.includes("500 properties/items") ||
   !readme.includes("10,000-character strings") ||
   !readme.includes("do not apply to SDK or MCP responses")
