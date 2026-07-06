@@ -1,5 +1,4 @@
-import { createSDK } from "toolcraft/sdk";
-import { root } from "../dist/root.js";
+import { createSDK, root } from "../dist/index.js";
 
 const savedEnv = { ...process.env };
 let calls = 0;

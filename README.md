@@ -105,6 +105,20 @@ Example MCP client configuration:
 
 If the package is globally installed, set `command` directly to `skylight-calendar-mcp` and omit `args`.
 
+## SDK
+
+The package exports both the typed command tree and Toolcraft's SDK factory:
+
+```js
+import { createSDK, root } from "skylight-calendar-agent";
+
+const skylight = createSDK(root);
+const lists = await skylight.lists.list({});
+const created = await skylight.lists.create({ label: "Weekend" });
+```
+
+The SDK uses the same environment configuration as the CLI and accepts native JSON values for `*Json` parameters.
+
 ### MCP safety
 
 Commands that reveal or mint credentials, OAuth authorization URLs, device activation codes, and signed upload URLs; trigger account emails, exports, migrations, hardware reset/deletion, or hidden-frame state; accept account passwords or share tokens; delete the user account; or transfer frame ownership are intentionally limited to the CLI and SDK. They are not advertised as MCP tools.
