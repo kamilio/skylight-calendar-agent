@@ -310,6 +310,19 @@ await expectLocalError(
     "--start",
     "2026-07-05",
     "--recurrence-rrule",
+    "FREQ=DAILY;INTERVL=2",
+  ],
+  "recurrenceRrule contains an unsupported recurrence component"
+);
+await expectLocalError(
+  [
+    "tasks",
+    "chore-create-simple",
+    "--summary",
+    "Test",
+    "--start",
+    "2026-07-05",
+    "--recurrence-rrule",
     "FREQ=DAILY;FREQ=WEEKLY",
   ],
   "recurrenceRrule must not repeat the FREQ component"

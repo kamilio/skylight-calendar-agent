@@ -4,6 +4,22 @@ import { terminalSafeText, truncateText } from "./text.js";
 const DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
 const MAX_REQUEST_JSON_DEPTH = 100;
 const MAX_RRULE_INTEGER = 2_147_483_647;
+const RRULE_COMPONENTS = new Set([
+  "FREQ",
+  "UNTIL",
+  "COUNT",
+  "INTERVAL",
+  "BYSECOND",
+  "BYMINUTE",
+  "BYHOUR",
+  "BYDAY",
+  "BYMONTHDAY",
+  "BYYEARDAY",
+  "BYWEEKNO",
+  "BYMONTH",
+  "BYSETPOS",
+  "WKST",
+]);
 
 function displayErrorValue(value: string): string {
   const safe = terminalSafeText(value);
@@ -354,6 +370,11 @@ export function normalizeRrule(value: string, label = "rrule"): string {
       );
     }
     const name = (match[1] ?? "").toUpperCase();
+    if (!RRULE_COMPONENTS.has(name)) {
+      throw new UserError(
+        `${label} contains an unsupported recurrence component: ${JSON.stringify(displayErrorValue(name))}.`
+      );
+    }
     if (components.has(name)) {
       throw new UserError(
         `${label} must not repeat the ${displayErrorValue(name)} component.`
