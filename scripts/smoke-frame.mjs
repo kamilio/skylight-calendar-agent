@@ -80,6 +80,23 @@ try {
   delete process.env.SKYLIGHT_CALENDAR_URL;
   process.env.SKYLIGHT_API_BASE = "https://example.invalid";
   process.env.SKYLIGHT_AUTH_HEADER = "Bearer test";
+  let malformedUnicodeCalls = 0;
+  try {
+    await resolveFrameId({
+      params: { label: "\uD800" },
+      fetch: async () => {
+        malformedUnicodeCalls += 1;
+        return Response.json({ data: [{ id: "42" }] });
+      },
+    });
+    throw new Error("Malformed Unicode parameter unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes('Command parameter "label" contains invalid Unicode')) throw error;
+    if (malformedUnicodeCalls !== 0) {
+      throw new Error("Malformed Unicode parameter reached frame discovery");
+    }
+  }
   try {
     await resolveFrameId({
       fetch: async () =>

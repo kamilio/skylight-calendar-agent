@@ -64,7 +64,7 @@ try {
     ],
     [
       () => sdk.lists.createRaw({ listJson: { label: "\uD800" } }),
-      "Request body property \"label\" contains invalid Unicode",
+      "Command parameter \"label\" contains invalid Unicode",
     ],
     [
       () => sdk.profiles.ownerProfileUpdate({ birthday: "02/31" }),

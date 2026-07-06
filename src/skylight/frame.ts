@@ -3,7 +3,7 @@ import { UserError } from "toolcraft";
 import { getSkylightConfig } from "./config.js";
 import { requestJson, SkylightRequestError } from "./http.js";
 import { terminalSafeText, truncateText } from "./text.js";
-import { normalizeIdentifier, pathSegment } from "./validation.js";
+import { assertWellFormedUnicode, normalizeIdentifier, pathSegment } from "./validation.js";
 
 type FramesListResponse = {
   data: Array<{
@@ -57,6 +57,28 @@ function validateIdentifierParams(params: unknown): void {
     if (name.endsWith("Id") && (typeof value === "string" || typeof value === "number")) {
       normalizeIdentifier(value, name);
     }
+  }
+}
+
+function validateParamUnicode(
+  value: unknown,
+  label = "Command parameter",
+  seen = new WeakSet<object>()
+): void {
+  if (typeof value === "string") {
+    assertWellFormedUnicode(value, label);
+    return;
+  }
+  if (value === null || typeof value !== "object") return;
+  if (seen.has(value)) return;
+  seen.add(value);
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => validateParamUnicode(item, `${label}[${index}]`, seen));
+    return;
+  }
+  for (const [name, child] of Object.entries(value)) {
+    assertWellFormedUnicode(name, "Command parameter name");
+    validateParamUnicode(child, `Command parameter ${JSON.stringify(name)}`, seen);
   }
 }
 
@@ -164,6 +186,7 @@ export async function resolveFrameId(ctx: {
   fetch: typeof globalThis.fetch;
   params?: unknown;
 }): Promise<string> {
+  validateParamUnicode(ctx.params);
   validateIdentifierParams(ctx.params);
   const config = getSkylightConfig();
   const fromEnv = config.frameId?.trim();
