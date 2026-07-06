@@ -1,6 +1,6 @@
-# Capturing API traffic (so HAR includes `/api/...`)
+# Capturing API traffic in a HAR
 
-Your current `skylight.har` only contains static asset `GET`s to `https://ourskylight.com/...` (fonts, images, JS bundle). To capture the *real* API calls, you need to record while the app is making **Fetch/XHR** requests to:
+If a capture contains only static asset `GET`s to `https://ourskylight.com/...` (fonts, images, or the JS bundle), record again while the app is making **Fetch/XHR** requests to:
 
 - `https://app.ourskylight.com/api/...`
 

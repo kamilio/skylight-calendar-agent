@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 const actions = fs.readFileSync("docs/actions.md", "utf8");
 const config = fs.readFileSync("docs/config.md", "utf8");
+const captureDocs = fs.readFileSync("docs/capturing-api-traffic.md", "utf8");
 const readme = fs.readFileSync("README.md", "utf8");
 const sectionFiles = fs
   .readdirSync("src/sections")
@@ -41,4 +42,8 @@ if (
   fs.readFileSync("docs/commands.md", "utf8").includes("MCP (stdio): `npm run dev:mcp`")
 ) {
   throw new Error("MCP development docs must suppress npm banners on stdout");
+}
+
+if (captureDocs.includes("Your current `skylight.har` only contains static asset")) {
+  throw new Error("HAR capture guidance incorrectly describes the current capture as asset-only");
 }
