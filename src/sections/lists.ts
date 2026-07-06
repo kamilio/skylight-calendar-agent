@@ -1,6 +1,6 @@
 import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { resolveFrameId } from "../skylight/frame.js";
-import { requestJson } from "../skylight/http.js";
+import { requestJson, sanitizeJsonResponseForOutput } from "../skylight/http.js";
 import { errorMessage, terminalSafeText, truncateText } from "../skylight/text.js";
 import {
   assertWellFormedUnicode,
@@ -234,7 +234,7 @@ export const listsGroup = defineGroup({
             );
           }
         }
-        return { items };
+        return sanitizeJsonResponseForOutput({ items });
       },
     }),
     defineCommand({

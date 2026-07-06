@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { getAuthorizationHeader } from "../dist/skylight/auth.js";
 
 const credentials = {
@@ -5,6 +6,28 @@ const credentials = {
   SKYLIGHT_EMAIL: "person@example.com",
   SKYLIGHT_PASSWORD: "secret",
 };
+
+const tokenChild = spawn(process.execPath, ["dist/cli.js", "profiles", "token"], {
+  env: {
+    ...process.env,
+    SKYLIGHT_AUTH_HEADER: "",
+    SKYLIGHT_BASIC_TOKEN: "",
+    SKYLIGHT_BEARER_TOKEN: "a".repeat(12_000),
+    SKYLIGHT_EMAIL: "",
+    SKYLIGHT_PASSWORD: "",
+  },
+  stdio: ["ignore", "pipe", "pipe"],
+});
+let tokenOutput = "";
+tokenChild.stdout.on("data", (chunk) => { tokenOutput += chunk; });
+tokenChild.stderr.on("data", (chunk) => { tokenOutput += chunk; });
+const tokenCode = await new Promise((resolve, reject) => {
+  tokenChild.on("exit", resolve);
+  tokenChild.on("error", reject);
+});
+if (tokenCode !== 0 || tokenOutput.length > 13_000 || !tokenOutput.includes("[truncated")) {
+  throw new Error(`Token CLI output was not safely bounded: ${tokenOutput.length}`);
+}
 
 for (const [name, value] of [
   ["SKYLIGHT_AUTH_HEADER", "Bearer good\nInjected: x"],

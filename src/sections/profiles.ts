@@ -1,6 +1,6 @@
 import { defineCommand, defineGroup, S, UserError } from "toolcraft";
 import { listCalendarFrames, resolveFrameId } from "../skylight/frame.js";
-import { requestJson } from "../skylight/http.js";
+import { requestJson, sanitizeJsonResponseForOutput } from "../skylight/http.js";
 import { getAuthorizationHeader } from "../skylight/auth.js";
 import {
   assertAtLeastOneDefined,
@@ -26,7 +26,7 @@ export const profilesGroup = defineGroup({
       params: S.Object({}),
       handler: async (ctx) => {
         const header = await getAuthorizationHeader({ fetch: ctx.fetch });
-        return { authorization: header };
+        return sanitizeJsonResponseForOutput({ authorization: header });
       },
     }),
     defineCommand({
