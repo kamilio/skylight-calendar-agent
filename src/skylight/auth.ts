@@ -122,7 +122,10 @@ async function login(opts: {
     try {
       json = JSON.parse(text) as SessionResponse;
     } catch {
-      throw new UserError("Login response was not valid JSON.");
+      const excerpt = errorBodyExcerpt(text);
+      throw new UserError(
+        `Login response was not valid JSON${excerpt.length > 0 ? `: ${excerpt}` : "."}`
+      );
     }
     const id = json.data?.id;
     const token = json.data?.attributes?.token;

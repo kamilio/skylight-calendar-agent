@@ -126,7 +126,12 @@ try {
   throw new Error("Invalid login JSON unexpectedly succeeded");
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  if (!message.includes("Login response was not valid JSON")) throw error;
+  if (
+    !message.includes("Login response was not valid JSON") ||
+    !message.includes("not json")
+  ) {
+    throw error;
+  }
 }
 
 try {

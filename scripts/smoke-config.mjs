@@ -8,6 +8,12 @@ if (normalized.apiBaseUrl !== "https://app.ourskylight.com") {
   throw new Error(`API base was not normalized: ${normalized.apiBaseUrl}`);
 }
 
+for (const apiBaseUrl of ["http://localhost:3000", "http://127.0.0.1:3000", "http://[::1]:3000"]) {
+  if (getSkylightConfig({ SKYLIGHT_API_BASE: apiBaseUrl }).apiBaseUrl !== apiBaseUrl) {
+    throw new Error(`Loopback API base was not accepted: ${apiBaseUrl}`);
+  }
+}
+
 const originalTimezone = process.env.TZ;
 process.env.TZ = "UTC";
 try {
@@ -23,6 +29,7 @@ try {
 for (const [key, value] of [
   ["SKYLIGHT_API_BASE", "not-a-url"],
   ["SKYLIGHT_API_BASE", "ftp://example.com"],
+  ["SKYLIGHT_API_BASE", "http://example.com"],
   ["SKYLIGHT_API_BASE", "https://example.com/unexpected/path"],
   ["SKYLIGHT_API_VERSION", "bad"],
   ["SKYLIGHT_API_VERSION", "2026-02-30"],
