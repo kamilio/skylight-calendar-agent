@@ -105,6 +105,16 @@ function basicToken(value: string, label: string): string {
   return value;
 }
 
+function bearerToken(value: string, label: string): string {
+  if (/\s/.test(value)) {
+    throw new UserError(`${label} must not contain whitespace.`);
+  }
+  if (!/^[A-Za-z0-9\-._~+/]+={0,}$/.test(value)) {
+    throw new UserError(`${label} must use valid Bearer token characters.`);
+  }
+  return value;
+}
+
 function authorizationHeader(value: string): string {
   const match = /^(Basic|Bearer)\s+(\S+)$/i.exec(value);
   if (!match) {
@@ -114,6 +124,8 @@ function authorizationHeader(value: string): string {
   }
   if (match[1]?.toLowerCase() === "basic") {
     basicToken(match[2] ?? "", "SKYLIGHT_AUTH_HEADER Basic token");
+  } else {
+    bearerToken(match[2] ?? "", "SKYLIGHT_AUTH_HEADER Bearer token");
   }
   return value;
 }
@@ -230,10 +242,7 @@ export async function getAuthorizationHeader(opts: {
         "SKYLIGHT_BEARER_TOKEN must contain only the token, without the Bearer prefix. Use SKYLIGHT_AUTH_HEADER for a complete header value."
       );
     }
-    if (/\s/.test(bearer)) {
-      throw new UserError("SKYLIGHT_BEARER_TOKEN must not contain whitespace.");
-    }
-    return `Bearer ${bearer}`;
+    return `Bearer ${bearerToken(bearer, "SKYLIGHT_BEARER_TOKEN")}`;
   }
 
   const email = loginEmail(env.SKYLIGHT_EMAIL);

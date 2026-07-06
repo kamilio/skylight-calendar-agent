@@ -51,6 +51,10 @@ for (const [env, expected] of [
     "SKYLIGHT_BASIC_TOKEN user id must not contain control characters",
   ],
   [{ SKYLIGHT_BEARER_TOKEN: "abc def" }, "must not contain whitespace"],
+  [{ SKYLIGHT_BEARER_TOKEN: "😀" }, "valid Bearer token characters"],
+  [{ SKYLIGHT_BEARER_TOKEN: "abc,def" }, "valid Bearer token characters"],
+  [{ SKYLIGHT_AUTH_HEADER: "Bearer 😀" }, "valid Bearer token characters"],
+  [{ SKYLIGHT_AUTH_HEADER: "Bearer abc,def" }, "valid Bearer token characters"],
 ]) {
   try {
     await getAuthorizationHeader({ fetch: globalThis.fetch, env });
