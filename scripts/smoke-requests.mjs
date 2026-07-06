@@ -134,7 +134,7 @@ try {
     "--event-id",
     "event-recurring",
     "--rrule",
-    " FREQ=WEEKLY;BYDAY=MO ",
+    " freq=weekly;byday=mo ",
   ]);
   await run([
     "calendar",

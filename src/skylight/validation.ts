@@ -388,7 +388,7 @@ export function normalizeRrule(value: string, label = "rrule"): string {
 
   const until = components.get("UNTIL");
   if (until !== undefined) {
-    const match = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?$/.exec(until);
+    const match = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})Z)?$/i.exec(until);
     if (match === null) {
       throw new UserError(
         `${label} contains an invalid UNTIL value: ${JSON.stringify(displayErrorValue(until))}.`
@@ -410,7 +410,13 @@ export function normalizeRrule(value: string, label = "rrule"): string {
       );
     }
   }
-  return `RRULE:${rule}`;
+  const uppercaseValues = new Set(["FREQ", "BYDAY", "WKST", "UNTIL"]);
+  const normalizedRule = [...components]
+    .map(([name, componentValue]) =>
+      `${name}=${uppercaseValues.has(name) ? componentValue.toUpperCase() : componentValue}`
+    )
+    .join(";");
+  return `RRULE:${normalizedRule}`;
 }
 
 export function assertValidDate(value: string, label: string): void {
