@@ -22,6 +22,18 @@ try {
   if (!message.includes("calendarUrl must not contain control characters")) throw error;
 }
 
+try {
+  assertValidAbsoluteUrl("https://user:secret@example.com/calendar.ics", "calendarUrl", [
+    "https:",
+  ]);
+  throw new Error("Credential-bearing URL unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("calendarUrl must not include embedded username or password")) {
+    throw error;
+  }
+}
+
 assertValidDate("0099-01-01", "date");
 assertValidDate("0000-02-29", "date");
 

@@ -318,6 +318,9 @@ export function normalizeAbsoluteUrl(
   ) {
     throw new UserError(`${label} must not use the ${url.protocol.slice(0, -1)} scheme.`);
   }
+  if (url.username.length > 0 || url.password.length > 0) {
+    throw new UserError(`${label} must not include embedded username or password credentials.`);
+  }
   return normalized;
 }
 
