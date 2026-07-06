@@ -28,6 +28,7 @@ function errorBodyExcerpt(value: string): string {
 }
 
 function safeOutputText(value: string): string {
+  assertWellFormedUnicode(value, "Response JSON string");
   return terminalSafeText(value, true);
 }
 
@@ -66,6 +67,7 @@ function sanitizeJsonValue(value: unknown, depth = 0): unknown {
 
   const sanitized: Record<string, unknown> = {};
   for (const [key, child] of Object.entries(value)) {
+    assertWellFormedUnicode(key, "Response JSON property name");
     const safeKey = terminalSafeText(key);
     if (Object.prototype.hasOwnProperty.call(sanitized, safeKey)) {
       throw new UserError("Response contained duplicate keys after terminal sanitization.");

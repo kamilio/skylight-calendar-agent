@@ -329,6 +329,24 @@ try {
   assertWellFormedUnicode(message, "Truncated error message");
 }
 
+for (const body of ['{"value":"\\ud800"}', '{"\\ud800":"value"}']) {
+  try {
+    await requestJson({
+      fetch: async () => new Response(body, { status: 200 }),
+      env,
+      method: "GET",
+      path: "/api/frames/42/lists",
+    });
+    throw new Error("Malformed Unicode response unexpectedly succeeded");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Response JSON") || !message.includes("contains invalid Unicode")) {
+      throw error;
+    }
+    if (!message.includes("GET /api/frames/42/lists")) throw error;
+  }
+}
+
 const emptyResponse = await requestJson({
   fetch: async () => new Response(null, { status: 204 }),
   env,
