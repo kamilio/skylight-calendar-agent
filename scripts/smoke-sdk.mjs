@@ -1,4 +1,5 @@
 import { createSkylightSDK } from "../dist/index.js";
+import { SkylightRequestError } from "../dist/skylight/http.js";
 
 const savedEnv = { ...process.env };
 let calls = 0;
@@ -533,6 +534,19 @@ try {
   const failingSdk = createSkylightSDK({
     fetch: async () => new Response("failed", { status: 500 }),
   });
+  try {
+    await failingSdk.lists.list({});
+    throw new Error("Failed SDK request unexpectedly succeeded");
+  } catch (error) {
+    if (
+      !(error instanceof SkylightRequestError) ||
+      error.status !== 500 ||
+      error.method !== "GET" ||
+      error.path !== "/api/frames/42/lists"
+    ) {
+      throw error;
+    }
+  }
   try {
     await failingSdk.lists.itemsCreate({
       listId: "1",

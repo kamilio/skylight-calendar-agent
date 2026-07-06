@@ -22,7 +22,24 @@ function sanitizeSdkErrors<T extends object>(sdk: T): T {
             try {
               return await Reflect.apply(child, value, args);
             } catch (error) {
-              throw new UserError(terminalSafeText(errorMessage(error)));
+              const message = terminalSafeText(errorMessage(error));
+              let errorObject = false;
+              try {
+                errorObject = error instanceof Error;
+              } catch {}
+              if (errorObject) {
+                let replaced = false;
+                try {
+                  Object.defineProperty(error, "message", {
+                    value: message,
+                    configurable: true,
+                    writable: true,
+                  });
+                  replaced = true;
+                } catch {}
+                if (replaced) throw error;
+              }
+              throw new UserError(message);
             }
           }
           : typeof child === "object" && child !== null
