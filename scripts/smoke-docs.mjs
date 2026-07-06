@@ -24,6 +24,8 @@ for (const file of sectionFiles) {
 if (
   !config.includes("without the `Basic` scheme prefix") ||
   !config.includes("without the `Bearer` scheme prefix") ||
+  !config.includes("SDK reads `process.env` but does not load `.env` automatically") ||
+  !config.includes("`SKYLIGHT_API_BASE` is not loaded from `.env`") ||
   config.includes("`Authorization: Basic <base64(id:token)>` value") ||
   config.includes("`Authorization: Bearer <token>` value")
 ) {
