@@ -10,6 +10,15 @@ const MAX_CLI_RESPONSE_COLLECTION_ITEMS = 500;
 const MAX_CLI_RESPONSE_STRING_LENGTH = 10_000;
 const MAX_RESPONSE_JSON_DEPTH = 100;
 let preserveResponseLayout = true;
+const trustedRequestErrors = new WeakSet<object>();
+
+function isUserError(value: unknown): value is UserError {
+  try {
+    return value instanceof UserError;
+  } catch {
+    return false;
+  }
+}
 
 export function flattenResponseLayoutForCli(): void {
   preserveResponseLayout = false;
@@ -22,6 +31,7 @@ export class SkylightRequestError extends UserError {
 
   constructor(status: number, method: string, path: string, message: string) {
     super(message);
+    trustedRequestErrors.add(this);
     this.status = status;
     this.method = method;
     this.path = path;
@@ -221,8 +231,8 @@ export async function requestJson<TResponse>(opts: {
     try {
       headers.authorization = await getAuthorizationHeader({ fetch: opts.fetch, env });
     } catch (error) {
-      if (error instanceof UserError) {
-        throw new UserError(requestContextMessage(error.message, opts.method, opts.path));
+      if (isUserError(error)) {
+        throw new UserError(requestContextMessage(errorMessage(error), opts.method, opts.path));
       }
       throw error;
     }
@@ -256,8 +266,8 @@ export async function requestJson<TResponse>(opts: {
             : { rejectedAuthorization: headers.authorization }),
         });
       } catch (error) {
-        if (error instanceof UserError) {
-          throw new UserError(requestContextMessage(error.message, opts.method, opts.path));
+        if (isUserError(error)) {
+          throw new UserError(requestContextMessage(errorMessage(error), opts.method, opts.path));
         }
         throw error;
       }
@@ -303,13 +313,16 @@ export async function requestJson<TResponse>(opts: {
     try {
       return sanitizeJsonValue(parsed) as TResponse;
     } catch (error) {
-      if (error instanceof UserError) {
-        throw new UserError(requestContextMessage(error.message, opts.method, opts.path));
+      if (isUserError(error)) {
+        throw new UserError(requestContextMessage(errorMessage(error), opts.method, opts.path));
       }
       throw error;
     }
   } catch (error) {
-    if (error instanceof UserError) throw error;
+    if (typeof error === "object" && error !== null && trustedRequestErrors.has(error)) {
+      throw error;
+    }
+    if (isUserError(error)) throw new UserError(errorMessage(error));
     if (controller.signal.aborted) {
       throw new UserError(
         `Request timed out after ${config.requestTimeoutMs}ms ${opts.method} ${opts.path}`

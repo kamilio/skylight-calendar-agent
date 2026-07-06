@@ -1,5 +1,6 @@
 import { flattenResponseLayoutForCli, requestJson } from "../dist/skylight/http.js";
 import { assertWellFormedUnicode } from "../dist/skylight/validation.js";
+import { UserError } from "toolcraft";
 
 const env = {
   SKYLIGHT_API_BASE: "https://example.invalid",
@@ -62,11 +63,20 @@ try {
   }
 }
 
+const revokedRejection = Proxy.revocable({}, {});
+revokedRejection.revoke();
 for (const rejection of [
   { toString: () => { throw new Error("toString-secret"); } },
   new Proxy(new Error("message-secret"), {
     get(target, property, receiver) {
       if (property === "message") throw new Error("message-getter-secret");
+      return Reflect.get(target, property, receiver);
+    },
+  }),
+  revokedRejection.proxy,
+  new Proxy(new UserError("user-error-secret"), {
+    get(target, property, receiver) {
+      if (property === "message") throw new Error("user-error-getter-secret");
       return Reflect.get(target, property, receiver);
     },
   }),
@@ -81,7 +91,7 @@ for (const rejection of [
     throw new Error("Hostile fetch rejection unexpectedly succeeded");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (!message.includes("Request failed GET /api/hostile-rejection: Unknown error")) throw error;
+    if (!message.includes("Unknown error")) throw error;
     if (message.includes("secret")) throw new Error(`Hostile rejection detail leaked: ${message}`);
   }
 }

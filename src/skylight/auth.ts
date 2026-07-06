@@ -23,6 +23,14 @@ interface LoginState {
   authorizations: Map<string, string>;
 }
 
+function isUserError(value: unknown): value is UserError {
+  try {
+    return value instanceof UserError;
+  } catch {
+    return false;
+  }
+}
+
 const loginStates = new WeakMap<
   object,
   WeakMap<typeof globalThis.fetch, LoginState>
@@ -217,7 +225,7 @@ async function login(opts: {
     const computed = base64(`${normalizedId}:${normalizedToken}`);
     return `Basic ${computed}`;
   } catch (error) {
-    if (error instanceof UserError) throw error;
+    if (isUserError(error)) throw new UserError(errorMessage(error));
     if (controller.signal.aborted) {
       throw new UserError(`Login request timed out after ${requestTimeoutMs}ms.`);
     }
