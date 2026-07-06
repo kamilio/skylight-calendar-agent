@@ -205,6 +205,12 @@ await expectLocalError(
   ["lists", "create", "--label", "safe\tInjected"],
   "Command arguments must not contain unsafe terminal formatting characters"
 );
+for (const separator of ["\u2028", "\u2029"]) {
+  await expectLocalError(
+    ["profiles", "forgot-password", "--email", `x${separator}Injected`],
+    "Command arguments must not contain unsafe terminal formatting characters"
+  );
+}
 await expectLocalError(
   [
     "tasks",
