@@ -21,7 +21,7 @@ function externalCredentialMethod(): ExternalCredentialMethod {
   if (hasNonBlankValue(process.env.SKYLIGHT_BEARER_TOKEN)) return "bearer";
   if (
     hasNonBlankValue(process.env.SKYLIGHT_EMAIL) ||
-    hasNonBlankValue(process.env.SKYLIGHT_PASSWORD)
+    (process.env.SKYLIGHT_PASSWORD?.length ?? 0) > 0
   ) {
     return "email-password";
   }

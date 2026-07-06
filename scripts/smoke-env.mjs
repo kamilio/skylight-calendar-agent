@@ -141,6 +141,30 @@ try {
     throw new Error("Whitespace-only exported credentials blocked a dotenv fallback");
   }
 
+  const whitespacePasswordPath = path.join(directory, "whitespace-password.env");
+  fs.writeFileSync(
+    whitespacePasswordPath,
+    "SKYLIGHT_EMAIL=dotenv@example.com\nSKYLIGHT_BEARER_TOKEN=stale\n"
+  );
+  for (const name of [
+    "SKYLIGHT_AUTH_HEADER",
+    "SKYLIGHT_BASIC_TOKEN",
+    "SKYLIGHT_BEARER_TOKEN",
+    "SKYLIGHT_EMAIL",
+    "SKYLIGHT_PASSWORD",
+  ]) {
+    delete process.env[name];
+  }
+  process.env.SKYLIGHT_PASSWORD = "   ";
+  loadDotEnv(whitespacePasswordPath);
+  if (
+    process.env.SKYLIGHT_EMAIL !== "dotenv@example.com" ||
+    process.env.SKYLIGHT_PASSWORD !== "   " ||
+    process.env.SKYLIGHT_BEARER_TOKEN !== undefined
+  ) {
+    throw new Error("Dotenv did not preserve and complete a whitespace password credential pair");
+  }
+
   const unrelatedPath = path.join(directory, "unrelated.env");
   fs.writeFileSync(unrelatedPath, "TZ=Pacific/Kiritimati\nUNRELATED=value\n");
   delete process.env.TZ;
