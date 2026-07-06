@@ -5,7 +5,9 @@ const DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
 const MAX_GENERAL_STRING_LENGTH = 8_192;
 const MAX_GENERAL_ARRAY_ITEMS = 500;
 const MAX_DATETIME_STRING_LENGTH = 1_024;
+const MAX_REQUEST_JSON_COLLECTION_ITEMS = 500;
 const MAX_REQUEST_JSON_DEPTH = 100;
+const MAX_REQUEST_JSON_KEY_LENGTH = 500;
 const MAX_RRULE_INTEGER = 2_147_483_647;
 const RRULE_COMPONENTS = new Set([
   "FREQ",
@@ -206,6 +208,11 @@ function jsonCompatibleSnapshot(
   }
   if (typeof value === "string") {
     assertWellFormedUnicode(value, label);
+    if (value.length > MAX_GENERAL_STRING_LENGTH) {
+      throw new UserError(
+        `${label} exceeds the maximum string length of ${MAX_GENERAL_STRING_LENGTH}.`
+      );
+    }
     return value;
   }
   if (typeof value === "number") {
@@ -245,6 +252,11 @@ function jsonCompatibleSnapshot(
         throw new UserError(`${label} contains a non-JSON array property.`);
       }
       const length = lengthDescriptor.value as number;
+      if (length > MAX_REQUEST_JSON_COLLECTION_ITEMS) {
+        throw new UserError(
+          `${label} exceeds the maximum array length of ${MAX_REQUEST_JSON_COLLECTION_ITEMS}.`
+        );
+      }
       const ownKeys = Reflect.ownKeys(value);
       const indexes = new Set<number>();
       for (const key of ownKeys) {
@@ -287,11 +299,21 @@ function jsonCompatibleSnapshot(
       const snapshot: Record<string, unknown> = {};
       visited.set(value, snapshot);
       const ownKeys = Reflect.ownKeys(value);
+      if (ownKeys.length > MAX_REQUEST_JSON_COLLECTION_ITEMS) {
+        throw new UserError(
+          `${label} exceeds the maximum object size of ${MAX_REQUEST_JSON_COLLECTION_ITEMS} properties.`
+        );
+      }
       for (const key of ownKeys) {
         if (typeof key !== "string") {
           throw new UserError(`${label} contains a non-JSON symbol property.`);
         }
         assertWellFormedUnicode(key, `${label} property name`);
+        if (key.length > MAX_REQUEST_JSON_KEY_LENGTH) {
+          throw new UserError(
+            `${label} contains a property name longer than ${MAX_REQUEST_JSON_KEY_LENGTH} characters.`
+          );
+        }
         const descriptor = Object.getOwnPropertyDescriptor(value, key);
         const displayKey = JSON.stringify(displayErrorValue(key));
         if (descriptor === undefined || !descriptor.enumerable || !("value" in descriptor)) {

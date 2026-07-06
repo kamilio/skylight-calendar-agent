@@ -224,11 +224,11 @@ try {
     ],
     [
       () => {
-        const key = `safe\u202E${"x".repeat(100_000)}`;
+        const key = `safe\u202E${"x".repeat(400)}`;
         return sdk.lists.createRaw({ listJson: { [key]: Number.NaN } });
       },
       'Command parameter "listJson"."safe ',
-      ["\u202E", "x".repeat(1_000)],
+      "\u202E",
     ],
     [
       () => {
@@ -278,6 +278,27 @@ try {
     [
       () => sdk.lists.createRaw({ listJson: { label: "\uD800" } }),
       'Command parameter "listJson"."label" contains invalid Unicode',
+    ],
+    [
+      () => sdk.lists.createRaw({ listJson: { label: "x".repeat(8_193) } }),
+      'Command parameter "listJson"."label" exceeds the maximum string length of 8192',
+    ],
+    [
+      () => sdk.lists.createRaw({ listJson: { items: Array(501).fill(null) } }),
+      'Command parameter "listJson"."items" exceeds the maximum array length of 500',
+    ],
+    [
+      () =>
+        sdk.lists.createRaw({
+          listJson: Object.fromEntries(
+            Array.from({ length: 501 }, (_value, index) => [`key-${index}`, index])
+          ),
+        }),
+      'Command parameter "listJson" exceeds the maximum object size of 500 properties',
+    ],
+    [
+      () => sdk.lists.createRaw({ listJson: { ["k".repeat(501)]: true } }),
+      'Command parameter "listJson" contains a property name longer than 500 characters',
     ],
     [
       () => sdk.profiles.ownerProfileUpdate({ birthday: "02/31" }),
