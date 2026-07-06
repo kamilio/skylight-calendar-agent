@@ -28,6 +28,14 @@ try {
     ],
     [() => sdk.photos.list({ page: Infinity }), 'Invalid value for "page"'],
     [
+      () =>
+        sdk.rewards.list({
+          redeemedAtMin: "2026-12-31T23:59:60Z",
+          redeemedAtMax: "2026-12-31T23:59:59Z",
+        }),
+      "redeemedAtMin must not be after redeemedAtMax",
+    ],
+    [
       () => sdk.rewards.pointsAdd({ categoryIds: ["1"], points: Number.NaN }),
       'Invalid value for "points"',
     ],
