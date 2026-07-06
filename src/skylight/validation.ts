@@ -244,7 +244,8 @@ export function assertValidDateOrDateTime(value: string, label: string): void {
     hour > 23 ||
     minute > 59 ||
     second > 59 ||
-    offsetHour > 23 ||
+    offsetHour > 14 ||
+    (offsetHour === 14 && offsetMinute > 0) ||
     offsetMinute > 59 ||
     !Number.isFinite(dateOrDateTimeTimestamp(value))
   ) {
