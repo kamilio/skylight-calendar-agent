@@ -14,7 +14,7 @@ const server = http.createServer((incoming, response) => {
       url: incoming.url,
     };
     response.setHeader("content-type", "application/json");
-    response.end('{"ok":true}');
+    response.end(JSON.stringify({ message: "safe\n■ forged failure\tvalue" }));
   });
 });
 
@@ -40,9 +40,13 @@ try {
   const child = spawn(
     process.execPath,
     ["dist/cli.js", "profiles", "forgot-password", "--email", "person@example.com"],
-    { env, stdio: ["ignore", "ignore", "pipe"] }
+    { env, stdio: ["ignore", "pipe", "pipe"] }
   );
+  let stdout = "";
   let stderr = "";
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
   child.stderr.on("data", (chunk) => {
     stderr += chunk;
   });
@@ -59,6 +63,9 @@ try {
   }
   if (request?.body?.email !== "person@example.com" || request?.body?.on_mobile !== true) {
     throw new Error(`Password reset body was incorrect: ${JSON.stringify(request?.body)}`);
+  }
+  if (stdout.includes("\n■ forged failure") || stdout.includes("\t")) {
+    throw new Error(`CLI response rendered unsafe layout: ${JSON.stringify(stdout)}`);
   }
 } finally {
   server.close();
