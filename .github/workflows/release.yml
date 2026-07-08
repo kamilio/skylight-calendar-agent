@@ -35,7 +35,7 @@ jobs:
           LOCAL_VERSION="$(node -p "require('./package.json').version")"
           NEXT_VERSION="$(node -e '
             const parse = (value) => {
-              if (!/^\\d+\\.\\d+\\.\\d+$/.test(value)) throw new Error(`Stable semver required: ${value}`);
+              if (!/^\d+\.\d+\.\d+$/.test(value)) throw new Error(`Stable semver required: ${value}`);
               return value.split(".").map(Number);
             };
             const remote = parse(process.argv[1]);
