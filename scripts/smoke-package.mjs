@@ -23,6 +23,8 @@ try {
   for (const required of [
     "dist/cli.js",
     "dist/mcp.js",
+    "dist/http-mcp.js",
+    "dist/http-headers.js",
     "dist/sections/lists.js.map",
     "src/sections/lists.ts",
     ".env.example",
@@ -30,6 +32,18 @@ try {
     "LICENSE",
   ]) {
     if (!names.has(required)) throw new Error(`Published package is missing ${required}`);
+  }
+
+  for (const executable of [
+    "dist/cli.js",
+    "dist/mcp.js",
+    "dist/http-mcp.js",
+    "dist/http-headers.js",
+  ]) {
+    const file = files.find((candidate) => candidate.path === executable);
+    if (file?.mode !== 0o755) {
+      throw new Error(`Published package binary is not executable: ${executable}`);
+    }
   }
 
   for (const forbidden of [".env", "auth.json", "skylight.har"]) {

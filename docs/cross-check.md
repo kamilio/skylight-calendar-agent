@@ -12,7 +12,7 @@ Full action inventory is in `docs/actions.md`.
 
 From `docs/openapi/openapi.yaml`, the documented endpoints are:
 
-- `POST /api/sessions` (auth)
+- Browser-backed OAuth2 login through `/auth/session`, `/oauth/authorize`, and `/oauth/token`
 - `GET /api/frames/{frameId}`
 - `GET|POST /api/frames/{frameId}/chores`
 - `GET /api/frames/{frameId}/categories`
@@ -29,7 +29,7 @@ Each of these has a corresponding CLI command implemented (either directly or vi
 
 ## Web bundle cross-check
 
-The Expo web bundle for `https://ourskylight.com/calendar/1234567` defines an API client with base URL `https://app.ourskylight.com/api` and header `Skylight-Api-Version: 2026-03-01`.
+The authenticated Expo calendar web client uses base URL `https://app.ourskylight.com/api` and currently sends `Skylight-Api-Version: 2026-05-01`.
 
 We matched:
 

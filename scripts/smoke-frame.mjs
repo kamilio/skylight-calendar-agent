@@ -56,12 +56,12 @@ try {
   else process.env.SKYLIGHT_AUTH_HEADER = originalAuthHeader;
 }
 
-async function runScenario(candidateStatus) {
+async function runScenario(candidateStatus, calendarId = "123") {
   const paths = [];
   const server = http.createServer((request, response) => {
     paths.push(request.url);
     response.setHeader("content-type", "application/json");
-    if (request.url === "/api/frames/123") {
+    if (request.url === "/api/frames/calendar") {
       response.statusCode = candidateStatus;
       response.end(JSON.stringify({ error: "candidate response" }));
       return;
@@ -78,7 +78,7 @@ async function runScenario(candidateStatus) {
       ...process.env,
       SKYLIGHT_API_BASE: `http://127.0.0.1:${address.port}`,
       SKYLIGHT_AUTH_HEADER: "Bearer test",
-      SKYLIGHT_CALENDAR_URL: "https://ourskylight.com/calendar/123",
+      SKYLIGHT_CALENDAR_URL: `https://ourskylight.com/calendar/${calendarId}`,
       SKYLIGHT_FRAME_ID: "",
     },
     stdio: "ignore",
@@ -89,15 +89,15 @@ async function runScenario(candidateStatus) {
 }
 
 const unauthorized = await runScenario(401);
-if (unauthorized.code === 0 || unauthorized.paths.join(",") !== "/api/frames/123") {
+if (unauthorized.code === 0 || unauthorized.paths.join(",") !== "/api/frames/calendar") {
   throw new Error(`Authentication failure was incorrectly masked: ${JSON.stringify(unauthorized)}`);
 }
 
-const missing = await runScenario(404);
+const missing = await runScenario(404, "456");
 if (
   missing.code !== 0 ||
   missing.paths.join(",") !==
-    "/api/frames/123,/api/frames/calendar,/api/frames/456/lists"
+    "/api/frames/calendar,/api/frames,/api/frames/456/lists"
 ) {
   throw new Error(`Missing candidate did not fall back correctly: ${JSON.stringify(missing)}`);
 }
@@ -299,15 +299,25 @@ try {
   const authenticatedFetch = async (url) => {
     const path = new URL(url).pathname;
     authenticatedPaths.push(path);
-    if (path === "/api/sessions") {
-      return Response.json({ data: { id: "user", attributes: { token: "token" } } });
+    if (path === "/auth/session/new") {
+      return new Response('<input name="authenticity_token" value="csrf">', {
+        headers: { "set-cookie": "session=test; Path=/" },
+      });
+    }
+    if (path === "/auth/session") return new Response("", { status: 302, headers: { location: "/dashboard" } });
+    if (path === "/oauth/authorize") {
+      return new Response("", { status: 302, headers: { location: "https://ourskylight.com/welcome?code=test" } });
+    }
+    if (path === "/oauth/token") {
+      return Response.json({ access_token: "token", refresh_token: "refresh", expires_in: 3600 });
     }
     return Response.json({ data: [{ id: "333" }] });
   };
   if (
     (await resolveFrameId({ fetch: authenticatedFetch })) !== "333" ||
     (await resolveFrameId({ fetch: authenticatedFetch })) !== "333" ||
-    authenticatedPaths.join(",") !== "/api/sessions,/api/frames/calendar"
+    authenticatedPaths.join(",") !==
+      "/auth/session/new,/auth/session,/oauth/authorize,/oauth/token,/api/frames/calendar"
   ) {
     throw new Error(
       `Login changed the frame cache identity: ${JSON.stringify(authenticatedPaths)}`

@@ -8,6 +8,11 @@ const server = http.createServer((request, response) => {
     body += chunk;
   });
   request.on("end", () => {
+    if (request.url === "/api/frames/calendar") {
+      response.setHeader("content-type", "application/json");
+      response.end('{"data":[{"id":"42","attributes":{"apps":["calendar"]}}]}');
+      return;
+    }
     requests.push({
       method: request.method,
       url: request.url,

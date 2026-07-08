@@ -99,6 +99,9 @@ try {
   const sdk = createSDK(root, {
     fetch: async (url, init) => {
       requests.push({ url: String(url), init });
+      if (new URL(String(url)).pathname === "/api/frames/calendar") {
+        return Response.json({ data: [{ id: "42", attributes: { apps: ["calendar"] } }] });
+      }
       return Response.json({ ok: true, data: [] });
     },
   });
@@ -106,6 +109,8 @@ try {
 
   for (const group of root.children) {
     for (const command of group.children) {
+      const scope = command.scope ?? group.scope ?? ["cli", "sdk"];
+      if (!scope.includes("sdk")) continue;
       const argumentsForCommand = {
         ...(optionalArguments[`${group.name}.${command.name}`] ?? {}),
       };
@@ -118,9 +123,14 @@ try {
       await sdk[camelCase(group.name)][camelCase(command.name)](argumentsForCommand);
       const expectedRequests = group.name === "profiles" && command.name === "token" ? 0 : 1;
       const commandRequests = requests.slice(requestCount);
-      if (commandRequests.length !== expectedRequests) {
+      const operationRequests = group.name === "profiles" && command.name === "frames"
+        ? commandRequests
+        : commandRequests.filter(
+          (request) => new URL(request.url).pathname !== "/api/frames/calendar"
+        );
+      if (operationRequests.length !== expectedRequests) {
         throw new Error(
-          `${group.name}.${command.name} made ${commandRequests.length} requests; expected ${expectedRequests}`
+          `${group.name}.${command.name} made ${operationRequests.length} operation requests; expected ${expectedRequests}`
         );
       }
       for (const request of commandRequests) {
@@ -146,7 +156,7 @@ try {
         if (headers.get("accept") !== "application/json") {
           throw new Error(`${group.name}.${command.name} omitted the JSON accept header`);
         }
-        if (headers.get("skylight-api-version") !== "2026-03-01") {
+        if (headers.get("skylight-api-version") !== "2026-05-01") {
           throw new Error(`${group.name}.${command.name} omitted the API version header`);
         }
         const publicRequest = group.name === "profiles" && command.name === "forgot-password";

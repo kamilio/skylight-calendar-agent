@@ -1,6 +1,7 @@
 import { UserError } from "toolcraft";
 import { getSkylightRequestConfig } from "./config.js";
 import { getAuthorizationHeader, refreshAuthorizationHeader } from "./auth.js";
+import type { AuthorizationStore } from "./credential-store.js";
 import { errorMessage, terminalSafeText, truncateText } from "./text.js";
 import { assertWellFormedUnicode, snapshotJsonCompatible } from "./validation.js";
 
@@ -185,6 +186,7 @@ export async function requestJson<TResponse>(opts: {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   path: string;
   authenticated?: boolean;
+  authorizationStore?: AuthorizationStore | null;
   query?: Record<
     string,
     | string
@@ -234,7 +236,12 @@ export async function requestJson<TResponse>(opts: {
   };
   if (opts.authenticated !== false) {
     try {
-      headers.authorization = await getAuthorizationHeader({ fetch: opts.fetch, env });
+      headers.authorization = await getAuthorizationHeader({
+        fetch: opts.fetch,
+        env,
+        ...(opts.authorizationStore === undefined ? {} : { store: opts.authorizationStore }),
+        useStoredCredentials: opts.env === undefined,
+      });
     } catch (error) {
       if (isUserError(error)) {
         throw new UserError(requestContextMessage(errorMessage(error), opts.method, opts.path));
@@ -266,6 +273,8 @@ export async function requestJson<TResponse>(opts: {
         refreshedAuthorization = await refreshAuthorizationHeader({
           fetch: opts.fetch,
           env,
+          ...(opts.authorizationStore === undefined ? {} : { store: opts.authorizationStore }),
+          useStoredCredentials: opts.env === undefined,
           ...(headers.authorization === undefined
             ? {}
             : { rejectedAuthorization: headers.authorization }),
@@ -287,7 +296,7 @@ export async function requestJson<TResponse>(opts: {
       const excerpt = errorBodyExcerpt(text);
       const authenticationHint =
         response.status === 401 && opts.authenticated !== false
-          ? " Authentication was rejected; check the configured Skylight credentials or token. Explicit auth header and token variables take precedence over email/password login."
+          ? " Authentication was rejected; check the configured Skylight credentials or token. Run `skylight auth login` to replace a stored credential. Explicit auth header and token variables take precedence over stored or email/password OAuth login."
           : "";
       const retryHint = retryAfterHint(response);
       throw new SkylightRequestError(

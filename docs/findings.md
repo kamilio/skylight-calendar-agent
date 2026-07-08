@@ -7,19 +7,20 @@
 
 ## Authentication
 
-PR #1 adds `POST /api/sessions` which returns an `id` and `token`. The API expects:
+The legacy `POST /api/sessions` login now rejects current clients with an unsupported-version response. Authentication uses Skylight's OAuth2 authorization-code flow:
 
-1. Concatenate `id:token`
-2. Base64 encode
-3. Send `Authorization: Basic <base64>`
+1. Establish a browser session through `/auth/session/new` and `/auth/session`.
+2. Request an authorization code from `/oauth/authorize` with client id `skylight-mobile` and a stable device fingerprint.
+3. Exchange the code at `/oauth/token` for Bearer access and rotating refresh tokens.
+4. Persist the refresh token and fingerprint securely, rotate the stored refresh token on every refresh, and send the access token as `Authorization: Bearer <token>`.
 
-The CLI scaffolding auto-logs-in using `SKYLIGHT_EMAIL`/`SKYLIGHT_PASSWORD` when no explicit auth header, Basic token, or Bearer token is set.
+The CLI scaffolding auto-logs-in using this OAuth flow when `SKYLIGHT_EMAIL`/`SKYLIGHT_PASSWORD` are set and no explicit or stored credential is available.
 
 The web app also uses a Bearer token (`Authorization: Bearer <accessToken>`) stored in local storage; you can provide it via `SKYLIGHT_BEARER_TOKEN`.
 
 ## API version header
 
-The web app sends `Skylight-Api-Version: 2026-03-01` on API requests. This agent now sends the same header (configurable via `SKYLIGHT_API_VERSION`).
+The authenticated calendar web app currently sends `Skylight-Api-Version: 2026-05-01` on API requests. This agent sends the same header by default (configurable via `SKYLIGHT_API_VERSION`).
 
 ## Calendar scope
 

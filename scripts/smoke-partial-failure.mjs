@@ -5,8 +5,12 @@ let requestCount = 0;
 const server = http.createServer((request, response) => {
   request.resume();
   request.on("end", () => {
-    requestCount += 1;
     response.setHeader("content-type", "application/json");
+    if (request.url === "/api/frames/calendar") {
+      response.end('{"data":[{"id":"42","attributes":{"apps":["calendar"]}}]}');
+      return;
+    }
+    requestCount += 1;
     if (requestCount === 2) {
       response.statusCode = 500;
       response.end(JSON.stringify({ error: "simulated failure" }));

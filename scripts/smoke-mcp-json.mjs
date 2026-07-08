@@ -3,6 +3,11 @@ import http from "node:http";
 
 let requestBody;
 const server = http.createServer((request, response) => {
+  if (request.method === "GET" && request.url === "/api/frames/calendar") {
+    response.setHeader("content-type", "application/json");
+    response.end('{"data":[{"id":"42","attributes":{"apps":["calendar"]}}]}');
+    return;
+  }
   let body = "";
   request.on("data", (chunk) => {
     body += chunk;

@@ -28,12 +28,22 @@ jobs:
       - run: npm install --global npm@^11.15.0
       - run: npm ci --ignore-scripts
       - run: npm run check
-      - name: Select next stable patch version
+      - name: Select unpublished stable version
         run: |
           PACKAGE_NAME="$(node -p "require('./package.json').name")"
           REMOTE_VERSION="$(npm view "$PACKAGE_NAME" version 2>/dev/null || echo 0.0.0)"
-          node -e 'if (process.argv[1].includes("-")) process.exit(1)' "$REMOTE_VERSION"
-          npm version --no-git-tag-version --allow-same-version "$REMOTE_VERSION"
-          npm version --no-git-tag-version patch
-          node -e 'if (require("./package.json").version.includes("-")) process.exit(1)'
+          LOCAL_VERSION="$(node -p "require('./package.json').version")"
+          NEXT_VERSION="$(node -e '
+            const parse = (value) => {
+              if (!/^\\d+\\.\\d+\\.\\d+$/.test(value)) throw new Error(`Stable semver required: ${value}`);
+              return value.split(".").map(Number);
+            };
+            const remote = parse(process.argv[1]);
+            const local = parse(process.argv[2]);
+            const compare = (left, right) => left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
+            process.stdout.write(compare(local, remote) > 0
+              ? local.join(".")
+              : `${remote[0]}.${remote[1]}.${remote[2] + 1}`);
+          ' "$REMOTE_VERSION" "$LOCAL_VERSION")"
+          npm version --no-git-tag-version --allow-same-version "$NEXT_VERSION"
       - run: npm publish --provenance --access public --tag latest

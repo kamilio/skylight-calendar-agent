@@ -136,24 +136,9 @@ export async function listCalendarFrames(ctx: {
 
 async function discoverFrameId(
   ctx: { fetch: typeof globalThis.fetch },
-  calendarShareId: string | null
+  calendarShareId: string | null,
+  configuredFrameId: string | null
 ): Promise<string> {
-  const fromUrl = calendarShareId?.trim();
-  if (fromUrl) {
-    try {
-      await requestJson({
-        fetch: ctx.fetch,
-        method: "GET",
-        path: `/api/frames/${pathSegment(fromUrl, "SKYLIGHT_CALENDAR_URL frame id")}`,
-      });
-      return pathSegment(fromUrl, "SKYLIGHT_CALENDAR_URL frame id");
-    } catch (error) {
-      if (!(error instanceof SkylightRequestError) || error.status !== 404) {
-        throw error;
-      }
-    }
-  }
-
   const frames = await listCalendarFrames(ctx, { forDiscovery: true });
 
   const ids = (frames.data ?? [])
@@ -170,6 +155,18 @@ async function discoverFrameId(
               : "",
       };
     });
+
+  const requestedId = configuredFrameId?.trim() || calendarShareId?.trim();
+  if (requestedId) {
+    const normalized = pathSegment(
+      requestedId,
+      configuredFrameId ? "SKYLIGHT_FRAME_ID" : "SKYLIGHT_CALENDAR_URL frame id"
+    );
+    if (ids.some((frame) => frame.id === normalized)) return normalized;
+    throw new UserError(
+      `${configuredFrameId ? "SKYLIGHT_FRAME_ID" : "SKYLIGHT_CALENDAR_URL"} resolves to ${JSON.stringify(displayValue(normalized))}, but that id is not returned by the calendar-only /api/frames/calendar endpoint.`
+    );
+  }
 
   if (ids.length === 1) {
     const [frame] = ids;
@@ -204,7 +201,6 @@ export async function resolveFrameId(ctx: {
   validateIdentifierParams(ctx.params);
   const config = getSkylightFrameConfig();
   const fromEnv = config.frameId?.trim();
-  if (fromEnv) return pathSegment(fromEnv, "SKYLIGHT_FRAME_ID");
   const key = frameResolutionKey(config);
   let resolutions = frameResolutions.get(ctx.fetch);
   if (resolutions === undefined) {
@@ -213,7 +209,7 @@ export async function resolveFrameId(ctx: {
   }
   const existing = resolutions.get(key);
   if (existing !== undefined) return existing;
-  const resolution = discoverFrameId(ctx, config.calendarShareId);
+  const resolution = discoverFrameId(ctx, config.calendarShareId, fromEnv || null);
   resolutions.set(key, resolution);
   try {
     return await resolution;

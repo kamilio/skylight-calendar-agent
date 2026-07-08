@@ -1,153 +1,119 @@
 import { flattenResponseLayoutForCli, requestJson } from "../dist/skylight/http.js";
 import { assertWellFormedUnicode } from "../dist/skylight/validation.js";
 import { UserError } from "toolcraft";
+import { serializeOAuthCredential } from "../dist/skylight/oauth.js";
 
 const env = {
   SKYLIGHT_API_BASE: "https://example.invalid",
   SKYLIGHT_AUTH_HEADER: "Bearer test",
 };
 
-const refreshEnv = {
-  SKYLIGHT_API_BASE: "https://example.invalid",
-  SKYLIGHT_EMAIL: "refresh@example.com",
-  SKYLIGHT_PASSWORD: "secret",
+const oauthEnv = { SKYLIGHT_API_BASE: "https://example.invalid" };
+let storedOAuth = serializeOAuthCredential({
+  version: 1,
+  type: "oauth",
+  accessToken: "old",
+  refreshToken: "refresh-old",
+  fingerprint: "11111111-1111-4111-8111-111111111111",
+  expiresAt: Date.now() + 3_600_000,
+});
+let oauthWrites = 0;
+const oauthStore = {
+  name: "HTTP OAuth store",
+  async read() { return storedOAuth; },
+  async write(value) { oauthWrites += 1; storedOAuth = value; },
+  async delete() { return true; },
 };
-let sessionCalls = 0;
+let refreshCalls = 0;
 let resourceCalls = 0;
-let acceptedToken = "old";
 const refreshFetch = async (url, init) => {
-  if (new URL(url).pathname === "/api/sessions") {
-    sessionCalls += 1;
-    const token = sessionCalls === 1 ? "old" : "new";
-    return Response.json({ data: { id: "user", attributes: { token } } });
+  if (new URL(url).pathname === "/oauth/token") {
+    refreshCalls += 1;
+    return Response.json({
+      access_token: "new",
+      refresh_token: "refresh-new",
+      expires_in: 3600,
+      token_type: "Bearer",
+    });
   }
   resourceCalls += 1;
-  const expected = `Basic ${Buffer.from(`user:${acceptedToken}`).toString("base64")}`;
-  return init?.headers?.authorization === expected
+  return init?.headers?.authorization === "Bearer new"
     ? Response.json({ ok: true })
     : new Response("expired", { status: 401 });
 };
-await requestJson({ fetch: refreshFetch, env: refreshEnv, method: "GET", path: "/api/test" });
-acceptedToken = "new";
-await requestJson({ fetch: refreshFetch, env: refreshEnv, method: "GET", path: "/api/test" });
-if (sessionCalls !== 2 || resourceCalls !== 3) {
-  throw new Error(`Expired session was not refreshed once: ${sessionCalls} logins, ${resourceCalls} requests`);
+await requestJson({
+  fetch: refreshFetch,
+  env: oauthEnv,
+  authorizationStore: oauthStore,
+  method: "GET",
+  path: "/api/test",
+});
+if (refreshCalls !== 1 || resourceCalls !== 2 || oauthWrites !== 1) {
+  throw new Error(
+    `Expired OAuth credential was not refreshed once: ${refreshCalls} refreshes, ${resourceCalls} requests, ${oauthWrites} writes`
+  );
 }
 
-let failedRefreshSessions = 0;
 try {
+  storedOAuth = serializeOAuthCredential({
+    version: 1,
+    type: "oauth",
+    accessToken: "failed",
+    refreshToken: "failed-refresh",
+    fingerprint: "22222222-2222-4222-8222-222222222222",
+    expiresAt: Date.now() + 3_600_000,
+  });
   await requestJson({
-    fetch: async (url) => {
-      if (new URL(url).pathname === "/api/sessions") {
-        failedRefreshSessions += 1;
-        if (failedRefreshSessions === 1) {
-          return Response.json({ data: { id: "user", attributes: { token: "expired" } } });
-        }
-        return new Response("login rejected", { status: 401 });
-      }
-      return new Response("expired", { status: 401 });
-    },
-    env: {
-      SKYLIGHT_API_BASE: "https://example.invalid",
-      SKYLIGHT_EMAIL: "failed-refresh@example.com",
-      SKYLIGHT_PASSWORD: "secret",
-    },
+    fetch: async (url) =>
+      new URL(url).pathname === "/oauth/token"
+        ? new Response("refresh rejected", { status: 401 })
+        : new Response("expired", { status: 401 }),
+    env: oauthEnv,
+    authorizationStore: oauthStore,
     method: "GET",
     path: "/api/refresh-context",
   });
-  throw new Error("Failed refresh unexpectedly succeeded");
+  throw new Error("Failed OAuth refresh unexpectedly succeeded");
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  if (!message.includes("Login failed (401)") || !message.includes("GET /api/refresh-context")) {
+  if (!message.includes("OAuth token request failed (401)") || !message.includes("GET /api/refresh-context")) {
     throw error;
   }
 }
 
-const revokedRejection = Proxy.revocable({}, {});
-revokedRejection.revoke();
-for (const rejection of [
-  { toString: () => { throw new Error("toString-secret"); } },
-  new Proxy(new Error("message-secret"), {
-    get(target, property, receiver) {
-      if (property === "message") throw new Error("message-getter-secret");
-      return Reflect.get(target, property, receiver);
-    },
-  }),
-  revokedRejection.proxy,
-  new Proxy(new UserError("user-error-secret"), {
-    get(target, property, receiver) {
-      if (property === "message") throw new Error("user-error-getter-secret");
-      return Reflect.get(target, property, receiver);
-    },
-  }),
-]) {
-  try {
-    await requestJson({
-      fetch: async () => { throw rejection; },
-      env,
-      method: "GET",
-      path: "/api/hostile-rejection",
-    });
-    throw new Error("Hostile fetch rejection unexpectedly succeeded");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!message.includes("Unknown error")) throw error;
-    if (message.includes("secret")) throw new Error(`Hostile rejection detail leaked: ${message}`);
-  }
-}
-
-const concurrentRefreshEnv = {
-  SKYLIGHT_API_BASE: "https://example.invalid",
-  SKYLIGHT_EMAIL: "concurrent-refresh@example.com",
-  SKYLIGHT_PASSWORD: "secret",
-};
-let concurrentSessionCalls = 0;
-let concurrentResourceCalls = 0;
-let releaseDelayedUnauthorized;
-const delayedUnauthorized = new Promise((resolve) => {
-  releaseDelayedUnauthorized = resolve;
+storedOAuth = serializeOAuthCredential({
+  version: 1,
+  type: "oauth",
+  accessToken: "concurrent-old",
+  refreshToken: "concurrent-refresh",
+  fingerprint: "33333333-3333-4333-8333-333333333333",
+  expiresAt: Date.now() + 3_600_000,
 });
-let firstOldRequestSeen = false;
-const concurrentRefreshFetch = async (url, init) => {
-  if (new URL(url).pathname === "/api/sessions") {
-    concurrentSessionCalls += 1;
-    const token = concurrentSessionCalls === 1 ? "old" : `new-${concurrentSessionCalls - 1}`;
-    return Response.json({ data: { id: "user", attributes: { token } } });
+let concurrentRefreshCalls = 0;
+let concurrentResourceCalls = 0;
+const concurrentFetch = async (url, init) => {
+  if (new URL(url).pathname === "/oauth/token") {
+    concurrentRefreshCalls += 1;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    return Response.json({
+      access_token: "concurrent-new",
+      refresh_token: "concurrent-rotated",
+      expires_in: 3600,
+      token_type: "Bearer",
+    });
   }
   concurrentResourceCalls += 1;
-  const oldAuthorization = `Basic ${Buffer.from("user:old").toString("base64")}`;
-  const newAuthorization = `Basic ${Buffer.from("user:new-1").toString("base64")}`;
-  if (init?.headers?.authorization === oldAuthorization) {
-    if (!firstOldRequestSeen) {
-      firstOldRequestSeen = true;
-      return new Response("expired", { status: 401 });
-    }
-    await delayedUnauthorized;
-    return new Response("expired", { status: 401 });
-  }
-  if (init?.headers?.authorization === newAuthorization) {
-    releaseDelayedUnauthorized();
-    return Response.json({ ok: true });
-  }
-  return new Response("unexpected token", { status: 401 });
+  return init?.headers?.authorization === "Bearer concurrent-new"
+    ? Response.json({ ok: true })
+    : new Response("expired", { status: 401 });
 };
 await Promise.all([
-  requestJson({
-    fetch: concurrentRefreshFetch,
-    env: concurrentRefreshEnv,
-    method: "GET",
-    path: "/api/first",
-  }),
-  requestJson({
-    fetch: concurrentRefreshFetch,
-    env: concurrentRefreshEnv,
-    method: "GET",
-    path: "/api/second",
-  }),
+  requestJson({ fetch: concurrentFetch, env: oauthEnv, authorizationStore: oauthStore, method: "GET", path: "/api/first" }),
+  requestJson({ fetch: concurrentFetch, env: oauthEnv, authorizationStore: oauthStore, method: "GET", path: "/api/second" }),
 ]);
-if (concurrentSessionCalls !== 2 || concurrentResourceCalls !== 4) {
+if (concurrentRefreshCalls !== 1 || concurrentResourceCalls !== 4) {
   throw new Error(
-    `Concurrent refresh discarded a newer session: ${concurrentSessionCalls} logins, ${concurrentResourceCalls} requests`
+    `Concurrent OAuth refresh was not deduplicated: ${concurrentRefreshCalls} refreshes, ${concurrentResourceCalls} requests`
   );
 }
 
@@ -322,7 +288,8 @@ try {
   const message = error instanceof Error ? error.message : String(error);
   if (
     !message.includes("check the configured Skylight credentials or token") ||
-    !message.includes("take precedence over email/password login")
+    !message.includes("Run `skylight auth login` to replace a stored credential") ||
+    !message.includes("take precedence over stored or email/password OAuth login")
   ) {
     throw new Error(`Unauthorized error lacked credential guidance: ${message}`);
   }

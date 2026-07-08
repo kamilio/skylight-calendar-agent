@@ -37,6 +37,23 @@ if (!readme.includes("It does not load `.env` automatically")) {
   throw new Error("README.md must distinguish SDK process.env usage from CLI dotenv loading");
 }
 
+if (/--package["',\s]+skylight-calendar-agent\b/.test(readme)) {
+  throw new Error("README contains an unscoped Skylight npx package example");
+}
+
+if (/npm (?:install|uninstall)(?: -g)? skylight-calendar-agent\b/.test(readme)) {
+  throw new Error("README contains an unscoped Skylight npm package example");
+}
+
+if (
+  !readme.includes("skylight auth login --email") ||
+  !readme.includes("passwords and tokens do not belong in `.mcp.json`") ||
+  !readme.includes("process-local credentials rather than an MCP HTTP authorization exchange") ||
+  !config.includes("macOS Keychain OAuth credential")
+) {
+  throw new Error("Authentication docs must explain the local Keychain and stdio MCP flow");
+}
+
 if (
   !readme.includes("structured `SkylightRequestError` type") ||
   !readme.includes("`status`, `method`, and `path` fields") ||

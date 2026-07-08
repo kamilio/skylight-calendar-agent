@@ -13,6 +13,9 @@ try {
 
   const sdk = createSkylightSDK({
     fetch: async (url, init) => {
+      if (new URL(url).pathname === "/api/frames/calendar") {
+        return Response.json({ data: [{ id: "42", attributes: { apps: ["calendar"] } }] });
+      }
       calls += 1;
       requestUrl = String(url);
       requestBody = init?.body === undefined ? undefined : JSON.parse(String(init.body));
@@ -531,7 +534,10 @@ try {
   }
 
   const failingSdk = createSkylightSDK({
-    fetch: async () => new Response("failed", { status: 500 }),
+    fetch: async (url) =>
+      new URL(url).pathname === "/api/frames/calendar"
+        ? Response.json({ data: [{ id: "42", attributes: { apps: ["calendar"] } }] })
+        : new Response("failed", { status: 500 }),
   });
   try {
     await failingSdk.lists.list({});

@@ -31,7 +31,9 @@
   "bin": {
     "skylight": "dist/cli.js",
     "skylight-calendar-agent": "dist/cli.js",
-    "skylight-calendar-mcp": "dist/mcp.js"
+    "skylight-calendar-mcp": "dist/mcp.js",
+    "skylight-calendar-mcp-http": "dist/http-mcp.js",
+    "skylight-calendar-mcp-http-headers": "dist/http-headers.js"
   },
   "files": [
     "dist",
@@ -46,16 +48,21 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
+    "postbuild": "node -e \"const fs=require('node:fs'); for (const file of ['dist/cli.js','dist/mcp.js','dist/http-mcp.js','dist/http-headers.js']) fs.chmodSync(file,0o755)\"",
     "check": "npm run build && npm run smoke && npm pack --dry-run >/dev/null",
-    "smoke": "node dist/cli.js --help >/dev/null && node scripts/smoke-version.mjs && node scripts/smoke-help.mjs && node scripts/smoke-mcp.mjs && node scripts/smoke-mcp-json.mjs && node scripts/smoke-sdk.mjs && tsc --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck scripts/smoke-sdk-types.mts && node scripts/smoke-sdk-sweep.mjs && node scripts/smoke-config.mjs && node scripts/smoke-env.mjs && node scripts/smoke-http.mjs && node scripts/smoke-auth.mjs && node scripts/smoke-frame.mjs && node scripts/smoke-local-validation.mjs && node scripts/smoke-public-request.mjs && node scripts/smoke-requests.mjs && node scripts/smoke-partial-failure.mjs && node scripts/smoke-docs.mjs && node scripts/smoke-package.mjs",
+    "smoke": "node dist/cli.js --help >/dev/null && node scripts/smoke-version.mjs && node scripts/smoke-help.mjs && node scripts/smoke-mcp.mjs && node scripts/smoke-mcp-json.mjs && node scripts/smoke-http-mcp.mjs && node scripts/smoke-oauth-login.mjs && node scripts/smoke-sdk.mjs && tsc --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck scripts/smoke-sdk-types.mts && node scripts/smoke-sdk-sweep.mjs && node scripts/smoke-config.mjs && node scripts/smoke-env.mjs && node scripts/smoke-http.mjs && node scripts/smoke-auth.mjs && node scripts/smoke-credential-store.mjs && node scripts/smoke-frame.mjs && node scripts/smoke-local-validation.mjs && node scripts/smoke-public-request.mjs && node scripts/smoke-requests.mjs && node scripts/smoke-partial-failure.mjs && node scripts/smoke-docs.mjs && node scripts/smoke-package.mjs",
     "prepublishOnly": "npm run check",
+    "install:global": "npm run build && npm install --global --ignore-scripts .",
     "cli": "node --enable-source-maps dist/cli.js",
     "mcp": "node --enable-source-maps dist/mcp.js",
+    "mcp:http": "node --enable-source-maps dist/http-mcp.js",
     "dev:cli": "tsx src/cli.ts",
     "dev:mcp": "tsx src/mcp.ts"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^24.0.0",
+    "tiny-stdio-mcp-server": "0.1.21",
     "tsx": "^4.23.0",
     "typescript": "^5.9.2"
   },
@@ -63,7 +70,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "toolcraft": "0.0.93"
+    "toolcraft": "0.0.126"
   },
   "author": ""
 }

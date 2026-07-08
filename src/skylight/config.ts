@@ -126,7 +126,7 @@ export function getSkylightRequestConfig(
   return {
     apiBaseUrl: normalizeApiBaseUrl(rawApiBaseUrl),
     apiVersion: normalizeApiVersion(
-      firstNonEmpty(env.SKYLIGHT_API_VERSION, "SKYLIGHT_API_VERSION") ?? "2026-03-01"
+      firstNonEmpty(env.SKYLIGHT_API_VERSION, "SKYLIGHT_API_VERSION") ?? "2026-05-01"
     ),
     requestTimeoutMs: parseRequestTimeout(
       firstNonEmpty(env.SKYLIGHT_REQUEST_TIMEOUT_MS, "SKYLIGHT_REQUEST_TIMEOUT_MS")

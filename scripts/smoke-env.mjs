@@ -15,7 +15,11 @@ let authorization;
 const server = http.createServer((request, response) => {
   authorization = request.headers.authorization;
   response.setHeader("content-type", "application/json");
-  response.end('{"ok":true}');
+  if (request.url === "/api/frames/calendar") {
+    response.end('{"data":[{"id":"42","attributes":{"apps":["calendar"]}}]}');
+    return;
+  }
+  response.end('{"ok":true,"data":[]}');
 });
 
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));

@@ -7,11 +7,13 @@ import { mealsGroup } from "./sections/meals.js";
 import { recipesGroup } from "./sections/recipes.js";
 import { photosGroup } from "./sections/photos.js";
 import { profilesGroup } from "./sections/profiles.js";
+import { authGroup } from "./sections/auth.js";
 
 export const root = defineGroup({
   name: "skylight",
   description: "Skylight Calendar Agent",
   children: [
+    authGroup,
     calendarGroup,
     tasksGroup,
     rewardsGroup,

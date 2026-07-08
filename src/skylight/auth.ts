@@ -1,26 +1,27 @@
 import { createHash } from "node:crypto";
 import { UserError } from "toolcraft";
 import { getSkylightRequestConfig } from "./config.js";
+import {
+  systemAuthorizationStore,
+  type AuthorizationStore,
+} from "./credential-store.js";
+import {
+  loginWithOAuth,
+  parseOAuthCredential,
+  refreshOAuthCredential,
+  serializeOAuthCredential,
+  type StoredOAuthCredential,
+} from "./oauth.js";
 import { errorMessage, terminalSafeText, truncateText } from "./text.js";
 import { assertBoundedString, assertWellFormedUnicode } from "./validation.js";
 
-interface SessionResponse {
-  data?: {
-    id?: string;
-    type?: string;
-    attributes?: {
-      token?: string;
-      email?: string;
-      subscription_status?: string;
-    };
-  };
-}
-
 const MAX_ERROR_BODY_LENGTH = 2_000;
 const MAX_CREDENTIAL_LENGTH = 16_384;
+const OAUTH_EXPIRY_SKEW_MS = 60_000;
+let runtimeAuthorizationStore: AuthorizationStore | null = null;
 interface LoginState {
-  requests: Map<string, Promise<string>>;
-  authorizations: Map<string, string>;
+  requests: Map<string, Promise<StoredOAuthCredential>>;
+  credentials: Map<string, StoredOAuthCredential>;
 }
 
 function isUserError(value: unknown): value is UserError {
@@ -35,6 +36,49 @@ const loginStates = new WeakMap<
   object,
   WeakMap<typeof globalThis.fetch, LoginState>
 >();
+const storedRefreshes = new WeakMap<
+  AuthorizationStore,
+  Map<string, Promise<StoredOAuthCredential>>
+>();
+
+export function setRuntimeAuthorizationStore(store: AuthorizationStore | null): void {
+  runtimeAuthorizationStore = store;
+}
+
+function defaultAuthorizationStore(useStoredCredentials: boolean): AuthorizationStore | null {
+  if (!useStoredCredentials) return null;
+  return runtimeAuthorizationStore ?? systemAuthorizationStore();
+}
+
+async function refreshStoredOAuth(opts: {
+  fetch: typeof globalThis.fetch;
+  env: NodeJS.ProcessEnv;
+  store: AuthorizationStore;
+  credential: StoredOAuthCredential;
+}): Promise<StoredOAuthCredential> {
+  let byToken = storedRefreshes.get(opts.store);
+  if (byToken === undefined) {
+    byToken = new Map();
+    storedRefreshes.set(opts.store, byToken);
+  }
+  const existing = byToken.get(opts.credential.refreshToken);
+  if (existing !== undefined) return existing;
+  const request = refreshOAuthCredential({
+    fetch: opts.fetch,
+    env: opts.env,
+    credential: opts.credential,
+  });
+  byToken.set(opts.credential.refreshToken, request);
+  try {
+    const refreshed = await request;
+    await opts.store.write(serializeOAuthCredential(refreshed), opts.env);
+    return refreshed;
+  } finally {
+    if (byToken.get(opts.credential.refreshToken) === request) {
+      byToken.delete(opts.credential.refreshToken);
+    }
+  }
+}
 
 function loginKey(env: NodeJS.ProcessEnv, email: string, password: string): string {
   return createHash("sha256")
@@ -60,7 +104,7 @@ function loginState(
   }
   let state = byFetch.get(fetch);
   if (state === undefined) {
-    state = { requests: new Map(), authorizations: new Map() };
+    state = { requests: new Map(), credentials: new Map() };
     byFetch.set(fetch, state);
   }
   return state;
@@ -71,10 +115,6 @@ function errorBodyExcerpt(value: string): string {
   if (sanitized.length <= MAX_ERROR_BODY_LENGTH) return sanitized;
   const truncated = truncateText(sanitized, MAX_ERROR_BODY_LENGTH);
   return `${truncated}… [truncated ${sanitized.length - truncated.length} characters]`;
-}
-
-function base64(value: string): string {
-  return Buffer.from(value, "utf8").toString("base64");
 }
 
 function safeCredentialValue(value: string, label: string): string {
@@ -144,6 +184,49 @@ function authorizationHeader(value: string): string {
   return `${scheme} ${match[2] ?? ""}`;
 }
 
+function explicitAuthorization(env: NodeJS.ProcessEnv): {
+  authorization: string;
+  source: string;
+} | null {
+  const explicit = env.SKYLIGHT_AUTH_HEADER
+    ? safeCredentialValue(env.SKYLIGHT_AUTH_HEADER, "SKYLIGHT_AUTH_HEADER")
+    : "";
+  if (explicit) {
+    return { authorization: authorizationHeader(explicit), source: "SKYLIGHT_AUTH_HEADER" };
+  }
+
+  const existing = env.SKYLIGHT_BASIC_TOKEN
+    ? safeCredentialValue(env.SKYLIGHT_BASIC_TOKEN, "SKYLIGHT_BASIC_TOKEN")
+    : "";
+  if (existing) {
+    if (/^basic\s/i.test(existing)) {
+      throw new UserError(
+        "SKYLIGHT_BASIC_TOKEN must contain only the base64 token, without the Basic prefix. Use SKYLIGHT_AUTH_HEADER for a complete header value."
+      );
+    }
+    return {
+      authorization: `Basic ${basicToken(existing, "SKYLIGHT_BASIC_TOKEN")}`,
+      source: "SKYLIGHT_BASIC_TOKEN",
+    };
+  }
+
+  const bearer = env.SKYLIGHT_BEARER_TOKEN
+    ? safeCredentialValue(env.SKYLIGHT_BEARER_TOKEN, "SKYLIGHT_BEARER_TOKEN")
+    : "";
+  if (bearer) {
+    if (/^bearer\s/i.test(bearer)) {
+      throw new UserError(
+        "SKYLIGHT_BEARER_TOKEN must contain only the token, without the Bearer prefix. Use SKYLIGHT_AUTH_HEADER for a complete header value."
+      );
+    }
+    return {
+      authorization: `Bearer ${bearerToken(bearer, "SKYLIGHT_BEARER_TOKEN")}`,
+      source: "SKYLIGHT_BEARER_TOKEN",
+    };
+  }
+  return null;
+}
+
 function loginEmail(value: string | undefined): string {
   if (value === undefined) return "";
   assertWellFormedUnicode(value, "SKYLIGHT_EMAIL");
@@ -161,139 +244,128 @@ function loginEmail(value: string | undefined): string {
   return email;
 }
 
-async function login(opts: {
+export async function loginWithPassword(opts: {
   fetch: typeof globalThis.fetch;
-  env: NodeJS.ProcessEnv;
+  env?: NodeJS.ProcessEnv;
   email: string;
   password: string;
-}): Promise<string> {
-  const { apiBaseUrl, requestTimeoutMs } = getSkylightRequestConfig(opts.env);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
-  try {
-    const response = await opts.fetch(`${apiBaseUrl}/api/sessions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "application/json",
-      },
-      body: JSON.stringify({ email: opts.email, password: opts.password }),
-      signal: controller.signal,
-    });
+}): Promise<StoredOAuthCredential> {
+  const env = opts.env ?? process.env;
+  const email = loginEmail(opts.email);
+  if (email.length === 0) throw new UserError("Email must not be blank.");
+  if (opts.password.length === 0) throw new UserError("Password must not be blank.");
+  assertBoundedString(opts.password, "Password");
+  return loginWithOAuth({ fetch: opts.fetch, env, email, password: opts.password });
+}
 
-    const text = await response.text();
-    if (!response.ok) {
-      const excerpt = errorBodyExcerpt(text);
-      throw new UserError(
-        `Login failed (${response.status}). ${excerpt.length > 0 ? excerpt : "Check credentials."}`
-      );
-    }
+export interface AuthorizationStatus {
+  configured: boolean;
+  source: string | null;
+  storage: string | null;
+  apiBaseUrl: string;
+}
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text) as unknown;
-    } catch {
-      const excerpt = errorBodyExcerpt(text);
-      throw new UserError(
-        `Login response was not valid JSON${excerpt.length > 0 ? `: ${excerpt}` : "."}`
-      );
-    }
-    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new UserError("Login response missing valid string id/token values.");
-    }
-    const json = parsed as SessionResponse;
-    const id = json.data?.id;
-    const token = json.data?.attributes?.token;
-    if (
-      typeof id !== "string" ||
-      id.trim().length === 0 ||
-      typeof token !== "string" ||
-      token.trim().length === 0
-    ) {
-      throw new UserError("Login response missing valid string id/token values.");
-    }
-
-    const normalizedId = safeCredentialValue(id, "Login response id");
-    const normalizedToken = safeCredentialValue(token, "Login response token");
-    if (normalizedId !== id || normalizedToken !== token) {
-      throw new UserError("Login response id/token values must not have surrounding whitespace.");
-    }
-    if (normalizedId.includes(":")) {
-      throw new UserError("Login response id must not contain a colon.");
-    }
-
-    const computed = base64(`${normalizedId}:${normalizedToken}`);
-    return `Basic ${computed}`;
-  } catch (error) {
-    if (isUserError(error)) throw new UserError(errorMessage(error));
-    if (controller.signal.aborted) {
-      throw new UserError(`Login request timed out after ${requestTimeoutMs}ms.`);
-    }
-    const detail = errorBodyExcerpt(errorMessage(error));
-    throw new UserError(`Login request failed: ${detail}`);
-  } finally {
-    clearTimeout(timeout);
+export async function getAuthorizationStatus(opts: {
+  env?: NodeJS.ProcessEnv;
+  store?: AuthorizationStore | null;
+} = {}): Promise<AuthorizationStatus> {
+  const env = opts.env ?? process.env;
+  const apiBaseUrl = getSkylightRequestConfig(env).apiBaseUrl;
+  const explicit = explicitAuthorization(env);
+  if (explicit !== null) {
+    return { configured: true, source: explicit.source, storage: null, apiBaseUrl };
   }
+  const store =
+    opts.store === undefined
+      ? defaultAuthorizationStore(opts.env === undefined)
+      : opts.store;
+  const stored = await store?.read(env);
+  if (stored && store !== null) {
+    const oauth = parseOAuthCredential(stored);
+    if (oauth === null) authorizationHeader(safeCredentialValue(stored, "Stored authorization"));
+    return {
+      configured: true,
+      source: oauth === null ? "stored authorization" : "stored OAuth credential",
+      storage: store?.name ?? null,
+      apiBaseUrl,
+    };
+  }
+  const email = loginEmail(env.SKYLIGHT_EMAIL);
+  const password = env.SKYLIGHT_PASSWORD;
+  if (email && password !== undefined && password.length > 0) {
+    assertBoundedString(password, "SKYLIGHT_PASSWORD");
+    return {
+      configured: true,
+      source: "SKYLIGHT_EMAIL/SKYLIGHT_PASSWORD",
+      storage: null,
+      apiBaseUrl,
+    };
+  }
+  return {
+    configured: false,
+    source: null,
+    storage: store?.name ?? null,
+    apiBaseUrl,
+  };
 }
 
 export async function getAuthorizationHeader(opts: {
   fetch: typeof globalThis.fetch;
   env?: NodeJS.ProcessEnv;
+  store?: AuthorizationStore | null;
+  useStoredCredentials?: boolean;
 }): Promise<string> {
   const env = opts.env ?? process.env;
-  const explicit = env.SKYLIGHT_AUTH_HEADER
-    ? safeCredentialValue(env.SKYLIGHT_AUTH_HEADER, "SKYLIGHT_AUTH_HEADER")
-    : "";
-  if (explicit) {
-    return authorizationHeader(explicit);
-  }
+  const explicit = explicitAuthorization(env);
+  if (explicit !== null) return explicit.authorization;
 
-  const existing = env.SKYLIGHT_BASIC_TOKEN
-    ? safeCredentialValue(env.SKYLIGHT_BASIC_TOKEN, "SKYLIGHT_BASIC_TOKEN")
-    : "";
-  if (existing) {
-    if (/^basic\s/i.test(existing)) {
-      throw new UserError(
-        "SKYLIGHT_BASIC_TOKEN must contain only the base64 token, without the Basic prefix. Use SKYLIGHT_AUTH_HEADER for a complete header value."
-      );
+  const store =
+    opts.store === undefined
+      ? defaultAuthorizationStore(
+          opts.useStoredCredentials === true ||
+            (opts.useStoredCredentials === undefined && opts.env === undefined)
+        )
+      : opts.store;
+  const stored = await store?.read(env);
+  if (stored && store !== null) {
+    const oauth = parseOAuthCredential(stored);
+    if (oauth !== null) {
+      const current =
+        oauth.expiresAt - OAUTH_EXPIRY_SKEW_MS <= Date.now()
+          ? await refreshStoredOAuth({ fetch: opts.fetch, env, store, credential: oauth })
+          : oauth;
+      return `Bearer ${safeCredentialValue(current.accessToken, "OAuth access token")}`;
     }
-    return `Basic ${basicToken(existing, "SKYLIGHT_BASIC_TOKEN")}`;
-  }
-
-  const bearer = env.SKYLIGHT_BEARER_TOKEN
-    ? safeCredentialValue(env.SKYLIGHT_BEARER_TOKEN, "SKYLIGHT_BEARER_TOKEN")
-    : "";
-  if (bearer) {
-    if (/^bearer\s/i.test(bearer)) {
-      throw new UserError(
-        "SKYLIGHT_BEARER_TOKEN must contain only the token, without the Bearer prefix. Use SKYLIGHT_AUTH_HEADER for a complete header value."
-      );
-    }
-    return `Bearer ${bearerToken(bearer, "SKYLIGHT_BEARER_TOKEN")}`;
+    return authorizationHeader(safeCredentialValue(stored, "Stored authorization"));
   }
 
   const email = loginEmail(env.SKYLIGHT_EMAIL);
   const password = env.SKYLIGHT_PASSWORD;
   if (!email || password === undefined || password.length === 0) {
     throw new UserError(
-      "Missing credentials. Set SKYLIGHT_EMAIL and SKYLIGHT_PASSWORD (or SKYLIGHT_BASIC_TOKEN / SKYLIGHT_BEARER_TOKEN / SKYLIGHT_AUTH_HEADER)."
+      "Missing credentials. Run `skylight auth login`, or set SKYLIGHT_EMAIL and SKYLIGHT_PASSWORD (or SKYLIGHT_BASIC_TOKEN / SKYLIGHT_BEARER_TOKEN / SKYLIGHT_AUTH_HEADER)."
     );
   }
   assertBoundedString(password, "SKYLIGHT_PASSWORD");
 
   const state = loginState(env, opts.fetch);
   const key = loginKey(env, email, password);
-  const cachedAuthorization = state.authorizations.get(key);
-  if (cachedAuthorization !== undefined) return cachedAuthorization;
+  const cachedCredential = state.credentials.get(key);
+  if (cachedCredential !== undefined && cachedCredential.expiresAt - OAUTH_EXPIRY_SKEW_MS > Date.now()) {
+    return `Bearer ${cachedCredential.accessToken}`;
+  }
   const existingLogin = state.requests.get(key);
-  if (existingLogin !== undefined) return existingLogin;
+  if (existingLogin !== undefined) return `Bearer ${(await existingLogin).accessToken}`;
 
-  const loginRequest = login({ fetch: opts.fetch, env, email, password });
+  const loginRequest =
+    cachedCredential === undefined
+      ? loginWithOAuth({ fetch: opts.fetch, env, email, password })
+      : refreshOAuthCredential({ fetch: opts.fetch, env, credential: cachedCredential });
   state.requests.set(key, loginRequest);
   try {
-    const authorization = await loginRequest;
-    state.authorizations.set(key, authorization);
-    return authorization;
+    const credential = await loginRequest;
+    state.credentials.set(key, credential);
+    return `Bearer ${credential.accessToken}`;
   } finally {
     if (state.requests.get(key) === loginRequest) state.requests.delete(key);
   }
@@ -303,21 +375,40 @@ export async function refreshAuthorizationHeader(opts: {
   fetch: typeof globalThis.fetch;
   env?: NodeJS.ProcessEnv;
   rejectedAuthorization?: string;
+  store?: AuthorizationStore | null;
+  useStoredCredentials?: boolean;
 }): Promise<string | null> {
   const env = opts.env ?? process.env;
-  if (
-    env.SKYLIGHT_AUTH_HEADER?.trim() ||
-    env.SKYLIGHT_BASIC_TOKEN?.trim() ||
-    env.SKYLIGHT_BEARER_TOKEN?.trim()
-  ) {
-    return null;
+  if (explicitAuthorization(env) !== null) return null;
+  const store =
+    opts.store === undefined
+      ? defaultAuthorizationStore(
+          opts.useStoredCredentials === true ||
+            (opts.useStoredCredentials === undefined && opts.env === undefined)
+        )
+      : opts.store;
+  const stored = await store?.read(env);
+  if (stored && store !== null) {
+    const oauth = parseOAuthCredential(stored);
+    if (oauth === null) return null;
+    const currentAuthorization = `Bearer ${oauth.accessToken}`;
+    if (
+      opts.rejectedAuthorization !== undefined &&
+      opts.rejectedAuthorization !== currentAuthorization
+    ) {
+      return currentAuthorization;
+    }
+    const refreshed = await refreshStoredOAuth({ fetch: opts.fetch, env, store, credential: oauth });
+    return `Bearer ${refreshed.accessToken}`;
   }
   const email = loginEmail(env.SKYLIGHT_EMAIL);
   const password = env.SKYLIGHT_PASSWORD;
   if (!email || password === undefined || password.length === 0) return null;
   const state = loginState(env, opts.fetch);
   const key = loginKey(env, email, password);
-  const currentAuthorization = state.authorizations.get(key);
+  const currentCredential = state.credentials.get(key);
+  const currentAuthorization =
+    currentCredential === undefined ? undefined : `Bearer ${currentCredential.accessToken}`;
   if (
     opts.rejectedAuthorization !== undefined &&
     currentAuthorization !== undefined &&
@@ -325,6 +416,6 @@ export async function refreshAuthorizationHeader(opts: {
   ) {
     return currentAuthorization;
   }
-  state.authorizations.delete(key);
-  return getAuthorizationHeader({ fetch: opts.fetch, env });
+  state.credentials.delete(key);
+  return getAuthorizationHeader({ fetch: opts.fetch, env, store: null });
 }
