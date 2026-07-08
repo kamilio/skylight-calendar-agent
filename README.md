@@ -179,6 +179,29 @@ skylight-calendar-mcp-http \
 
 The password is sent directly to Skylight and is not stored. The resulting Skylight OAuth credential and this server's OAuth grants are kept only in process memory, so clients sign in again after a restart. One running server supports one Skylight account; restart it to switch accounts. The generated signing key is also process-local, which keeps setup automatic but invalidates issued MCP tokens on restart.
 
+### Remote OpenClaw login from Telegram
+
+Configure the HTTPS MCP URL once on the OpenClaw host:
+
+```sh
+openclaw mcp set skylight '{"url":"https://skylight.example.com/mcp","transport":"streamable-http","auth":"oauth","oauth":{"scope":"mcp"}}'
+```
+
+In a private Telegram chat, ask OpenClaw to run this CLI command and send you the authorization URL it prints:
+
+```sh
+openclaw mcp login skylight
+```
+
+Open the URL on your phone and sign in to Skylight. When OpenClaw uses a loopback callback, the completion page displays a short-lived one-time code instead of redirecting the phone to `localhost`. Send that code back in the private chat, then have OpenClaw finish the same CLI login:
+
+```sh
+openclaw mcp login skylight --code ONE_TIME_CODE
+openclaw mcp doctor skylight --probe
+```
+
+The Skylight password is entered only on the HTTPS Skylight MCP page; do not send it through Telegram. The one-time code is bound to the login attempt through PKCE and expires shortly. Use a private, allowlisted Telegram account and delete the code message after login. Run `openclaw mcp logout skylight` to disconnect the remote client.
+
 Pre-shared token mode remains available by explicitly setting `SKYLIGHT_MCP_HTTP_TOKEN`; doing so disables the built-in OAuth server. For deployments that already have an authorization service, configure Toolcraft's external JWT verification instead:
 
 The legacy `skylight-calendar-mcp-http-headers` helper is installed for existing pre-shared-token configurations, but new OAuth setups should connect directly without it.
