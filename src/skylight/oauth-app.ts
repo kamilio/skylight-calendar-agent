@@ -59,6 +59,7 @@ export function createSkylightOAuthApp(options: {
   publicUrl: URL;
   fetch?: typeof globalThis.fetch;
   env?: NodeJS.ProcessEnv;
+  onAuthorizationUrl?: (url: URL) => void;
 }): SkylightOAuthApp {
   const publicUrl = new URL(options.publicUrl);
   const issuer = publicUrl.origin;
@@ -78,6 +79,7 @@ export function createSkylightOAuthApp(options: {
     store: createInMemoryAuthorizationServerStore(),
     interaction: {
       start(context) {
+        options.onAuthorizationUrl?.(new URL(context.request.url));
         pruneInteractions(interactions);
         interactions.set(context.transaction.id, {
           scopes: context.transaction.scopes,

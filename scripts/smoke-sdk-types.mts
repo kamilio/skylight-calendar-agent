@@ -5,6 +5,8 @@ const sdk = createSkylightSDK();
 void sdk.lists.create({ label: "Weekend" });
 void sdk.calendar.eventEdit({ eventId: "event-1", clearCategories: true });
 void sdk.tasks.chores({});
+void sdk.auth.status({});
+void sdk.auth.logout({});
 void ((error: SkylightRequestError) => error.status);
 
 // @ts-expect-error label is required

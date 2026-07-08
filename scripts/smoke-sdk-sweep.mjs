@@ -111,6 +111,7 @@ try {
     for (const command of group.children) {
       const scope = command.scope ?? group.scope ?? ["cli", "sdk"];
       if (!scope.includes("sdk")) continue;
+      if (group.name === "auth") continue;
       const argumentsForCommand = {
         ...(optionalArguments[`${group.name}.${command.name}`] ?? {}),
       };

@@ -68,7 +68,7 @@ export const authGroup = defineGroup({
     defineCommand({
       name: "status",
       description: "Show the active authentication source without revealing credentials",
-      scope: ["cli"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async () => getAuthorizationStatus(),
     }),
@@ -89,7 +89,7 @@ export const authGroup = defineGroup({
     defineCommand({
       name: "logout",
       description: "Remove the locally stored OAuth credential",
-      scope: ["cli"],
+      scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async () => {
         const store = systemAuthorizationStore();

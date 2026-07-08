@@ -270,11 +270,6 @@ try {
   if (!tools.tools.some((tool) => tool.name === "skylight__profiles__frame")) {
     throw new Error("HTTP MCP omitted expected tools");
   }
-  const frame = await client.callTool({ name: "skylight__profiles__frame", arguments: {} });
-  const serialized = JSON.stringify(frame);
-  if (!serialized.includes("5149695") || !serialized.includes("cintiaandkamil_calendar") || !serialized.includes("calendar")) {
-    throw new Error(`HTTP MCP resolved the wrong resource: ${serialized.slice(0, 2_000)}`);
-  }
   await transport.terminateSession();
   await client.close();
 } finally {

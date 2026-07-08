@@ -239,7 +239,12 @@ async function main(): Promise<void> {
   const canonicalUrl = (): URL =>
     config.publicUrl ?? new URL(`http://${config.hostname.includes(":") ? `[${config.hostname}]` : config.hostname}:${resolvedPort}${config.path}`);
   const embeddedOAuth = config.embeddedOAuth
-    ? createSkylightOAuthApp({ publicUrl: config.publicUrl ?? canonicalUrl() })
+    ? createSkylightOAuthApp({
+        publicUrl: config.publicUrl ?? canonicalUrl(),
+        onAuthorizationUrl(url) {
+          process.stderr.write(`Open Skylight login: ${url.toString()}\n`);
+        },
+      })
     : null;
   const oauthOptions: TinyHttpMcpServerOAuthOptions | undefined = embeddedOAuth?.mcpAuthorization ?? (config.oauth === null
     ? undefined
@@ -350,6 +355,9 @@ async function main(): Promise<void> {
   });
   resolvedPort = (server.address() as AddressInfo).port;
   process.stdout.write(`${canonicalUrl().toString()}\n`);
+  if (embeddedOAuth !== null) {
+    process.stderr.write(`Skylight login page: ${new URL("/", canonicalUrl()).toString()}\n`);
+  }
 
   let closing = false;
   const shutdown = async () => {

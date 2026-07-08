@@ -37,6 +37,7 @@ const upstreamFetch = async (url, init = {}) => {
 };
 
 let app;
+let printedAuthorizationUrl;
 const server = createServer((request, response) => {
   void app.handle(request, response).catch((error) => {
     response.statusCode = 500;
@@ -55,6 +56,9 @@ app = createSkylightOAuthApp({
   publicUrl: new URL(resource),
   fetch: upstreamFetch,
   env: { SKYLIGHT_API_BASE: "https://skylight.invalid" },
+  onAuthorizationUrl(url) {
+    printedAuthorizationUrl = url;
+  },
 });
 
 try {
@@ -80,6 +84,9 @@ try {
   }).toString();
 
   let pageResponse = await fetch(authorize);
+  if (printedAuthorizationUrl?.href !== authorize.href) {
+    throw new Error("OAuth authorization URL was not exposed for CLI display");
+  }
   let page = await pageResponse.text();
   let cookie = pageResponse.headers.getSetCookie()[0]?.split(";", 1)[0] ?? "";
   let csrf = hiddenValue(page, "csrf");

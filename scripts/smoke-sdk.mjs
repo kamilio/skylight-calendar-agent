@@ -23,6 +23,10 @@ try {
     },
   });
 
+  if (typeof sdk.auth.logout !== "function" || typeof sdk.auth.status !== "function") {
+    throw new Error("SDK omitted authentication status/logout commands");
+  }
+
   for (const [invoke, expected, forbidden] of [
     [
       () => sdk.profiles.userUpdate({ updatesJson: "super-secret" }),

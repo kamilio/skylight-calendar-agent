@@ -39,6 +39,7 @@ On macOS, the recommended setup is an interactive OAuth2 login that encrypts the
 ```sh
 skylight auth login --email you@example.com
 skylight auth status
+skylight auth logout
 ```
 
 The password prompt is hidden and the password is used only to establish Skylight's browser-backed OAuth session; it is never persisted by this package. The encrypted credential file is stored under the user's macOS Application Support directory with mode `0600`, while its encryption key remains in Keychain. CLI and MCP processes automatically refresh it before expiry and after an authorization rejection, so passwords and tokens do not belong in `.mcp.json` or the project directory. Remove both with `skylight auth logout`.
@@ -207,6 +208,7 @@ import { createSkylightSDK } from "@kamilio/skylight-calendar-agent";
 const skylight = createSkylightSDK();
 const lists = await skylight.lists.list({});
 const created = await skylight.lists.create({ label: "Weekend" });
+await skylight.auth.logout({});
 ```
 
 The SDK reads the same `SKYLIGHT_*` variables from `process.env` and accepts native JSON values for `*Json` parameters. It does not load `.env` automatically; load that file in your application before creating the SDK if needed. Response types are `unknown` because the upstream API is undocumented and may change.
