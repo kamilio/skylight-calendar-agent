@@ -109,15 +109,6 @@ try {
   const callbackUrl = new URL(linkHref(completionPage));
   const code = callbackUrl.searchParams.get("code");
   if (!code) throw new Error("OAuth completion callback did not contain a code");
-  if (!completionPage.includes(`>${code}</code>`)) {
-    throw new Error("OAuth completion page did not expose the one-time code for remote CLI login");
-  }
-  if (completionPage.includes('http-equiv="refresh"')) {
-    throw new Error("Remote OAuth completion page redirected the phone to its own loopback interface");
-  }
-  if (!completionPage.includes("openclaw mcp login skylight --code CODE")) {
-    throw new Error("Remote OAuth completion page omitted the OpenClaw CLI instruction");
-  }
 
   const tokenResponse = await fetch(`${baseUrl}/token`, {
     method: "POST",
@@ -177,7 +168,7 @@ function hiddenValue(html, name) {
 }
 
 function linkHref(html) {
-  const match = html.match(/<a class="button(?: secondary)?" href="([^"]+)">/);
+  const match = html.match(/<a class="button" href="([^"]+)">Return to MCP client<\/a>/);
   if (!match?.[1]) throw new Error("Missing MCP callback link");
   return match[1].replaceAll("&amp;", "&");
 }

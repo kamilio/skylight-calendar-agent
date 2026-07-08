@@ -4,9 +4,9 @@ You may set `SKYLIGHT_FRAME_ID` directly or provide a public `SKYLIGHT_CALENDAR_
 
 ## Environment variables
 
-On macOS, `skylight auth login` performs Skylight's browser-backed OAuth2 authorization-code flow. It encrypts the access token, rotating refresh token, and stable device fingerprint in a mode-`0600` file under the user's Application Support directory, with a random 256-bit encryption key stored in Keychain. The account password is used only to establish the login session and is not persisted by this package. Access tokens are refreshed automatically before expiry and after a `401`. `skylight auth status` reports the active source without revealing it, and `skylight auth logout` removes both the encrypted file and its Keychain key.
+`skylight auth login` prints Skylight's HTTPS OAuth URL for browser sign-in. After sign-in, pass the complete `https://ourskylight.com/welcome?...` URL to `skylight auth complete --callback-url URL`. On macOS, the rotating OAuth credential is encrypted with a random 256-bit key stored in Keychain. On Linux it is stored below `~/.config/skylight-calendar-agent/credentials` with directory mode `0700` and file mode `0600`. Access tokens refresh automatically before expiry and after a `401`. `skylight auth status` reports the active source without revealing it, and `skylight auth logout` removes the stored credential.
 
-- `SKYLIGHT_EMAIL` / `SKYLIGHT_PASSWORD` — portable fallback for the OAuth2 authorization-code login when no explicit header, Basic token, Bearer token, or stored credential is available. Prefer `skylight auth login` so the rotating refresh credential can be persisted securely.
+- `SKYLIGHT_EMAIL` / `SKYLIGHT_PASSWORD` — portable fallback when no explicit header, Basic token, Bearer token, or stored credential is available. Prefer the browser flow; `skylight auth login-password` explicitly performs direct terminal login.
 - `SKYLIGHT_BASIC_TOKEN` — optional base64-encoded `id:token` value, without the `Basic` scheme prefix.
 - `SKYLIGHT_BEARER_TOKEN` — optional web-app access token, without the `Bearer` scheme prefix.
 - `SKYLIGHT_AUTH_HEADER` — optional full `Authorization` header value (wins over BASIC/BEARER).
@@ -33,7 +33,7 @@ On macOS, `skylight auth login` performs Skylight's browser-backed OAuth2 author
 
 Built-in OAuth login and external OAuth verification are mutually exclusive. The built-in mode publishes authorization-server and protected-resource metadata, supports dynamic client registration and PKCE, and issues short-lived access tokens plus rotating refresh tokens. Its signing key, grants, and Skylight credential are intentionally ephemeral. Locally, `skylight-calendar-mcp-http` works without options at `http://127.0.0.1:8787/mcp`; only public deployments need bind and public URL settings.
 
-Credential precedence is `SKYLIGHT_AUTH_HEADER`, then `SKYLIGHT_BASIC_TOKEN`, then `SKYLIGHT_BEARER_TOKEN`, then the macOS Keychain OAuth credential, then email/password OAuth login. Explicit environment credentials can temporarily override the stored credential. Run `skylight auth login` again if the refresh credential is revoked or login verification changes.
+Credential precedence is `SKYLIGHT_AUTH_HEADER`, then `SKYLIGHT_BASIC_TOKEN`, then `SKYLIGHT_BEARER_TOKEN`, then the stored OAuth credential, then email/password OAuth login. Explicit environment credentials can temporarily override the stored credential. Run `skylight auth login` again if the refresh credential is revoked or login verification changes.
 
 In `.env`, quote values that contain `#` or intentional leading/trailing spaces. Double-quoted values support `\\`, `\\"`, `\\n`, `\\r`, and `\\t` escapes.
 

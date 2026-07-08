@@ -13,6 +13,20 @@ if (
   throw new Error(`Root help title is incorrect: ${rootOutput}`);
 }
 
+const browserLogin = spawnSync(process.execPath, ["dist/cli.js", "auth", "login"], {
+  encoding: "utf8",
+});
+const browserLoginOutput = `${browserLogin.stdout ?? ""}${browserLogin.stderr ?? ""}`;
+const browserLoginUrl = browserLoginOutput.split(/\r?\n/, 1)[0] ?? "";
+if (
+  browserLogin.status !== 0 ||
+  !browserLoginUrl.startsWith("https://app.ourskylight.com/oauth/authorize?") ||
+  !browserLoginUrl.includes("state=") ||
+  browserLoginUrl.includes("…")
+) {
+  throw new Error(`Browser login did not print the complete OAuth URL: ${browserLoginOutput}`);
+}
+
 function collectPaths(group, prefix = []) {
   const paths = [];
   for (const child of group.children ?? []) {

@@ -262,8 +262,63 @@ export function createMacOSKeychainAuthorizationStore(options: {
   };
 }
 
+export function createFileAuthorizationStore(options: {
+  storageDirectory?: string;
+} = {}): AuthorizationStore {
+  const storageDirectory =
+    options.storageDirectory ??
+    path.join(process.env.XDG_CONFIG_HOME ?? path.join(homedir(), ".config"), "skylight-calendar-agent", "credentials");
+  const account = (env: NodeJS.ProcessEnv): string => getSkylightRequestConfig(env).apiBaseUrl;
+  const filePath = (apiBaseUrl: string): string => path.join(storageDirectory, credentialFileName(apiBaseUrl));
+  const cache = new Map<string, string>();
+
+  return {
+    name: "user credential file",
+    async read(env = process.env) {
+      const apiBaseUrl = account(env);
+      const cached = cache.get(apiBaseUrl);
+      if (cached !== undefined) return cached;
+      try {
+        const credential = (await readFile(filePath(apiBaseUrl), "utf8")).replace(/\r?\n$/, "");
+        cache.set(apiBaseUrl, credential);
+        return credential;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException)?.code === "ENOENT") return null;
+        throw error;
+      }
+    },
+    async write(authorization, env = process.env) {
+      const apiBaseUrl = account(env);
+      await mkdir(storageDirectory, { recursive: true, mode: 0o700 });
+      await chmod(storageDirectory, 0o700);
+      const destination = filePath(apiBaseUrl);
+      const temporary = `${destination}.${process.pid}.${randomBytes(6).toString("hex")}.tmp`;
+      try {
+        await writeFile(temporary, `${authorization}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
+        await rename(temporary, destination);
+        await chmod(destination, 0o600);
+      } finally {
+        await rm(temporary, { force: true });
+      }
+      cache.set(apiBaseUrl, authorization);
+    },
+    async delete(env = process.env) {
+      const apiBaseUrl = account(env);
+      cache.delete(apiBaseUrl);
+      try {
+        await rm(filePath(apiBaseUrl));
+        return true;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException)?.code === "ENOENT") return false;
+        throw error;
+      }
+    },
+  };
+}
+
 export function systemAuthorizationStore(): AuthorizationStore | null {
-  return process.platform === "darwin" ? macOSSystemStore : null;
+  return process.platform === "darwin" ? macOSSystemStore : fileSystemStore;
 }
 
 const macOSSystemStore = createMacOSKeychainAuthorizationStore();
+const fileSystemStore = createFileAuthorizationStore();

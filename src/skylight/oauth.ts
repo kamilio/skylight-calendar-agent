@@ -12,6 +12,10 @@ const SCOPE = "everything";
 const REDIRECT_URI = "https://ourskylight.com/welcome";
 const MAX_RESPONSE_LENGTH = 20_000;
 
+export interface BrowserOAuthLogin {
+  loginUrl: string;
+}
+
 function oauthDeviceValues(fingerprint: string): Record<string, string> {
   return {
     skylight_api_client_device_fingerprint: fingerprint,
@@ -135,6 +139,83 @@ function oauthCredential(json: TokenResponse, fingerprint: string): StoredOAuthC
     fingerprint,
     expiresAt: Date.now() + Math.floor(json.expires_in * 1_000),
   };
+}
+
+export function createBrowserOAuthLogin(opts: {
+  env?: NodeJS.ProcessEnv;
+  fingerprint?: string;
+} = {}): BrowserOAuthLogin {
+  const env = opts.env ?? process.env;
+  const { apiBaseUrl } = getSkylightRequestConfig(env);
+  const fingerprint = opts.fingerprint ?? randomUUID();
+  const authorize = new URL(`${apiBaseUrl}/oauth/authorize`);
+  authorize.search = new URLSearchParams({
+    client_id: CLIENT_ID,
+    response_type: "code",
+    redirect_uri: REDIRECT_URI,
+    scope: SCOPE,
+    state: fingerprint,
+    skylight_api_client_device_fingerprint: fingerprint,
+  }).toString();
+  return { loginUrl: authorize.toString() };
+}
+
+export async function completeBrowserOAuthLogin(opts: {
+  fetch: typeof globalThis.fetch;
+  callbackUrl: string;
+  env?: NodeJS.ProcessEnv;
+}): Promise<StoredOAuthCredential> {
+  const env = opts.env ?? process.env;
+  const { apiBaseUrl, requestTimeoutMs } = getSkylightRequestConfig(env);
+  let callback: URL;
+  try {
+    callback = new URL(opts.callbackUrl);
+  } catch {
+    throw new UserError("Callback URL must be the complete Skylight URL shown after sign-in.");
+  }
+  if (
+    callback.protocol !== "https:" ||
+    callback.hostname !== "ourskylight.com" ||
+    callback.pathname !== "/welcome"
+  ) {
+    throw new UserError("Callback URL must begin with https://ourskylight.com/welcome.");
+  }
+  const code = callback.searchParams.get("code");
+  const fingerprint = callback.searchParams.get("state");
+  if (!code || !fingerprint) {
+    throw new UserError("Callback URL did not contain the OAuth code and state. Start `skylight auth login` again.");
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(fingerprint)) {
+    throw new UserError("Callback URL contained an invalid OAuth state. Start `skylight auth login` again.");
+  }
+  assertBoundedString(code, "OAuth authorization code");
+  assertBoundedString(fingerprint, "OAuth state");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+  try {
+    return await tokenRequest({
+      fetch: opts.fetch,
+      apiBaseUrl,
+      fingerprint,
+      signal: controller.signal,
+      values: new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        client_id: CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+        scope: SCOPE,
+        ...oauthDeviceValues(fingerprint),
+      }),
+    });
+  } catch (error) {
+    if (error instanceof UserError) throw error;
+    if (controller.signal.aborted) {
+      throw new UserError(`Skylight login completion timed out after ${requestTimeoutMs}ms.`);
+    }
+    throw new UserError(`Skylight login completion failed: ${excerpt(errorMessage(error))}`);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function tokenRequest(opts: {

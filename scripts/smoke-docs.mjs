@@ -46,12 +46,12 @@ if (/npm (?:install|uninstall)(?: -g)? skylight-calendar-agent\b/.test(readme)) 
 }
 
 if (
-  !readme.includes("skylight auth login --email") ||
-  !readme.includes("passwords and tokens do not belong in `.mcp.json`") ||
+  !readme.includes("skylight auth complete --callback-url") ||
+  !readme.includes("Hermes") ||
   !readme.includes("process-local credentials rather than an MCP HTTP authorization exchange") ||
-  !config.includes("macOS Keychain OAuth credential")
+  !config.includes("~/.config/skylight-calendar-agent/credentials")
 ) {
-  throw new Error("Authentication docs must explain the local Keychain and stdio MCP flow");
+  throw new Error("Authentication docs must explain browser completion and portable storage");
 }
 
 if (

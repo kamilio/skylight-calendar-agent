@@ -6,7 +6,7 @@ Unless noted otherwise, listed actions are available to the CLI and SDK. For saf
 
 ## Auth
 
-- Local credentials (CLI only): `auth login`, `auth status`, `auth http-token`, `auth logout`
+- Local credentials (CLI only): `auth login`, `auth complete`, `auth login-password`, `auth status`, `auth http-token`, `auth logout`
 
 ## Calendar
 

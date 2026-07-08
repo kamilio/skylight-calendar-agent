@@ -34,20 +34,26 @@ npm run build
 
 ## Configure
 
-On macOS, the recommended setup is an interactive OAuth2 login that encrypts the resulting access token, rotating refresh token, and device fingerprint with a random key held in Keychain:
+The recommended setup uses Skylight's HTTPS OAuth page. The CLI prints the complete URL without opening a local browser, which works well when Hermes is running on another machine:
 
 ```sh
-skylight auth login --email you@example.com
+skylight auth login
+```
+
+Open the printed URL on your phone and sign in directly on `app.ourskylight.com`. After Skylight redirects to `https://ourskylight.com/welcome`, copy that complete final URL back to Hermes and have it run:
+
+```sh
+skylight auth complete --callback-url 'https://ourskylight.com/welcome?code=...&state=...'
 skylight auth status
 skylight auth logout
 ```
 
-The password prompt is hidden and the password is used only to establish Skylight's browser-backed OAuth session; it is never persisted by this package. The encrypted credential file is stored under the user's macOS Application Support directory with mode `0600`, while its encryption key remains in Keychain. CLI and MCP processes automatically refresh it before expiry and after an authorization rejection, so passwords and tokens do not belong in `.mcp.json` or the project directory. Remove both with `skylight auth logout`.
+Your password stays between your browser and Skylight; it is never sent through Telegram or entered into the remote shell. On macOS, the OAuth credential is encrypted with a random key held in Keychain. On Linux, including typical Hermes hosts, it is stored in `~/.config/skylight-calendar-agent/credentials` with directory mode `0700` and file mode `0600`. CLI processes automatically refresh the credential before expiry and after an authorization rejection. Remove it with `skylight auth logout`.
 
-For non-interactive setup, pipe the password without placing it in shell history:
+For direct terminal-only setup, the older password flow remains available:
 
 ```sh
-printf '%s\n' "$SKYLIGHT_PASSWORD" | skylight auth login --email you@example.com --password-stdin
+printf '%s\n' "$SKYLIGHT_PASSWORD" | skylight auth login-password --email you@example.com --password-stdin
 ```
 
 Environment variables and `.env` remain available as portable fallbacks:
@@ -66,7 +72,7 @@ Instead of email and password, you may set one of:
 - `SKYLIGHT_BASIC_TOKEN` — base64-encoded Skylight user-id/token pair
 - `SKYLIGHT_BEARER_TOKEN` — web-app access token
 
-If multiple methods are set, precedence is full auth header, Basic token, Bearer token, the stored Keychain OAuth credential, then email/password OAuth login. Environment credentials therefore remain useful for temporary overrides.
+If multiple methods are set, precedence is full auth header, Basic token, Bearer token, the stored OAuth credential, then email/password OAuth login. Environment credentials therefore remain useful for temporary overrides.
 
 An explicitly exported credential method takes precedence over credential methods in `.env`. When shell credentials are present, `SKYLIGHT_API_BASE` is also not loaded from `.env`; export it explicitly if you intentionally use a custom API host. This prevents a stale or untrusted working-directory file from redirecting exported credentials.
 
@@ -129,7 +135,7 @@ Example MCP client configuration:
 
 If the package is globally installed, set `command` directly to `skylight-calendar-mcp` and omit `args`.
 
-For local stdio MCP servers, the MCP authorization specification uses process-local credentials rather than an MCP HTTP authorization exchange. Run `skylight auth login` once before starting Claude; the MCP server then reads and refreshes the Skylight OAuth credential from macOS Keychain without secrets in `.mcp.json`.
+For local stdio MCP servers, the MCP authorization specification uses process-local credentials rather than an MCP HTTP authorization exchange. Complete `skylight auth login` once before starting Claude; the MCP server then reads and refreshes the same stored Skylight OAuth credential without secrets in `.mcp.json`.
 
 ### Streamable HTTP
 
@@ -178,29 +184,6 @@ skylight-calendar-mcp-http \
 ```
 
 The password is sent directly to Skylight and is not stored. The resulting Skylight OAuth credential and this server's OAuth grants are kept only in process memory, so clients sign in again after a restart. One running server supports one Skylight account; restart it to switch accounts. The generated signing key is also process-local, which keeps setup automatic but invalidates issued MCP tokens on restart.
-
-### Remote OpenClaw login from Telegram
-
-Configure the HTTPS MCP URL once on the OpenClaw host:
-
-```sh
-openclaw mcp set skylight '{"url":"https://skylight.example.com/mcp","transport":"streamable-http","auth":"oauth","oauth":{"scope":"mcp"}}'
-```
-
-In a private Telegram chat, ask OpenClaw to run this CLI command and send you the authorization URL it prints:
-
-```sh
-openclaw mcp login skylight
-```
-
-Open the URL on your phone and sign in to Skylight. When OpenClaw uses a loopback callback, the completion page displays a short-lived one-time code instead of redirecting the phone to `localhost`. Send that code back in the private chat, then have OpenClaw finish the same CLI login:
-
-```sh
-openclaw mcp login skylight --code ONE_TIME_CODE
-openclaw mcp doctor skylight --probe
-```
-
-The Skylight password is entered only on the HTTPS Skylight MCP page; do not send it through Telegram. The one-time code is bound to the login attempt through PKCE and expires shortly. Use a private, allowlisted Telegram account and delete the code message after login. Run `openclaw mcp logout skylight` to disconnect the remote client.
 
 Pre-shared token mode remains available by explicitly setting `SKYLIGHT_MCP_HTTP_TOKEN`; doing so disables the built-in OAuth server. For deployments that already have an authorization service, configure Toolcraft's external JWT verification instead:
 

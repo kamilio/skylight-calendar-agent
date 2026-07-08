@@ -5,6 +5,8 @@ import {
   refreshAuthorizationHeader,
 } from "../dist/skylight/auth.js";
 import {
+  completeBrowserOAuthLogin,
+  createBrowserOAuthLogin,
   parseOAuthCredential,
   serializeOAuthCredential,
 } from "../dist/skylight/oauth.js";
@@ -19,6 +21,55 @@ const oauth = {
   fingerprint: "11111111-1111-4111-8111-111111111111",
   expiresAt: Date.now() + 3_600_000,
 };
+
+const browserLogin = createBrowserOAuthLogin({
+  env,
+  fingerprint: "22222222-2222-4222-8222-222222222222",
+});
+const browserLoginUrl = new URL(browserLogin.loginUrl);
+if (
+  browserLoginUrl.origin !== apiBase ||
+  browserLoginUrl.pathname !== "/oauth/authorize" ||
+  browserLoginUrl.searchParams.get("client_id") !== "skylight-mobile" ||
+  browserLoginUrl.searchParams.get("state") !== "22222222-2222-4222-8222-222222222222" ||
+  browserLoginUrl.searchParams.get("skylight_api_client_device_fingerprint") !== "22222222-2222-4222-8222-222222222222"
+) {
+  throw new Error(`Browser OAuth login URL was incorrect: ${browserLogin.loginUrl}`);
+}
+let completionBody = "";
+const browserCredential = await completeBrowserOAuthLogin({
+  env,
+  callbackUrl: "https://ourskylight.com/welcome?code=browser-code&state=22222222-2222-4222-8222-222222222222",
+  fetch: async (url, init) => {
+    if (String(url) !== `${apiBase}/oauth/token`) throw new Error(`Unexpected completion URL ${url}`);
+    completionBody = String(init?.body);
+    return Response.json({
+      access_token: "browser-access",
+      refresh_token: "browser-refresh",
+      expires_in: 3600,
+      token_type: "Bearer",
+    });
+  },
+});
+if (
+  browserCredential.accessToken !== "browser-access" ||
+  browserCredential.fingerprint !== "22222222-2222-4222-8222-222222222222" ||
+  !completionBody.includes("code=browser-code") ||
+  !completionBody.includes("skylight_api_client_device_fingerprint=22222222-2222-4222-8222-222222222222")
+) {
+  throw new Error("Browser OAuth completion did not exchange the callback correctly");
+}
+try {
+  await completeBrowserOAuthLogin({
+    env,
+    callbackUrl: "https://example.com/welcome?code=x&state=y",
+    fetch: globalThis.fetch,
+  });
+  throw new Error("Foreign OAuth callback URL unexpectedly succeeded");
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!message.includes("https://ourskylight.com/welcome")) throw error;
+}
 
 let storedReads = 0;
 const legacyStore = {

@@ -1,7 +1,10 @@
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createMacOSKeychainAuthorizationStore } from "../dist/skylight/credential-store.js";
+import {
+  createFileAuthorizationStore,
+  createMacOSKeychainAuthorizationStore,
+} from "../dist/skylight/credential-store.js";
 
 const env = { SKYLIGHT_API_BASE: "https://example.invalid" };
 const directory = await mkdtemp(path.join(tmpdir(), "skylight-credentials-"));
@@ -36,6 +39,26 @@ const runner = async (args, input) => {
 };
 
 try {
+  const fileStoreDirectory = path.join(directory, "portable");
+  const fileStore = createFileAuthorizationStore({ storageDirectory: fileStoreDirectory });
+  const fileCredential = JSON.stringify({ accessToken: "linux-access", refreshToken: "linux-refresh" });
+  await fileStore.write(fileCredential, env);
+  const [portableFile] = await import("node:fs/promises").then(({ readdir }) => readdir(fileStoreDirectory));
+  const portablePath = path.join(fileStoreDirectory, portableFile);
+  if ((await readFile(portablePath, "utf8")).trim() !== fileCredential) {
+    throw new Error("Portable credential file did not contain the credential");
+  }
+  if (
+    ((await stat(fileStoreDirectory)).mode & 0o777) !== 0o700 ||
+    ((await stat(portablePath)).mode & 0o777) !== 0o600
+  ) {
+    throw new Error("Portable credential storage permissions were not restrictive");
+  }
+  const freshFileStore = createFileAuthorizationStore({ storageDirectory: fileStoreDirectory });
+  if ((await freshFileStore.read(env)) !== fileCredential || !(await freshFileStore.delete(env))) {
+    throw new Error("Portable credential did not survive a fresh store or delete cleanly");
+  }
+
   const store = createMacOSKeychainAuthorizationStore({
     runner,
     service: "test-service",

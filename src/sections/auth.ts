@@ -1,16 +1,17 @@
 import { defineCommand, defineGroup, S, UserError } from "toolcraft";
-import {
-  getAuthorizationStatus,
-  loginWithPassword,
-} from "../skylight/auth.js";
+import { getAuthorizationStatus, loginWithPassword } from "../skylight/auth.js";
 import { systemAuthorizationStore } from "../skylight/credential-store.js";
-import { serializeOAuthCredential } from "../skylight/oauth.js";
+import {
+  completeBrowserOAuthLogin,
+  createBrowserOAuthLogin,
+  serializeOAuthCredential,
+} from "../skylight/oauth.js";
 import {
   getOrCreateStoredHttpMcpToken,
   rotateStoredHttpMcpToken,
 } from "../skylight/http-auth.js";
 import { promptLine } from "../skylight/prompt.js";
-import { assertBoundedString, emailParam } from "../skylight/validation.js";
+import { assertBoundedString, boundedStringParam, emailParam } from "../skylight/validation.js";
 
 async function readPasswordFromStdin(): Promise<string> {
   let password = "";
@@ -28,7 +29,46 @@ export const authGroup = defineGroup({
   children: [
     defineCommand({
       name: "login",
-      description: "Log in with OAuth2 and store refresh credentials in the OS credential store",
+      description: "Print the Skylight OAuth URL for browser sign-in",
+      scope: ["cli"],
+      params: S.Object({}),
+      handler: async () => {
+        const login = createBrowserOAuthLogin();
+        process.stdout.write(`${login.loginUrl}\n`);
+        return {
+          next: "After sign-in, copy the final browser URL and run `skylight auth complete --callback-url URL`.",
+        };
+      },
+    }),
+    defineCommand({
+      name: "complete",
+      description: "Complete browser OAuth login from the final Skylight URL",
+      scope: ["cli"],
+      params: S.Object({
+        callbackUrl: boundedStringParam({
+          description: "Complete https://ourskylight.com/welcome URL shown after sign-in",
+        }),
+      }),
+      handler: async (ctx) => {
+        const store = systemAuthorizationStore();
+        if (store === null) {
+          throw new UserError("Local credential storage is unavailable on this platform.");
+        }
+        const credential = await completeBrowserOAuthLogin({
+          fetch: ctx.fetch,
+          callbackUrl: ctx.params.callbackUrl,
+        });
+        await store.write(serializeOAuthCredential(credential));
+        return {
+          authenticated: true,
+          storage: store.name,
+          apiBaseUrl: (await getAuthorizationStatus({ store })).apiBaseUrl,
+        };
+      },
+    }),
+    defineCommand({
+      name: "login-password",
+      description: "Log in by reading the Skylight password in this terminal",
       scope: ["cli"],
       params: S.Object({
         email: S.Optional(emailParam({ description: "Skylight account email", short: "e" })),
@@ -38,11 +78,7 @@ export const authGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const store = systemAuthorizationStore();
-        if (store === null) {
-          throw new UserError(
-            "Secure local login currently requires macOS Keychain. Use environment credentials on this platform."
-          );
-        }
+        if (store === null) throw new UserError("Local credential storage is unavailable on this platform.");
         const email =
           ctx.params.email ??
           process.env.SKYLIGHT_EMAIL ??

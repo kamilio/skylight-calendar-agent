@@ -342,33 +342,13 @@ function renderAuthorizationPage(input: {
 }
 
 function renderCompletionPage(redirectUrl: string): string {
-  const callback = new URL(redirectUrl);
-  const authorizationCode = callback.searchParams.get("code");
-  const loopbackCallback = isLoopbackHostname(callback.hostname);
   const escapedUrl = escapeHtml(redirectUrl);
-  if (loopbackCallback && authorizationCode !== null) {
-    return page("Skylight connected", `<main>
-      <div class="success">✓</div>
-      <h1>Skylight connected</h1>
-      <p class="intro">Return to the OpenClaw chat and send this one-time authorization code:</p>
-      <section class="authorization-code" aria-label="One-time authorization code">
-        <code>${escapeHtml(authorizationCode)}</code>
-      </section>
-      <p class="fine">Then run <code>openclaw mcp login skylight --code CODE</code> on the OpenClaw host. The code expires shortly and works only for this login attempt.</p>
-      <a class="button secondary" href="${escapedUrl}">Try callback on this device</a>
-    </main>`);
-  }
   return page("Skylight connected", `<main>
     <div class="success">✓</div>
     <h1>Skylight connected</h1>
     <p class="intro">Authentication succeeded. Returning to your MCP client in two seconds.</p>
     <a class="button" href="${escapedUrl}">Return to MCP client</a>
   </main>`, `<meta http-equiv="refresh" content="2;url=${escapedUrl}">`);
-}
-
-function isLoopbackHostname(hostname: string): boolean {
-  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  return normalized === "localhost" || normalized === "::1" || /^127(?:\.\d{1,3}){3}$/.test(normalized);
 }
 
 function renderLandingPage(resource: string): string {
@@ -381,7 +361,7 @@ function renderErrorPage(): string {
 
 function page(title: string, body: string, extraHead = ""): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${extraHead}<title>${escapeHtml(title)}</title><style>
-    :root{color-scheme:light;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#fffaf2,#f5eadc);color:#30271f}main{max-width:28rem;margin:0 auto;padding:4.5rem 1.25rem}.brand{font-size:.72rem;font-weight:800;letter-spacing:.18em;color:#a85e30}h1{font-size:2rem;line-height:1.1;margin:.75rem 0}.intro{line-height:1.6;color:#66584d}section{background:#fff;border:1px solid #e6d7c6;border-radius:1.15rem;padding:1.4rem;margin:1.5rem 0;box-shadow:0 1rem 3rem #6f452018}form{display:grid;gap:.65rem}label{font-size:.88rem;font-weight:700}input,button,.button{font:inherit;border-radius:.7rem}input{width:100%;border:1px solid #cdbba9;padding:.82rem;background:#fff;color:#30271f}input:focus{outline:3px solid #e9b98e66;border-color:#b96d3b}button,.button{display:inline-block;border:0;padding:.85rem 1rem;background:#b86635;color:#fff;text-decoration:none;text-align:center;font-weight:800;cursor:pointer;margin-top:.35rem}.button.secondary{background:#6e5b4d}.scope,.fine{font-size:.78rem;color:#847466;line-height:1.45}.error{padding:.8rem;border-radius:.65rem;background:#fff0ed;color:#952f20;font-weight:700;line-height:1.4}.success{display:grid;place-items:center;width:3.5rem;height:3.5rem;border-radius:50%;background:#dcefdc;color:#26712a;font-size:2rem;font-weight:900}.authorization-code code{display:block;font-size:1.1rem;font-weight:800;letter-spacing:.04em;overflow-wrap:anywhere;user-select:all}code{overflow-wrap:anywhere;background:#fff;padding:.15rem .3rem;border-radius:.3rem}@media(prefers-color-scheme:dark){:root{color-scheme:dark}body{background:linear-gradient(145deg,#201a16,#2a211b);color:#f5eee7}.intro,.scope,.fine{color:#c4b4a6}section{background:#30261f;border-color:#554334}input{background:#211a16;color:#f5eee7;border-color:#6e5747}code{background:#30261f}}
+    :root{color-scheme:light;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#fffaf2,#f5eadc);color:#30271f}main{max-width:28rem;margin:0 auto;padding:4.5rem 1.25rem}.brand{font-size:.72rem;font-weight:800;letter-spacing:.18em;color:#a85e30}h1{font-size:2rem;line-height:1.1;margin:.75rem 0}.intro{line-height:1.6;color:#66584d}section{background:#fff;border:1px solid #e6d7c6;border-radius:1.15rem;padding:1.4rem;margin:1.5rem 0;box-shadow:0 1rem 3rem #6f452018}form{display:grid;gap:.65rem}label{font-size:.88rem;font-weight:700}input,button,.button{font:inherit;border-radius:.7rem}input{width:100%;border:1px solid #cdbba9;padding:.82rem;background:#fff;color:#30271f}input:focus{outline:3px solid #e9b98e66;border-color:#b96d3b}button,.button{display:inline-block;border:0;padding:.85rem 1rem;background:#b86635;color:#fff;text-decoration:none;text-align:center;font-weight:800;cursor:pointer;margin-top:.35rem}.scope,.fine{font-size:.78rem;color:#847466;line-height:1.45}.error{padding:.8rem;border-radius:.65rem;background:#fff0ed;color:#952f20;font-weight:700;line-height:1.4}.success{display:grid;place-items:center;width:3.5rem;height:3.5rem;border-radius:50%;background:#dcefdc;color:#26712a;font-size:2rem;font-weight:900}code{overflow-wrap:anywhere;background:#fff;padding:.15rem .3rem;border-radius:.3rem}@media(prefers-color-scheme:dark){:root{color-scheme:dark}body{background:linear-gradient(145deg,#201a16,#2a211b);color:#f5eee7}.intro,.scope,.fine{color:#c4b4a6}section{background:#30261f;border-color:#554334}input{background:#211a16;color:#f5eee7;border-color:#6e5747}code{background:#30261f}}
   </style></head><body>${body}</body></html>`;
 }
 
