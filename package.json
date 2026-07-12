@@ -70,7 +70,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "toolcraft": "0.0.126"
+    "toolcraft": "0.0.131"
   },
   "author": ""
 }
