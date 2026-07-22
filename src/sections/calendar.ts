@@ -46,6 +46,7 @@ export const calendarGroup = defineGroup({
       name: "notification-settings",
       description: "Get event notification settings",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -60,9 +61,10 @@ export const calendarGroup = defineGroup({
       name: "notification-settings-update",
       description: "Update event notification settings",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
-        onTime: S.Boolean({ description: "Notify on time; use --on-time=false to disable" }),
-        early: S.Boolean({ description: "Notify early; use --early=false to disable" }),
+        onTime: S.Boolean({ description: "Whether to notify at the event start time" }),
+        early: S.Boolean({ description: "Whether to send an early notification" }),
         earlyMinutesBefore: S.Optional(
           S.Number({
             description: "Minutes before the event for early notifications",
@@ -96,6 +98,7 @@ export const calendarGroup = defineGroup({
       name: "events",
       description: "List calendar events for a date range",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         dateMin: dateParam({ description: "YYYY-MM-DD", short: "a" }),
         dateMax: dateParam({ description: "YYYY-MM-DD", short: "b" }),
@@ -129,6 +132,7 @@ export const calendarGroup = defineGroup({
       name: "events-search",
       description: "Search calendar events",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         searchQuery: nonBlankParam({ description: "Search query", short: "q" }),
         timezone: S.Optional(boundedStringParam({ description: "IANA timezone", short: "z" })),
@@ -159,6 +163,7 @@ export const calendarGroup = defineGroup({
       name: "events-countdowns",
       description: "List countdown events",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         timezone: S.Optional(boundedStringParam({ description: "IANA timezone", short: "z" })),
         include: S.Optional(
@@ -185,6 +190,7 @@ export const calendarGroup = defineGroup({
       name: "recent-invited-emails",
       description: "List recently invited emails",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -199,6 +205,9 @@ export const calendarGroup = defineGroup({
       name: "event-create",
       description: "Create a calendar event",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
+      idempotent: false,
+      openWorld: true,
       params: S.Object({
         summary: nonBlankParam({ description: "Event title", short: "s" }),
         startsAt: dateOrDateTimeParam({
@@ -295,6 +304,9 @@ export const calendarGroup = defineGroup({
       name: "event-edit",
       description: "Edit a calendar event",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
+      idempotent: false,
+      openWorld: true,
       params: S.Object({
         eventId: nonBlankParam({ description: "Event id", short: "i" }),
         summary: S.Optional(nonBlankParam({ description: "Event title", short: "s" })),
@@ -305,7 +317,7 @@ export const calendarGroup = defineGroup({
           dateOrDateTimeParam({ description: "ISO datetime or YYYY-MM-DD", short: "b" })
         ),
         allDay: S.Optional(
-          S.Boolean({ description: "All day event; use --all-day=false to disable" })
+          S.Boolean({ description: "Whether the event lasts all day" })
         ),
         rrule: S.Optional(nonBlankParam({ description: "RRULE string" })),
         categoryIds: S.Optional(
@@ -335,7 +347,7 @@ export const calendarGroup = defineGroup({
         ),
         countdownEnabled: S.Optional(
           S.Boolean({
-            description: "Enable countdown; use --countdown-enabled=false to disable",
+            description: "Whether to enable a countdown for the event",
           })
         ),
       }),
@@ -440,6 +452,8 @@ export const calendarGroup = defineGroup({
       name: "event-delete",
       description: "Delete a calendar event",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
+      openWorld: true,
       params: S.Object({
         eventId: nonBlankParam({ description: "Event id", short: "i" }),
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
@@ -464,6 +478,7 @@ export const calendarGroup = defineGroup({
       name: "calendar-accounts",
       description: "List calendar accounts",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -478,6 +493,7 @@ export const calendarGroup = defineGroup({
       name: "calendar-account-calendars",
       description: "List calendars from an account id",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         accountId: nonBlankParam({ description: "Calendar account id", short: "i" }),
       }),
@@ -494,6 +510,7 @@ export const calendarGroup = defineGroup({
       name: "calendar-account-update",
       description: "Update synced account calendars",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         accountId: nonBlankParam({ description: "Calendar account id", short: "i" }),
         activeCalendars: S.Optional(
@@ -533,6 +550,7 @@ export const calendarGroup = defineGroup({
       name: "webcal-sync",
       description: "Sync a public calendar URL (webcal)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         calendarUrl: nonBlankParam({ description: "Public share URL", short: "u" }),
       }),
@@ -555,6 +573,7 @@ export const calendarGroup = defineGroup({
       name: "webcal-urls",
       description: "List synced calendar URLs",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -609,6 +628,7 @@ export const calendarGroup = defineGroup({
       name: "source-calendars",
       description: "List source calendars",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -623,6 +643,7 @@ export const calendarGroup = defineGroup({
       name: "source-calendar-get",
       description: "Get a source calendar by id",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
       }),
@@ -639,6 +660,8 @@ export const calendarGroup = defineGroup({
       name: "source-calendar-save",
       description: "Create or update a source calendar (attributes JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
+      idempotent: false,
       params: S.Object({
         calendarId: S.Optional(
           nonBlankParam({ description: "If set, updates that calendar id" })
@@ -668,6 +691,7 @@ export const calendarGroup = defineGroup({
       name: "source-calendar-delete",
       description: "Delete a source calendar",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
       }),
@@ -684,6 +708,7 @@ export const calendarGroup = defineGroup({
       name: "source-calendar-set-default",
       description: "Set a source calendar as default for new events",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
       }),
@@ -702,6 +727,7 @@ export const calendarGroup = defineGroup({
       name: "source-calendar-link-profiles",
       description: "Link profiles/categories to a source calendar (categorizations JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
         categorizationsJson: jsonParam({

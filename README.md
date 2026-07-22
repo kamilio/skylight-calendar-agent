@@ -135,6 +135,12 @@ Example MCP client configuration:
 
 If the package is globally installed, set `command` directly to `skylight-calendar-mcp` and omit `args`.
 
+Every advertised tool includes a human-readable title, an object-root output schema, and explicit
+read-only, destructive, retry-safety, and open-world annotations. Skylight usually returns objects,
+which pass through unchanged. For MCP-compatible structured output, a root array is exposed as
+`{ "data": [...] }`, an empty successful response as `{ "ok": true }`, and a root success string as
+`{ "message": "..." }`.
+
 For local stdio MCP servers, the MCP authorization specification uses process-local credentials rather than an MCP HTTP authorization exchange. Complete `skylight auth login` once before starting Claude; the MCP server then reads and refreshes the same stored Skylight OAuth credential without secrets in `.mcp.json`.
 
 ### Streamable HTTP

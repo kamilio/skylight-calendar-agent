@@ -37,6 +37,7 @@ export const profilesGroup = defineGroup({
       name: "user",
       description: "Get current user",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) =>
         ctx.skylight.request({
@@ -49,6 +50,7 @@ export const profilesGroup = defineGroup({
       name: "user-update",
       description: "Update user profile (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         updatesJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
@@ -66,6 +68,7 @@ export const profilesGroup = defineGroup({
       name: "notification-preference",
       description: "Update user notification preference",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         preference: nonBlankParam({ description: "Preference string (server-defined)", short: "p" }),
       }),
@@ -83,9 +86,10 @@ export const profilesGroup = defineGroup({
       name: "marketing-preference",
       description: "Update user marketing preference",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         agree: S.Boolean({
-          description: "Agree to marketing; use --agree=false to opt out",
+          description: "Whether the user agrees to receive marketing",
           short: "a",
         }),
       }),
@@ -159,6 +163,7 @@ export const profilesGroup = defineGroup({
       name: "plus-access",
       description: "Get Skylight Plus subscription access",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) =>
         ctx.skylight.request({
@@ -213,6 +218,7 @@ export const profilesGroup = defineGroup({
       name: "frames",
       description: "List frames for this account (defaults to calendar frames)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         type: S.Optional(
           S.Enum(["calendar", "photo", "tv"] as const, {
@@ -234,8 +240,9 @@ export const profilesGroup = defineGroup({
     }),
     defineCommand({
       name: "frame",
-      description: "Get configured frame info",
+      description: "Get the active Skylight frame",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -250,6 +257,7 @@ export const profilesGroup = defineGroup({
       name: "frame-update",
       description: "Update frame settings (raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
@@ -268,6 +276,7 @@ export const profilesGroup = defineGroup({
       name: "frame-rename",
       description: "Rename frame",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         name: nonBlankParam({ description: "New name", short: "n" }),
       }),
@@ -343,6 +352,7 @@ export const profilesGroup = defineGroup({
       name: "owner-profile-update",
       description: "Update household owner profile",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         name: S.Optional(nonBlankParam({ description: "Owner name" })),
         birthday: S.Optional(monthDayParam({ description: "Birthday in MM/DD format" })),
@@ -371,6 +381,7 @@ export const profilesGroup = defineGroup({
       name: "categories",
       description: "List categories",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -385,6 +396,7 @@ export const profilesGroup = defineGroup({
       name: "category-get",
       description: "Get a category by id",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         categoryId: nonBlankParam({ description: "Category id", short: "i" }),
       }),
@@ -401,6 +413,7 @@ export const profilesGroup = defineGroup({
       name: "category-create",
       description: "Create a category (raw JSON body; selected_for_chore_chart may mirror linked_to_profile)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
@@ -419,6 +432,8 @@ export const profilesGroup = defineGroup({
       name: "category-find-or-create",
       description: "Find or create a category (raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
+      idempotent: true,
       params: S.Object({
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
@@ -437,6 +452,7 @@ export const profilesGroup = defineGroup({
       name: "category-update",
       description: "Update a category (raw JSON updates)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         categoryId: nonBlankParam({ description: "Category id", short: "i" }),
         updatesJson: jsonParam({ description: "Raw JSON updates", short: "j" }),
@@ -456,6 +472,7 @@ export const profilesGroup = defineGroup({
       name: "category-delete",
       description: "Delete a category",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         categoryId: nonBlankParam({ description: "Category id", short: "i" }),
         reassignToCategoryId: S.Optional(
@@ -488,6 +505,7 @@ export const profilesGroup = defineGroup({
       name: "category-link-source-calendars",
       description: "Link source calendars to a profile category (categorizations JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         categoryId: nonBlankParam({ description: "Category id", short: "i" }),
         categorizationsJson: jsonParam({ description: "JSON payload", short: "j" }),
@@ -510,6 +528,7 @@ export const profilesGroup = defineGroup({
       name: "family-member-update",
       description: "Update a family member (category-backed) (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         categoryId: nonBlankParam({ description: "Category id", short: "i" }),
         updatesJson: jsonParam({ description: "JSON object", short: "j" }),
@@ -529,6 +548,7 @@ export const profilesGroup = defineGroup({
       name: "devices",
       description: "List devices",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -543,6 +563,7 @@ export const profilesGroup = defineGroup({
       name: "device-get",
       description: "Get a device by id",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         deviceId: nonBlankParam({ description: "Device id", short: "i" }),
       }),
@@ -559,6 +580,7 @@ export const profilesGroup = defineGroup({
       name: "device-create",
       description: "Create a device",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         name: nonBlankParam({ description: "Device name", short: "n" }),
         categoryId: nonBlankParam({ description: "Category id", short: "c" }),
@@ -587,6 +609,7 @@ export const profilesGroup = defineGroup({
       name: "device-rename",
       description: "Rename a device",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         deviceId: nonBlankParam({ description: "Device id", short: "i" }),
         name: nonBlankParam({ description: "New name", short: "n" }),
@@ -661,6 +684,7 @@ export const profilesGroup = defineGroup({
       name: "device-update-settings",
       description: "Update device settings (raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         deviceId: nonBlankParam({ description: "Device id", short: "i" }),
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),

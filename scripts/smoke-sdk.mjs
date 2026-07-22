@@ -26,6 +26,12 @@ try {
   if (typeof sdk.auth.logout !== "function" || typeof sdk.auth.status !== "function") {
     throw new Error("SDK omitted authentication status/logout commands");
   }
+  if (
+    typeof sdk.meals.createRaw !== "function" ||
+    typeof sdk.photos.uploadMessage !== "function"
+  ) {
+    throw new Error("SDK omitted commands hidden only from MCP");
+  }
 
   for (const [invoke, expected, forbidden] of [
     [
@@ -535,6 +541,30 @@ try {
   await sdk.lists.createRaw({ listJson: descriptorBackedJson });
   if (calls !== 8 || requestBody?.label !== "Descriptor SDK JSON") {
     throw new Error(`SDK JSON was not serialized from descriptors: ${JSON.stringify(requestBody)}`);
+  }
+
+  const rawResultSdk = createSkylightSDK({
+    fetch: async (url, init) => {
+      const pathname = new URL(url).pathname;
+      if (pathname === "/api/frames/calendar") {
+        return Response.json({ data: [{ id: "42", attributes: { apps: ["calendar"] } }] });
+      }
+      if (pathname === "/api/frames/42/reward_points") {
+        return Response.json([{ category_id: "category-1", points: 12 }]);
+      }
+      if (pathname === "/api/frames/42/lists/7" && init?.method === "DELETE") {
+        return new Response(null, { status: 204 });
+      }
+      return Response.json({ ok: true });
+    },
+  });
+  const rawPoints = await rawResultSdk.rewards.points({});
+  if (!Array.isArray(rawPoints) || rawPoints[0]?.category_id !== "category-1") {
+    throw new Error(`SDK root array was unexpectedly normalized: ${JSON.stringify(rawPoints)}`);
+  }
+  const rawDelete = await rawResultSdk.lists.delete({ listId: "7" });
+  if (rawDelete !== null) {
+    throw new Error(`SDK empty response was unexpectedly normalized: ${JSON.stringify(rawDelete)}`);
   }
 
   const failingSdk = createSkylightSDK({

@@ -19,6 +19,7 @@ export const recipesGroup = defineGroup({
       name: "list",
       description: "List meal recipes",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -34,6 +35,7 @@ export const recipesGroup = defineGroup({
       name: "get",
       description: "Get a meal recipe by id",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         recipeId: nonBlankParam({ description: "Recipe id", short: "i" }),
       }),
@@ -51,6 +53,7 @@ export const recipesGroup = defineGroup({
       name: "create",
       description: "Create a meal recipe",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         categoryId: nonBlankParam({ description: "Meal category id", short: "c" }),
         summary: nonBlankParam({ description: "Recipe title", short: "s" }),
@@ -76,6 +79,7 @@ export const recipesGroup = defineGroup({
       name: "update",
       description: "Update a meal recipe",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         recipeId: nonBlankParam({ description: "Recipe id", short: "i" }),
         categoryId: S.Optional(nonBlankParam({ description: "Meal category id", short: "c" })),
@@ -109,6 +113,7 @@ export const recipesGroup = defineGroup({
       name: "delete",
       description: "Delete a meal recipe",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         recipeId: nonBlankParam({ description: "Recipe id", short: "i" }),
         includeMeals: S.Optional(S.Boolean({ description: "Apply deletion to sittings too" })),
@@ -129,6 +134,7 @@ export const recipesGroup = defineGroup({
       name: "add-to-grocery-list",
       description: "Add recipe ingredients to grocery list",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         recipeId: nonBlankParam({ description: "Recipe id", short: "i" }),
       }),

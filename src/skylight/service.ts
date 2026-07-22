@@ -1,4 +1,5 @@
 import {
+  S,
   UserError,
   defineCommand,
   defineGroup,
@@ -58,6 +59,7 @@ export interface SkylightServices {
 type SkylightScopeInput = readonly Scope[] | undefined;
 type SkylightHumanInLoopMode = "sync" | "async";
 type SkylightHumanInLoopModeInput = SkylightHumanInLoopMode | null | undefined;
+export type SkylightCommandEffect = "read" | "additive" | "destructive";
 type SkylightAnyObjectSchema = ObjectSchema<Record<string, never>>;
 type ResolveOwnHumanInLoopMode<TValue> = TValue extends {
   mode: infer TMode extends SkylightHumanInLoopMode;
@@ -98,6 +100,41 @@ type SkylightGroupMetadata<
   >;
 };
 
+const skylightMcpResultSchema = S.Object(
+  {
+    data: S.Optional(S.Json()),
+    included: S.Optional(S.Json()),
+    meta: S.Optional(S.Json()),
+    links: S.Optional(S.Json()),
+    ok: S.Optional(S.Json()),
+    message: S.Optional(S.Json()),
+  },
+  {
+    additionalProperties: true,
+    description:
+      "Skylight API response. Most endpoints use a JSON:API-style data field; additional fields vary by resource.",
+  }
+);
+
+function normalizeSkylightMcpResult(value: unknown): Record<string, unknown> {
+  if (value === null || value === undefined) return { ok: true };
+  if (Array.isArray(value)) return { data: value };
+  if (typeof value === "object") return value as Record<string, unknown>;
+  if (typeof value === "string") return { message: value };
+  return { data: value };
+}
+
+function commandTitle(name: string, description: string | undefined): string {
+  if (description !== undefined && description.trim().length > 0) {
+    return description.trim().replace(/[.!?]+$/, "");
+  }
+  return name
+    .split("-")
+    .filter((part) => part.length > 0)
+    .map((part) => `${part[0]!.toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
 export function defineSkylightCommand<
   TName extends string,
   TParamsSchema extends ObjectSchema<any>,
@@ -111,11 +148,15 @@ export function defineSkylightCommand<
 >(
   config: Omit<
     CommandConfig<SkylightServices, TParamsSchema, TSecrets, TResult>,
-    "name" | "scope" | "humanInLoop"
+    "name" | "scope" | "humanInLoop" | "annotations" | "mcpResult"
   > & {
     name: TName;
+    title?: string;
     scope?: TOwnScope;
     humanInLoop?: TOwnHumanInLoop;
+    effect?: SkylightCommandEffect;
+    idempotent?: boolean;
+    openWorld?: boolean;
   }
 ): Command<SkylightServices, TParamsSchema, TSecrets, TResult> &
   SkylightCommandMetadata<
@@ -125,6 +166,42 @@ export function defineSkylightCommand<
     TOwnScope,
     ResolveOwnHumanInLoopMode<TOwnHumanInLoop>
   > {
+  const {
+    effect,
+    idempotent,
+    openWorld,
+    title,
+    ...baseConfig
+  } = config;
+  const isMcp = config.scope?.includes("mcp") === true;
+  if (isMcp && effect === undefined) {
+    throw new Error(`MCP command ${config.name} must declare its effect.`);
+  }
+
+  const resolvedConfig = {
+    ...baseConfig,
+    name: config.name,
+    ...(config.scope === undefined ? {} : { scope: config.scope }),
+    ...(config.humanInLoop === undefined
+      ? {}
+      : { humanInLoop: config.humanInLoop }),
+    ...(isMcp
+      ? {
+          title: title ?? commandTitle(config.name, config.description),
+          annotations: {
+            readOnlyHint: effect === "read",
+            destructiveHint: effect === "destructive",
+            idempotentHint: idempotent ?? effect !== "additive",
+            openWorldHint: openWorld ?? false,
+          },
+          result: config.result ?? skylightMcpResultSchema,
+          mcpResult: normalizeSkylightMcpResult,
+        }
+      : title === undefined
+        ? {}
+        : { title }),
+  };
+
   return defineCommand<
     SkylightServices,
     TName,
@@ -133,7 +210,7 @@ export function defineSkylightCommand<
     TResult,
     TOwnScope,
     TOwnHumanInLoop
-  >(config);
+  >(resolvedConfig);
 }
 
 export function defineSkylightGroup<

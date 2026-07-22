@@ -16,12 +16,13 @@ import {
 
 export const photosGroup = defineGroup({
   name: "photos",
-  description: "Photos/videos (messages) and albums",
+  description: "Photos, videos, and albums",
   children: [
     defineCommand({
       name: "list",
-      description: "List messages (photos/videos)",
+      description: "List photos and videos",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         page: S.Optional(
           S.Number({
@@ -46,8 +47,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "list-paged",
-      description: "List messages using page_token",
+      description: "List photos and videos after a page token",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         pageToken: nonBlankParam({ description: "page_token value", short: "p" }),
       }),
@@ -64,8 +66,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "list-synced",
-      description: "List messages using sync_token",
+      description: "List photos and videos changed after a sync token",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         syncToken: nonBlankParam({ description: "sync_token value", short: "s" }),
       }),
@@ -82,8 +85,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "delete-many",
-      description: "Bulk delete messages",
+      description: "Delete multiple photos or videos",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         messageIds: boundedArrayParam(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
@@ -103,8 +107,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "copy-to-frames",
-      description: "Copy messages to other frames",
+      description: "Copy photos or videos to other frames",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         messageIds: boundedArrayParam(nonBlankParam({ description: "Message id" }), {
           description: "Message ids",
@@ -138,8 +143,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "get",
-      description: "Get message details",
+      description: "Get photo or video details",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
@@ -154,8 +160,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "likes",
-      description: "List message likes",
+      description: "List likes on a photo or video",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
@@ -170,8 +177,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "comments",
-      description: "List message comments",
+      description: "List comments on a photo or video",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
         page: S.Optional(
@@ -197,8 +205,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "delete",
-      description: "Delete a message",
+      description: "Delete a photo or video",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
@@ -213,8 +222,10 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "like",
-      description: "Like a message",
+      description: "Like a photo or video",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
+      idempotent: true,
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
@@ -229,8 +240,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "unlike",
-      description: "Unlike a message",
+      description: "Remove the current user's like from a photo or video",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
@@ -245,8 +257,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "comment",
-      description: "Comment on a message",
+      description: "Comment on a photo or video",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
         body: nonBlankParam({ description: "Comment body", short: "b" }),
@@ -263,8 +276,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "comment-delete",
-      description: "Delete a comment on a message",
+      description: "Delete a comment on a photo or video",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "m" }),
         commentId: nonBlankParam({ description: "Comment id", short: "c" }),
@@ -280,8 +294,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "caption-update",
-      description: "Update message caption",
+      description: "Update a photo or video caption",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
         caption: boundedStringParam({ description: "New caption", short: "c" }),
@@ -310,8 +325,8 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "upload-message",
-      description: "Register an uploaded message (raw fields JSON)",
-      scope: ["cli", "mcp", "sdk"],
+      description: "Register a previously uploaded photo or video (raw fields JSON)",
+      scope: ["cli", "sdk"],
       params: S.Object({
         payloadJson: jsonParam({
           description: "JSON for {file_upload, frame_ids, ext, ...}",
@@ -366,6 +381,7 @@ export const photosGroup = defineGroup({
       name: "albums",
       description: "List albums",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -380,6 +396,7 @@ export const photosGroup = defineGroup({
       name: "album-create",
       description: "Create an album",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         title: nonBlankParam({ description: "Album title", short: "t" }),
       }),
@@ -397,6 +414,7 @@ export const photosGroup = defineGroup({
       name: "album-rename",
       description: "Rename an album",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         albumId: nonBlankParam({ description: "Album id", short: "i" }),
         title: nonBlankParam({ description: "New title", short: "t" }),
@@ -415,6 +433,7 @@ export const photosGroup = defineGroup({
       name: "album-delete",
       description: "Delete an album",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         albumId: nonBlankParam({ description: "Album id", short: "i" }),
       }),
@@ -429,8 +448,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "album-messages",
-      description: "List messages in an album",
+      description: "List photos and videos in an album",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         albumId: nonBlankParam({ description: "Album id", short: "i" }),
         page: S.Optional(
@@ -456,8 +476,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "album-message-ids",
-      description: "List all message ids in an album",
+      description: "List all photo and video ids in an album",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         albumId: nonBlankParam({ description: "Album id", short: "i" }),
       }),
@@ -472,8 +493,10 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "album-add",
-      description: "Add messages to album(s)",
+      description: "Add photos or videos to albums",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
+      idempotent: true,
       params: S.Object({
         albumIds: boundedArrayParam(nonBlankParam({ description: "Album id" }), {
           description: "Album ids",
@@ -501,8 +524,9 @@ export const photosGroup = defineGroup({
     }),
     defineCommand({
       name: "album-remove",
-      description: "Remove messages from an album",
+      description: "Remove photos or videos from an album",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         albumId: nonBlankParam({ description: "Album id", short: "i" }),
         messageIds: boundedArrayParam(nonBlankParam({ description: "Message id" }), {

@@ -25,6 +25,7 @@ export const mealsGroup = defineGroup({
       name: "categories",
       description: "List meal categories",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -39,6 +40,7 @@ export const mealsGroup = defineGroup({
       name: "category-update",
       description: "Update a meal category (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         categoryId: nonBlankParam({ description: "Meal category id", short: "i" }),
         updatesJson: jsonParam({ description: "JSON object", short: "j" }),
@@ -58,6 +60,7 @@ export const mealsGroup = defineGroup({
       name: "list",
       description: "List meals (sittings) for an optional date range",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "a" })),
         dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "b" })),
@@ -81,6 +84,7 @@ export const mealsGroup = defineGroup({
       name: "get",
       description: "Get meal instances for a sitting id",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         mealId: nonBlankParam({ description: "Meal sitting id", short: "i" }),
         dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "a" })),
@@ -105,6 +109,7 @@ export const mealsGroup = defineGroup({
       name: "create",
       description: "Create a meal sitting",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         recipeId: nonBlankParam({ description: "Meal recipe id", short: "r" }),
         categoryId: nonBlankParam({ description: "Meal category id", short: "c" }),
@@ -112,8 +117,12 @@ export const mealsGroup = defineGroup({
         extrasJson: S.Optional(
           jsonParam({ description: "Extra JSON fields to merge into body", short: "j" })
         ),
-        dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "a" })),
-        dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
+        dateMin: S.Optional(
+          dateParam({ description: "Start of response refresh range; does not schedule the meal (YYYY-MM-DD)", short: "a" })
+        ),
+        dateMax: S.Optional(
+          dateParam({ description: "End of response refresh range; does not schedule the meal (YYYY-MM-DD)", short: "b" })
+        ),
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
@@ -145,11 +154,15 @@ export const mealsGroup = defineGroup({
     defineCommand({
       name: "create-raw",
       description: "Create a meal sitting (raw JSON body)",
-      scope: ["cli", "mcp", "sdk"],
+      scope: ["cli", "sdk"],
       params: S.Object({
         bodyJson: jsonParam({ description: "Raw body JSON", short: "j" }),
-        dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "a" })),
-        dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
+        dateMin: S.Optional(
+          dateParam({ description: "Start of response refresh range; does not schedule the meal (YYYY-MM-DD)", short: "a" })
+        ),
+        dateMax: S.Optional(
+          dateParam({ description: "End of response refresh range; does not schedule the meal (YYYY-MM-DD)", short: "b" })
+        ),
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
@@ -172,10 +185,11 @@ export const mealsGroup = defineGroup({
       name: "update",
       description: "Update a meal instance",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         mealId: nonBlankParam({ description: "Meal sitting id", short: "i" }),
         instanceIso: dateOrDateTimeParam({
-          description: "Instance date or ISO datetime (path segment)",
+          description: "Date or ISO datetime identifying the meal instance",
           short: "t",
         }),
         recipeId: S.Optional(nonBlankParam({ description: "Meal recipe id", short: "r" })),
@@ -184,8 +198,12 @@ export const mealsGroup = defineGroup({
           jsonParam({ description: "Extra JSON updates to merge", short: "j" })
         ),
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
-        dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "a" })),
-        dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
+        dateMin: S.Optional(
+          dateParam({ description: "Start of response refresh range; does not reschedule the meal (YYYY-MM-DD)", short: "a" })
+        ),
+        dateMax: S.Optional(
+          dateParam({ description: "End of response refresh range; does not reschedule the meal (YYYY-MM-DD)", short: "b" })
+        ),
       }),
       handler: async (ctx) => {
         assertAtLeastOneDefined(
@@ -233,15 +251,20 @@ export const mealsGroup = defineGroup({
       name: "delete",
       description: "Delete a meal instance",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         mealId: nonBlankParam({ description: "Meal sitting id", short: "i" }),
         instanceIso: dateOrDateTimeParam({
-          description: "Instance date or ISO datetime (path segment)",
+          description: "Date or ISO datetime identifying the meal instance",
           short: "t",
         }),
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
-        dateMin: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "a" })),
-        dateMax: S.Optional(dateParam({ description: "YYYY-MM-DD (refresh range)", short: "b" })),
+        dateMin: S.Optional(
+          dateParam({ description: "Start of response refresh range (YYYY-MM-DD)", short: "a" })
+        ),
+        dateMax: S.Optional(
+          dateParam({ description: "End of response refresh range (YYYY-MM-DD)", short: "b" })
+        ),
       }),
       handler: async (ctx) => {
         assertValidDateOrDateTime(ctx.params.instanceIso, "instanceIso");

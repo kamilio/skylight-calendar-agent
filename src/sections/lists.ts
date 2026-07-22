@@ -38,8 +38,9 @@ export const listsGroup = defineGroup({
   children: [
     defineCommand({
       name: "list",
-      description: "List lists",
+      description: "List all lists",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -54,6 +55,7 @@ export const listsGroup = defineGroup({
       name: "get",
       description: "Get list by id",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
       }),
@@ -70,6 +72,7 @@ export const listsGroup = defineGroup({
       name: "create",
       description: "Create a to-do or shopping list",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         label: nonBlankParam({ description: "List name", short: "l" }),
         kind: S.Optional(
@@ -115,6 +118,7 @@ export const listsGroup = defineGroup({
       name: "create-raw",
       description: "Create a list from a raw JSON object",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         listJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
@@ -133,6 +137,7 @@ export const listsGroup = defineGroup({
       name: "update",
       description: "Update a list (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         updatesJson: jsonParam({ description: "JSON object", short: "j" }),
@@ -152,6 +157,7 @@ export const listsGroup = defineGroup({
       name: "delete",
       description: "Delete a list",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
       }),
@@ -168,6 +174,7 @@ export const listsGroup = defineGroup({
       name: "items",
       description: "List list items for a list",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
       }),
@@ -184,6 +191,7 @@ export const listsGroup = defineGroup({
       name: "item-create",
       description: "Add a to-do item to a list",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         label: nonBlankParam({ description: "To-do text", short: "l" }),
@@ -207,6 +215,7 @@ export const listsGroup = defineGroup({
       name: "items-create",
       description: "Add multiple to-do items to a list",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         labels: boundedArrayParam(nonBlankParam({ description: "To-do text" }), {
@@ -246,6 +255,7 @@ export const listsGroup = defineGroup({
       name: "item-create-raw",
       description: "Add a list item from a raw JSON object",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         itemJson: jsonParam({ description: "JSON object", short: "j" }),
@@ -265,6 +275,7 @@ export const listsGroup = defineGroup({
       name: "item-update",
       description: "Update a list item (updates JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         itemId: nonBlankParam({ description: "List item id" }),
@@ -285,6 +296,7 @@ export const listsGroup = defineGroup({
       name: "item-delete",
       description: "Delete a list item",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         itemId: nonBlankParam({ description: "List item id" }),
@@ -302,6 +314,7 @@ export const listsGroup = defineGroup({
       name: "item-move",
       description: "Move a list item after another item",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         itemId: nonBlankParam({ description: "List item id" }),
@@ -332,6 +345,7 @@ export const listsGroup = defineGroup({
       name: "items-move-section",
       description: "Bulk move items to a section",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         itemIds: boundedArrayParam(nonBlankParam({ description: "List item id" }), {
@@ -359,6 +373,7 @@ export const listsGroup = defineGroup({
       name: "items-delete",
       description: "Bulk delete list items",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         listId: nonBlankParam({ description: "List id", short: "i" }),
         itemIds: boundedArrayParam(nonBlankParam({ description: "List item id" }), {

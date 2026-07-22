@@ -23,6 +23,7 @@ export const rewardsGroup = defineGroup({
       name: "list",
       description: "List rewards",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         redeemedAtMin: S.Optional(
           dateTimeParam({ description: "RFC3339 datetime with Z or UTC offset", short: "m" })
@@ -60,6 +61,7 @@ export const rewardsGroup = defineGroup({
       name: "get",
       description: "Get a reward by id",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
@@ -76,6 +78,7 @@ export const rewardsGroup = defineGroup({
       name: "create",
       description: "Create a reward (reward JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         rewardJson: jsonParam({ description: "JSON object", short: "j" }),
       }),
@@ -94,6 +97,7 @@ export const rewardsGroup = defineGroup({
       name: "update",
       description: "Update a reward (reward JSON)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
         rewardJson: jsonParam({ description: "JSON object", short: "j" }),
@@ -113,6 +117,7 @@ export const rewardsGroup = defineGroup({
       name: "delete",
       description: "Delete a reward",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
@@ -129,6 +134,8 @@ export const rewardsGroup = defineGroup({
       name: "redeem",
       description: "Redeem a reward",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
+      idempotent: false,
       params: S.Object({
         rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
@@ -145,6 +152,8 @@ export const rewardsGroup = defineGroup({
       name: "unredeem",
       description: "Unredeem a reward",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
+      idempotent: false,
       params: S.Object({
         rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
@@ -161,6 +170,7 @@ export const rewardsGroup = defineGroup({
       name: "points",
       description: "List reward points",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -175,6 +185,8 @@ export const rewardsGroup = defineGroup({
       name: "points-add",
       description: "Adjust reward points for categories (negative values subtract)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
+      idempotent: false,
       params: S.Object({
         categoryIds: boundedArrayParam(nonBlankParam({ description: "Category id" }), {
           description: "Category ids",

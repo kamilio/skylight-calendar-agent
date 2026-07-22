@@ -25,6 +25,7 @@ export const tasksGroup = defineGroup({
       name: "chores",
       description: "List chores for a date range",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({
         after: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "a" })),
         before: S.Optional(dateParam({ description: "YYYY-MM-DD", short: "b" })),
@@ -63,6 +64,7 @@ export const tasksGroup = defineGroup({
       name: "chore-create",
       description: "Create a chore via /chores/create_multiple (raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         choreJson: jsonParam({ description: "Raw chore JSON body", short: "j" }),
       }),
@@ -81,6 +83,7 @@ export const tasksGroup = defineGroup({
       name: "chore-create-jsonapi",
       description: "Create a chore via /chores (OpenAPI JSON:API shape; raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
@@ -99,6 +102,7 @@ export const tasksGroup = defineGroup({
       name: "chore-create-simple",
       description: "Create a simple chore (convenience wrapper)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         summary: nonBlankParam({ description: "Title", short: "s" }),
         start: dateParam({ description: "YYYY-MM-DD", short: "d" }),
@@ -153,6 +157,7 @@ export const tasksGroup = defineGroup({
       name: "chore-update",
       description: "Update a chore",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         choreId: nonBlankParam({ description: "Chore id", short: "i" }),
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
@@ -180,6 +185,7 @@ export const tasksGroup = defineGroup({
       name: "chore-delete",
       description: "Delete a chore",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         choreId: nonBlankParam({ description: "Chore id", short: "i" }),
         applyTo: S.Optional(nonBlankParam({ description: "Apply-to scope (server-defined)" })),
@@ -204,6 +210,7 @@ export const tasksGroup = defineGroup({
       name: "chore-status",
       description: "Update task completion status",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         seriesId: nonBlankParam({ description: "Chore series id", short: "i" }),
         status: nonBlankParam({ description: "Status (server-defined)", short: "s" }),
@@ -236,6 +243,7 @@ export const tasksGroup = defineGroup({
       name: "taskbox-create",
       description: "Create a Task Box item",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         summary: nonBlankParam({ description: "Task summary", short: "s" }),
       }),
@@ -258,6 +266,7 @@ export const tasksGroup = defineGroup({
       name: "taskbox-create-jsonapi",
       description: "Create a Task Box item (OpenAPI JSON:API shape; raw JSON body)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "additive",
       params: S.Object({
         bodyJson: jsonParam({ description: "Raw JSON body", short: "j" }),
       }),
@@ -276,6 +285,7 @@ export const tasksGroup = defineGroup({
       name: "taskbox-list",
       description: "List Task Box items",
       scope: ["cli", "mcp", "sdk"],
+      effect: "read",
       params: S.Object({}),
       handler: async (ctx) => {
         const frameId = await ctx.skylight.resolveFrameId(ctx);
@@ -290,6 +300,8 @@ export const tasksGroup = defineGroup({
       name: "taskbox-save",
       description: "Create or update a Task Box item (raw JSON body; include id to update)",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
+      idempotent: false,
       params: S.Object({
         taskBoxItemJson: jsonParam({ description: "Raw task box item JSON", short: "j" }),
       }),
@@ -339,6 +351,7 @@ export const tasksGroup = defineGroup({
       name: "taskbox-delete",
       description: "Delete a Task Box item",
       scope: ["cli", "mcp", "sdk"],
+      effect: "destructive",
       params: S.Object({
         taskBoxItemId: nonBlankParam({ description: "Task Box item id", short: "i" }),
       }),

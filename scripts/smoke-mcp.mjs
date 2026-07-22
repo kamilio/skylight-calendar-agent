@@ -60,7 +60,106 @@ child.stdout.on("data", (chunk) => {
       if (tool.inputSchema?.type !== "object") {
         throw new Error(`MCP tool lacks an object input schema: ${tool.name}`);
       }
+      if (typeof tool.title !== "string" || tool.title.trim().length === 0) {
+        throw new Error(`MCP tool lacks a title: ${tool.name}`);
+      }
+      if (tool.outputSchema?.type !== "object") {
+        throw new Error(`MCP tool lacks an object output schema: ${tool.name}`);
+      }
+      for (const hint of [
+        "readOnlyHint",
+        "destructiveHint",
+        "idempotentHint",
+        "openWorldHint",
+      ]) {
+        if (typeof tool.annotations?.[hint] !== "boolean") {
+          throw new Error(`MCP tool lacks ${hint}: ${tool.name}`);
+        }
+      }
     }
+    const annotationCounts = tools.reduce(
+      (counts, tool) => {
+        if (tool.annotations.readOnlyHint) counts.read += 1;
+        else if (tool.annotations.destructiveHint) counts.destructive += 1;
+        else counts.additive += 1;
+        if (tool.annotations.idempotentHint) counts.idempotent += 1;
+        if (tool.annotations.openWorldHint) counts.openWorld += 1;
+        return counts;
+      },
+      { read: 0, additive: 0, destructive: 0, idempotent: 0, openWorld: 0 }
+    );
+    if (
+      JSON.stringify(annotationCounts) !==
+      JSON.stringify({
+        read: 40,
+        additive: 23,
+        destructive: 51,
+        idempotent: 87,
+        openWorld: 3,
+      })
+    ) {
+      throw new Error(`Unexpected MCP annotation counts: ${JSON.stringify(annotationCounts)}`);
+    }
+
+    const expectedAnnotations = {
+      skylight__lists__list: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      skylight__lists__create: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+      skylight__lists__delete: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      skylight__calendar__event_create: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      skylight__calendar__event_edit: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      skylight__calendar__event_delete: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+      skylight__calendar__webcal_sync: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+      skylight__rewards__unredeem: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    };
+    for (const [name, expected] of Object.entries(expectedAnnotations)) {
+      const actual = tools.find((tool) => tool.name === name)?.annotations;
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(
+          `Unexpected annotations for ${name}: ${JSON.stringify(actual)}`
+        );
+      }
+    }
+
     const requiredTools = [
       "skylight__lists__create",
       "skylight__lists__item_create",
@@ -95,6 +194,8 @@ child.stdout.on("data", (chunk) => {
       "skylight__photos__upload_credentials",
       "skylight__photos__upload_url",
       "skylight__photos__upload_urls",
+      "skylight__photos__upload_message",
+      "skylight__meals__create_raw",
     ];
     for (const name of forbiddenTools) {
       if (names.includes(name)) throw new Error(`MCP exposes sensitive tool: ${name}`);

@@ -7,6 +7,8 @@ void sdk.calendar.eventEdit({ eventId: "event-1", clearCategories: true });
 void sdk.tasks.chores({});
 void sdk.auth.status({});
 void sdk.auth.logout({});
+void sdk.meals.createRaw({ bodyJson: { recipe_id: "recipe-1" } });
+void sdk.photos.uploadMessage({ payloadJson: { file_upload: "upload-1" } });
 void ((error: SkylightRequestError) => error.status);
 
 // @ts-expect-error label is required

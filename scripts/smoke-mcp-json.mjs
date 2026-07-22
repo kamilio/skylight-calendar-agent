@@ -13,7 +13,17 @@ const server = http.createServer((request, response) => {
     body += chunk;
   });
   request.on("end", () => {
-    requestBody = JSON.parse(body);
+    if (request.method === "GET" && request.url === "/api/frames/42/reward_points") {
+      response.setHeader("content-type", "application/json");
+      response.end('[{"category_id":"category-1","points":12}]');
+      return;
+    }
+    if (request.method === "DELETE" && request.url === "/api/frames/42/lists/7") {
+      response.statusCode = 204;
+      response.end();
+      return;
+    }
+    requestBody = body.length === 0 ? undefined : JSON.parse(body);
     response.setHeader("content-type", "application/json");
     response.end('{"ok":true,"layout":"safe\\nkeep"}');
   });
@@ -112,12 +122,39 @@ try {
       arguments: { date_min: "\u001b[31m\r\n\u202e", date_max: "2026-07-31" },
     },
   });
+  send({
+    jsonrpc: "2.0",
+    id: 5,
+    method: "tools/call",
+    params: {
+      name: "skylight__rewards__points",
+      arguments: {},
+    },
+  });
+  send({
+    jsonrpc: "2.0",
+    id: 6,
+    method: "tools/call",
+    params: {
+      name: "skylight__lists__delete",
+      arguments: { list_id: "7" },
+    },
+  });
   child.stdin.write("{invalid json\n");
 
-  const [responseMessage, invalidJsonResponse, unsafeValidationResponse, parseErrorResponse] = await Promise.all([
+  const [
+    responseMessage,
+    invalidJsonResponse,
+    unsafeValidationResponse,
+    pointsResponse,
+    deleteResponse,
+    parseErrorResponse,
+  ] = await Promise.all([
     waitForResponse(2),
     waitForResponse(3),
     waitForResponse(4),
+    waitForResponse(5),
+    waitForResponse(6),
     waitForResponse(null),
   ]);
   if (responseMessage?.error) {
@@ -127,6 +164,12 @@ try {
   const responsePayload = JSON.parse(responseMessage.result?.content?.[0]?.text ?? "null");
   if (responsePayload?.layout !== "safe\nkeep") {
     throw new Error(`Successful MCP response layout was altered: ${JSON.stringify(responseMessage.result)}`);
+  }
+  if (
+    JSON.stringify(responseMessage.result.structuredContent) !==
+    JSON.stringify(responsePayload)
+  ) {
+    throw new Error("MCP structured content must match its JSON text fallback");
   }
   if (requestBody?.label !== "Native MCP JSON") {
     throw new Error(`Native MCP JSON body was not preserved: ${JSON.stringify(requestBody)}`);
@@ -150,6 +193,20 @@ try {
   }
   if (parseErrorResponse?.error?.code !== -32700) {
     throw new Error(`Malformed MCP JSON did not receive a parse error: ${JSON.stringify(parseErrorResponse)}`);
+  }
+  const pointsPayload = JSON.parse(pointsResponse?.result?.content?.[0]?.text ?? "null");
+  if (
+    pointsPayload?.data?.[0]?.category_id !== "category-1" ||
+    JSON.stringify(pointsResponse?.result?.structuredContent) !== JSON.stringify(pointsPayload)
+  ) {
+    throw new Error(`Root array was not normalized for MCP: ${JSON.stringify(pointsResponse)}`);
+  }
+  const deletePayload = JSON.parse(deleteResponse?.result?.content?.[0]?.text ?? "null");
+  if (
+    deletePayload?.ok !== true ||
+    JSON.stringify(deleteResponse?.result?.structuredContent) !== JSON.stringify(deletePayload)
+  ) {
+    throw new Error(`Empty response was not normalized for MCP: ${JSON.stringify(deleteResponse)}`);
   }
 } finally {
   child.kill();
