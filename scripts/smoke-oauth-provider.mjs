@@ -96,6 +96,73 @@ if (
   throw new Error("Skylight provider did not return the login credential.");
 }
 
+const blockedFetch = async (_input, init = {}) =>
+  new Promise((_resolve, reject) => {
+    const abort = () => reject(init.signal?.reason ?? new Error("aborted"));
+    if (init.signal?.aborted) abort();
+    else init.signal?.addEventListener("abort", abort, { once: true });
+  });
+const timeoutProvider = createSkylightOAuthProvider({
+  fetch: blockedFetch,
+  env: { ...env, SKYLIGHT_REQUEST_TIMEOUT_MS: "5" },
+});
+let timeoutMessage = "";
+try {
+  await timeoutProvider.connect({
+    email: "person@example.com",
+    password: "secret",
+    signal: new AbortController().signal,
+  });
+} catch (error) {
+  timeoutMessage = String(error);
+}
+if (!timeoutMessage.includes("Skylight took too long to respond")) {
+  throw new Error(`Provider timeout was not explained safely: ${timeoutMessage}`);
+}
+
+const cancelController = new AbortController();
+const canceledConnection = createSkylightOAuthProvider({
+  fetch: blockedFetch,
+  env,
+}).connect({
+  email: "person@example.com",
+  password: "secret",
+  signal: cancelController.signal,
+});
+cancelController.abort();
+let canceledMessage = "";
+try {
+  await canceledConnection;
+} catch (error) {
+  canceledMessage = String(error);
+}
+if (!canceledMessage.includes("sign-in was canceled")) {
+  throw new Error(`Provider cancellation was not explained safely: ${canceledMessage}`);
+}
+
+const upstreamSecret = "provider-secret-should-not-leak";
+let failureMessage = "";
+try {
+  await createSkylightOAuthProvider({
+    fetch: async () => {
+      throw new Error(upstreamSecret);
+    },
+    env,
+  }).connect({
+    email: "person@example.com",
+    password: "secret",
+    signal: new AbortController().signal,
+  });
+} catch (error) {
+  failureMessage = String(error);
+}
+if (
+  !failureMessage.includes("Check your email and password") ||
+  failureMessage.includes(upstreamSecret)
+) {
+  throw new Error(`Provider failure leaked unsafe details: ${failureMessage}`);
+}
+
 let credential = {
   ...connected.credential,
   accessToken: "expired-access",

@@ -131,7 +131,7 @@ try {
   const { client_id: clientId } = await registration.json();
   const verifier = randomBytes(32).toString("base64url");
   const first = await startAuthorization({ clientId, verifier, state: "smoke-state" });
-  assert.match(first.csp, /form-action 'self' https:\/\/client\.example/);
+  const firstNonce = assertLoginUx(first);
   assert.match(first.html, /Connect Skylight Calendar/);
   assert.doesNotMatch(first.html, /one Skylight account/i);
 
@@ -139,16 +139,19 @@ try {
     cookie: first.cookie,
     html: first.html,
     email: "person@example.com",
-    password: "wrong",
+    password: "not-echoed-secret",
   });
   const retryHtml = await rejected.text();
   assert.equal(rejected.status, 400);
   assert.match(retryHtml, /Skylight sign-in failed/);
-  assert.match(
-    rejected.headers.get("content-security-policy") ?? "",
-    /form-action 'self' https:\/\/client\.example/
-  );
-  assert.doesNotMatch(retryHtml, /value="wrong"/);
+  const retryNonce = assertLoginUx({
+    csp: rejected.headers.get("content-security-policy") ?? "",
+    html: retryHtml,
+  });
+  assert.notEqual(retryNonce, firstNonce);
+  assert.match(retryHtml, /class="error" role="alert"/);
+  assert.match(retryHtml, /value="person@example\.com"/);
+  assert.doesNotMatch(retryHtml, /not-echoed-secret/);
 
   const completion = await submitLogin({
     cookie: first.cookie,
@@ -164,6 +167,19 @@ try {
   assert.equal(callback.searchParams.get("iss"), baseUrl);
   const code = callback.searchParams.get("code");
   assert.ok(code);
+
+  const expired = await submitLogin({
+    cookie: first.cookie,
+    html: retryHtml,
+    email: "person@example.com",
+    password: "correct horse",
+  });
+  assert.equal(expired.status, 400);
+  assert.match(expired.headers.get("content-type") ?? "", /text\/html/);
+  const expiredHtml = await expired.text();
+  assert.match(expiredHtml, /Connection expired/);
+  assert.match(expiredHtml, /return to the app that started the connection/);
+  assert.match(expiredHtml, /click Connect again/);
 
   const tokenResponse = await fetch(`${baseUrl}/token`, {
     method: "POST",
@@ -310,6 +326,21 @@ function hiddenValue(html, name) {
   const valueStart = start + marker.length;
   const end = html.indexOf('"', valueStart);
   return html.slice(valueStart, end);
+}
+
+function assertLoginUx({ csp, html }) {
+  assert.match(csp, /default-src 'none'/);
+  assert.match(csp, /form-action 'self' https:\/\/client\.example/);
+  assert.doesNotMatch(csp, /script-src[^;]*'unsafe-inline'/);
+  const nonce = /script-src 'nonce-([^']+)'/.exec(csp)?.[1] ?? "";
+  assert.ok(nonce);
+  assert.ok(html.includes(`<script nonce="${nonce}">`));
+  assert.match(html, /autocomplete="username"/);
+  assert.match(html, /autocomplete="current-password"/);
+  assert.match(html, /role="status" aria-live="polite" hidden/);
+  assert.match(html, /Signing in… This may take a moment\./);
+  assert.match(html, /Connecting…/);
+  return nonce;
 }
 
 async function reservePort() {

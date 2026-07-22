@@ -16,6 +16,13 @@ export interface CreateSkylightOAuthProviderOptions {
   accountEnv?: NodeJS.ProcessEnv;
 }
 
+function isSkylightLoginTimeout(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    /^Skylight login timed out after \d+ms\.$/.test(error.message)
+  );
+}
+
 export function createSkylightOAuthProvider(
   options: CreateSkylightOAuthProviderOptions = {}
 ): HostedOAuthProvider<StoredOAuthCredential, SkylightServices> {
@@ -37,11 +44,13 @@ export function createSkylightOAuthProvider(
           password: password ?? "",
           signal,
         });
-      } catch {
+      } catch (error) {
         throw new HostedOAuthLoginError(
           signal.aborted
             ? "Skylight sign-in was canceled. Start the connection again."
-            : "Skylight sign-in failed. Check your email and password, then try again."
+            : isSkylightLoginTimeout(error)
+              ? "Skylight took too long to respond. Check your connection and try again."
+              : "Skylight sign-in failed. Check your email and password, then try again."
         );
       }
 
