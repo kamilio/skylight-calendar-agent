@@ -1,23 +1,56 @@
-import { createHash, randomBytes } from "node:crypto";
-import { createServer } from "node:http";
-import { getAuthorizationHeader, setRuntimeAuthorizationStore } from "../dist/skylight/auth.js";
-import { createSkylightOAuthApp } from "../dist/skylight/oauth-app.js";
+import assert from "node:assert/strict";
+import { createHash, createPublicKey, randomBytes } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import net from "node:net";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { S, defineCommand, defineGroup } from "toolcraft";
+import { createHTTPMCPServer } from "toolcraft/http";
+import { hostedOAuth } from "toolcraft/http/hosted-oauth";
+import { deriveOAuthKeyMaterial } from "../dist/skylight/oauth-keys.js";
+import { createSkylightOAuthProvider } from "../dist/skylight/oauth-provider.js";
+import { SQLiteSkylightOAuthStore } from "../dist/skylight/oauth-sqlite-store.js";
+
+const encodedMasterKey = randomBytes(32).toString("base64url");
+const firstKeyMaterial = deriveOAuthKeyMaterial(encodedMasterKey);
+const restartedKeyMaterial = deriveOAuthKeyMaterial(encodedMasterKey);
+assert.equal(firstKeyMaterial.signingPrivateKey.asymmetricKeyType, "ec");
+assert.notDeepEqual(firstKeyMaterial.encryptionKey, firstKeyMaterial.subjectKey);
+assert.deepEqual(firstKeyMaterial.encryptionKey, restartedKeyMaterial.encryptionKey);
+assert.deepEqual(firstKeyMaterial.subjectKey, restartedKeyMaterial.subjectKey);
+assert.deepEqual(
+  createPublicKey(firstKeyMaterial.signingPrivateKey).export({ format: "jwk" }),
+  createPublicKey(restartedKeyMaterial.signingPrivateKey).export({ format: "jwk" })
+);
+assert.throws(() => deriveOAuthKeyMaterial("short"), /SKYLIGHT_OAUTH_MASTER_KEY/);
 
 const upstreamRequests = [];
+let signedInEmail = "person@example.com";
 const upstreamFetch = async (url, init = {}) => {
   const parsed = new URL(String(url));
   const body = init.body === undefined ? "" : String(init.body);
   upstreamRequests.push({ path: parsed.pathname, body });
   if (parsed.pathname === "/auth/session/new") {
-    return new Response('<input type="hidden" name="authenticity_token" value="csrf-token">', {
-      headers: { "set-cookie": "session=abc; Path=/; HttpOnly" },
-    });
+    return new Response(
+      '<input type="hidden" name="authenticity_token" value="csrf-token">',
+      { headers: { "set-cookie": "session=abc; Path=/; HttpOnly" } }
+    );
   }
   if (parsed.pathname === "/auth/session") {
-    const password = new URLSearchParams(body).get("password");
-    return password === "correct horse"
-      ? new Response("", { status: 302, headers: { location: "/dashboard" } })
-      : new Response("", { status: 302, headers: { location: "/auth/session/new" } });
+    const form = new URLSearchParams(body);
+    if (form.get("password") === "correct horse") {
+      signedInEmail = form.get("email") ?? "person@example.com";
+      return new Response("", {
+        status: 302,
+        headers: { location: "/dashboard" },
+      });
+    }
+    return new Response("", {
+      status: 302,
+      headers: { location: "/auth/session/new" },
+    });
   }
   if (parsed.pathname === "/oauth/authorize") {
     return new Response("", {
@@ -26,89 +59,111 @@ const upstreamFetch = async (url, init = {}) => {
     });
   }
   if (parsed.pathname === "/oauth/token") {
+    const account = signedInEmail === "other@example.com" ? "other" : "person";
     return Response.json({
-      access_token: "upstream-access",
-      refresh_token: "upstream-refresh",
+      access_token: `upstream-access-${account}`,
+      refresh_token: `upstream-refresh-${account}`,
       expires_in: 3600,
       token_type: "Bearer",
     });
   }
+  if (parsed.pathname === "/api/user") {
+    const authorization = new Headers(init.headers).get("authorization") ?? "";
+    const account = authorization.endsWith("-other") ? "other" : "person";
+    return Response.json({ data: { id: `upstream-user-${account}`, type: "user" } });
+  }
   throw new Error(`Unexpected upstream request: ${parsed.pathname}`);
 };
 
-let app;
-let printedAuthorizationUrl;
-const server = createServer((request, response) => {
-  void app.handle(request, response).catch((error) => {
-    response.statusCode = 500;
-    response.end(error instanceof Error ? error.message : String(error));
-  });
-});
-await new Promise((resolve, reject) => {
-  server.once("error", reject);
-  server.listen(0, "127.0.0.1", resolve);
-});
-const address = server.address();
-if (!address || typeof address === "string") throw new Error("OAuth smoke server did not bind");
-const baseUrl = `http://127.0.0.1:${address.port}`;
+const port = await reservePort();
+const baseUrl = `http://127.0.0.1:${port}`;
 const resource = `${baseUrl}/mcp`;
-app = createSkylightOAuthApp({
-  publicUrl: new URL(resource),
-  fetch: upstreamFetch,
-  env: { SKYLIGHT_API_BASE: "https://skylight.invalid" },
-  onAuthorizationUrl(url) {
-    printedAuthorizationUrl = url;
-  },
+const storageDirectory = await mkdtemp(
+  path.join(tmpdir(), "skylight-oauth-login-")
+);
+const databasePath = path.join(storageDirectory, "oauth.sqlite");
+const createStorage = () =>
+  new SQLiteSkylightOAuthStore({
+    databasePath,
+    ...deriveOAuthKeyMaterial(encodedMasterKey),
+  });
+let storage = createStorage();
+const root = defineGroup({
+  name: "smoke",
+  children: [
+    defineCommand({
+      name: "timezone",
+      scope: ["mcp"],
+      params: S.Object({}),
+      handler: ({ skylight }) => skylight.timezone(),
+    }),
+  ],
 });
+const createServer = () => createHTTPMCPServer(root, {
+  name: "skylight-oauth-smoke",
+  version: "1.0.0",
+  oauth: hostedOAuth({
+    publicUrl: resource,
+    storage,
+    provider: createSkylightOAuthProvider({
+      fetch: upstreamFetch,
+      env: {
+        SKYLIGHT_API_BASE: "https://skylight.invalid",
+        SKYLIGHT_TIMEZONE: "America/Chicago",
+      },
+    }),
+    advanced: { branding: { title: "Skylight Calendar" } },
+  }),
+});
+let handle = await (await createServer()).listenHttp({ hostname: "127.0.0.1", port });
+let client;
 
 try {
   const registration = await fetch(`${baseUrl}/register`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ redirect_uris: ["http://127.0.0.1/callback"] }),
+    body: JSON.stringify({
+      redirect_uris: ["https://client.example/callback"],
+      token_endpoint_auth_method: "none",
+    }),
   });
-  if (registration.status !== 201) throw new Error(`OAuth registration failed: ${registration.status}`);
+  assert.equal(registration.status, 201);
   const { client_id: clientId } = await registration.json();
   const verifier = randomBytes(32).toString("base64url");
-  const challenge = createHash("sha256").update(verifier).digest("base64url");
-  const authorize = new URL(`${baseUrl}/authorize`);
-  authorize.search = new URLSearchParams({
-    response_type: "code",
-    client_id: clientId,
-    redirect_uri: "http://127.0.0.1/callback",
-    code_challenge: challenge,
-    code_challenge_method: "S256",
-    resource,
-    scope: "mcp offline_access",
-    state: "smoke-state",
-  }).toString();
+  const first = await startAuthorization({ clientId, verifier, state: "smoke-state" });
+  assert.match(first.csp, /form-action 'self' https:\/\/client\.example/);
+  assert.match(first.html, /Connect Skylight Calendar/);
+  assert.doesNotMatch(first.html, /one Skylight account/i);
 
-  let pageResponse = await fetch(authorize);
-  if (printedAuthorizationUrl?.href !== authorize.href) {
-    throw new Error("OAuth authorization URL was not exposed for CLI display");
-  }
-  let page = await pageResponse.text();
-  let cookie = pageResponse.headers.getSetCookie()[0]?.split(";", 1)[0] ?? "";
-  let csrf = hiddenValue(page, "csrf");
-  const transactionId = hiddenValue(page, "transaction_id");
-  if (!page.includes("Connect your calendar") || !page.includes('autocomplete="current-password"')) {
-    throw new Error("OAuth login page did not render the Skylight sign-in experience");
-  }
+  const rejected = await submitLogin({
+    cookie: first.cookie,
+    html: first.html,
+    email: "person@example.com",
+    password: "wrong",
+  });
+  const retryHtml = await rejected.text();
+  assert.equal(rejected.status, 400);
+  assert.match(retryHtml, /Skylight sign-in failed/);
+  assert.match(
+    rejected.headers.get("content-security-policy") ?? "",
+    /form-action 'self' https:\/\/client\.example/
+  );
+  assert.doesNotMatch(retryHtml, /value="wrong"/);
 
-  const rejected = await submitLogin({ cookie, csrf, transactionId, password: "wrong" });
-  page = await rejected.text();
-  if (rejected.status !== 200 || !page.includes("Skylight sign-in failed") || page.includes('value="wrong"')) {
-    throw new Error("Rejected Skylight login was not safely retryable");
-  }
-  cookie = rejected.headers.getSetCookie()[0]?.split(";", 1)[0] ?? "";
-  csrf = hiddenValue(page, "csrf");
-
-  const completion = await submitLogin({ cookie, csrf, transactionId, password: "correct horse" });
-  const completionPage = await completion.text();
-  if (!completionPage.includes("Skylight connected")) throw new Error("OAuth completion page was not rendered");
-  const callbackUrl = new URL(linkHref(completionPage));
-  const code = callbackUrl.searchParams.get("code");
-  if (!code) throw new Error("OAuth completion callback did not contain a code");
+  const completion = await submitLogin({
+    cookie: first.cookie,
+    html: retryHtml,
+    email: "person@example.com",
+    password: "correct horse",
+  });
+  assert.equal(completion.status, 303);
+  const callback = new URL(completion.headers.get("location") ?? "");
+  assert.equal(callback.origin, "https://client.example");
+  assert.equal(callback.pathname, "/callback");
+  assert.equal(callback.searchParams.get("state"), "smoke-state");
+  assert.equal(callback.searchParams.get("iss"), baseUrl);
+  const code = callback.searchParams.get("code");
+  assert.ok(code);
 
   const tokenResponse = await fetch(`${baseUrl}/token`, {
     method: "POST",
@@ -117,58 +172,158 @@ try {
       grant_type: "authorization_code",
       code,
       client_id: clientId,
-      redirect_uri: "http://127.0.0.1/callback",
+      redirect_uri: "https://client.example/callback",
       code_verifier: verifier,
       resource,
     }),
   });
-  if (tokenResponse.status !== 200) throw new Error(`OAuth token exchange failed: ${tokenResponse.status}`);
+  assert.equal(tokenResponse.status, 200);
   const tokens = await tokenResponse.json();
-  const verified = await app.authorizationServer.verifyAccessToken(tokens.access_token, resource);
-  if (!verified.scopes.includes("mcp")) throw new Error("OAuth access token did not include the MCP scope");
+  assert.deepEqual(new Set(tokens.scope.split(" ")), new Set(["mcp", "offline_access"]));
+  assert.equal(typeof tokens.refresh_token, "string");
 
-  const upstreamAuthorization = await getAuthorizationHeader({
-    fetch: upstreamFetch,
-    env: { SKYLIGHT_API_BASE: "https://skylight.invalid" },
-    useStoredCredentials: true,
+  await handle.close();
+  storage.close();
+  storage = createStorage();
+  handle = await (await createServer()).listenHttp({ hostname: "127.0.0.1", port });
+  let restartedHealth;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      restartedHealth = await fetch(`${baseUrl}/healthz`, {
+        headers: { connection: "close" },
+      });
+      break;
+    } catch (error) {
+      if (attempt === 1) throw error;
+    }
+  }
+  assert.ok(restartedHealth);
+  assert.equal(restartedHealth.status, 200);
+  assert.deepEqual(await restartedHealth.json(), { ok: true });
+
+  client = new Client({ name: "skylight-oauth-smoke", version: "1.0.0" });
+  await client.connect(
+    new StreamableHTTPClientTransport(new URL(handle.url), {
+      requestInit: { headers: { authorization: `Bearer ${tokens.access_token}` } },
+    })
+  );
+  const timezone = await client.callTool({ name: "smoke__timezone", arguments: {} });
+  assert.equal(timezone.isError, undefined);
+  assert.match(JSON.stringify(timezone.content), /America\/Chicago/);
+
+  const other = await startAuthorization({
+    clientId,
+    verifier: randomBytes(32).toString("base64url"),
+    state: "other-state",
   });
-  if (upstreamAuthorization !== "Bearer upstream-access") {
-    throw new Error("Embedded OAuth login did not install the upstream Skylight credential");
+  const otherCompletion = await submitLogin({
+    cookie: other.cookie,
+    html: other.html,
+    email: "other@example.com",
+    password: "correct horse",
+  });
+  assert.equal(otherCompletion.status, 303);
+  assert.equal(
+    new URL(otherCompletion.headers.get("location") ?? "").searchParams.get("state"),
+    "other-state"
+  );
+
+  const personSubject = await storage.resolveSubject("Skylight", "upstream-user-person");
+  const otherSubject = await storage.resolveSubject("Skylight", "upstream-user-other");
+  assert.notEqual(personSubject, otherSubject);
+  const personCredential = await storage.credentials.get(personSubject);
+  const otherCredential = await storage.credentials.get(otherSubject);
+  assert.equal(personCredential?.accessToken, "upstream-access-person");
+  assert.equal(otherCredential?.accessToken, "upstream-access-other");
+  assert.doesNotMatch(
+    JSON.stringify([personCredential, otherCredential]),
+    /correct horse|person@example\.com|other@example\.com/
+  );
+
+  await storage.credentials.delete(personSubject);
+  let failedClosed = false;
+  try {
+    const missing = await client.callTool({ name: "smoke__timezone", arguments: {} });
+    failedClosed = missing.isError === true;
+  } catch {
+    failedClosed = true;
   }
-  if (upstreamRequests.filter(({ path }) => path === "/auth/session").length !== 2) {
-    throw new Error("OAuth login retry did not make the expected upstream requests");
-  }
+  assert.equal(failedClosed, true);
+  assert.equal(
+    upstreamRequests.filter(({ path }) => path === "/auth/session").length,
+    3
+  );
+  storage.close();
+  const unhealthy = await fetch(`${baseUrl}/healthz`);
+  assert.equal(unhealthy.status, 503);
+  assert.deepEqual(await unhealthy.json(), { ok: false });
 } finally {
-  setRuntimeAuthorizationStore(null);
-  await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  await client?.close();
+  await handle.close();
+  storage.close();
+  await rm(storageDirectory, { recursive: true, force: true });
 }
 
-async function submitLogin({ cookie, csrf, transactionId, password }) {
-  return fetch(`${baseUrl}/interaction/login`, {
+console.log("hosted-oauth-login-isolation-and-callback-ok");
+
+async function startAuthorization({ clientId, verifier, state }) {
+  const authorize = new URL(`${baseUrl}/authorize`);
+  authorize.search = new URLSearchParams({
+    response_type: "code",
+    client_id: clientId,
+    redirect_uri: "https://client.example/callback",
+    code_challenge: createHash("sha256").update(verifier).digest("base64url"),
+    code_challenge_method: "S256",
+    resource,
+    state,
+  }).toString();
+  const response = await fetch(authorize);
+  assert.equal(response.status, 200);
+  return {
+    html: await response.text(),
+    cookie: response.headers.get("set-cookie")?.split(";", 1)[0] ?? "",
+    csp: response.headers.get("content-security-policy") ?? "",
+  };
+}
+
+function submitLogin({ cookie, html, email, password }) {
+  return fetch(`${baseUrl}/oauth/connect`, {
     method: "POST",
     redirect: "manual",
     headers: {
       "content-type": "application/x-www-form-urlencoded",
       cookie,
-      origin: baseUrl,
     },
     body: new URLSearchParams({
-      csrf,
-      transaction_id: transactionId,
-      email: "person@example.com",
+      transaction: hiddenValue(html, "transaction"),
+      csrf: hiddenValue(html, "csrf"),
+      email,
       password,
     }),
   });
 }
 
 function hiddenValue(html, name) {
-  const match = html.match(new RegExp(`name="${name}" value="([^"]+)"`));
-  if (!match?.[1]) throw new Error(`Missing hidden ${name} value`);
-  return match[1].replaceAll("&amp;", "&").replaceAll("&quot;", '"');
+  const marker = `name="${name}" value="`;
+  const start = html.indexOf(marker);
+  if (start < 0) throw new Error(`Missing hidden ${name} value`);
+  const valueStart = start + marker.length;
+  const end = html.indexOf('"', valueStart);
+  return html.slice(valueStart, end);
 }
 
-function linkHref(html) {
-  const match = html.match(/<a class="button" href="([^"]+)">Return to MCP client<\/a>/);
-  if (!match?.[1]) throw new Error("Missing MCP callback link");
-  return match[1].replaceAll("&amp;", "&");
+async function reservePort() {
+  const probe = net.createServer();
+  await new Promise((resolve, reject) => {
+    probe.once("error", reject);
+    probe.listen(0, "127.0.0.1", resolve);
+  });
+  const address = probe.address();
+  if (address === null || typeof address === "string") {
+    throw new Error("Could not reserve an OAuth smoke port.");
+  }
+  await new Promise((resolve, reject) =>
+    probe.close((error) => (error ? reject(error) : resolve()))
+  );
+  return address.port;
 }

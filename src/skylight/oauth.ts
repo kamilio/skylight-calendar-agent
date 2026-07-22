@@ -255,12 +255,16 @@ export async function loginWithOAuth(opts: {
   email: string;
   password: string;
   fingerprint?: string;
+  signal?: AbortSignal;
 }): Promise<StoredOAuthCredential> {
   const env = opts.env ?? process.env;
   const { apiBaseUrl, requestTimeoutMs } = getSkylightRequestConfig(env);
   const fingerprint = opts.fingerprint ?? randomUUID();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+  const abortFromCaller = () => controller.abort();
+  if (opts.signal?.aborted) controller.abort();
+  else opts.signal?.addEventListener("abort", abortFromCaller, { once: true });
   const cookies = new Map<string, string>();
   try {
     const loginPage = await browserFetch({
@@ -352,11 +356,16 @@ export async function loginWithOAuth(opts: {
   } catch (error) {
     if (error instanceof UserError) throw error;
     if (controller.signal.aborted) {
-      throw new UserError(`Skylight login timed out after ${requestTimeoutMs}ms.`);
+      throw new UserError(
+        opts.signal?.aborted
+          ? "Skylight login was canceled."
+          : `Skylight login timed out after ${requestTimeoutMs}ms.`
+      );
     }
     throw new UserError(`Skylight login failed: ${excerpt(errorMessage(error))}`);
   } finally {
     clearTimeout(timeout);
+    opts.signal?.removeEventListener("abort", abortFromCaller);
   }
 }
 

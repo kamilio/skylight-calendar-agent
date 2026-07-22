@@ -4,8 +4,15 @@ import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import { homedir } from "node:os";
 import path from "node:path";
 import { UserError } from "toolcraft";
+import type { HostedOAuthCredentialAccess } from "toolcraft/http/hosted-oauth";
 import { getSkylightRequestConfig } from "./config.js";
 import { terminalSafeText, truncateText } from "./text.js";
+import {
+  parseOAuthCredential,
+  refreshOAuthCredential as refreshSkylightOAuthCredential,
+  serializeOAuthCredential,
+  type StoredOAuthCredential,
+} from "./oauth.js";
 
 const DEFAULT_SERVICE = "skylight-calendar-agent";
 const MAX_COMMAND_OUTPUT = 20_000;
@@ -35,6 +42,57 @@ export interface AuthorizationStore {
   read(env?: NodeJS.ProcessEnv): Promise<string | null>;
   write(authorization: string, env?: NodeJS.ProcessEnv): Promise<void>;
   delete(env?: NodeJS.ProcessEnv): Promise<boolean>;
+  /**
+   * Optional shared-store refresh hook. Implementations must re-read and
+   * persist atomically so rotating refresh tokens are never used concurrently
+   * by separate server instances.
+   */
+  refreshOAuthCredential?(options: {
+    fetch: typeof globalThis.fetch;
+    env: NodeJS.ProcessEnv;
+    credential: StoredOAuthCredential;
+  }): Promise<StoredOAuthCredential>;
+}
+
+/**
+ * Adapts Toolcraft's verified-subject credential handle to the authorization
+ * store used by Skylight requests. Hosted storage owns persistence and
+ * serialization remains an internal detail of the local request layer.
+ */
+export function createHostedOAuthAuthorizationStore(
+  credentials: HostedOAuthCredentialAccess<StoredOAuthCredential>
+): AuthorizationStore {
+  return {
+    name: "Toolcraft hosted OAuth credential",
+    async read() {
+      return serializeOAuthCredential(await credentials.read());
+    },
+    async write(authorization) {
+      const credential = parseOAuthCredential(authorization);
+      if (credential === null) {
+        throw new UserError(
+          "Hosted Skylight connections accept only OAuth credentials. Reconnect the account."
+        );
+      }
+      await credentials.update(() => credential);
+    },
+    async delete() {
+      await credentials.delete();
+      return true;
+    },
+    async refreshOAuthCredential({ fetch, env, credential }) {
+      return credentials.update(async (current) => {
+        // A concurrent request may already have exchanged this rotating token.
+        // Reuse its replacement rather than replaying the old refresh token.
+        if (current.refreshToken !== credential.refreshToken) return current;
+        return refreshSkylightOAuthCredential({
+          fetch,
+          env,
+          credential: current,
+        });
+      });
+    },
+  };
 }
 
 function boundedOutput(value: string): string {

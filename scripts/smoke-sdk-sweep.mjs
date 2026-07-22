@@ -1,5 +1,6 @@
 import { createSDK } from "toolcraft/sdk";
 import { root } from "../dist/root.js";
+import { createLocalSkylightServices } from "../dist/skylight/service.js";
 
 const savedEnv = { ...process.env };
 
@@ -97,6 +98,7 @@ try {
 
   const requests = [];
   const sdk = createSDK(root, {
+    services: createLocalSkylightServices(),
     fetch: async (url, init) => {
       requests.push({ url: String(url), init });
       if (new URL(String(url)).pathname === "/api/frames/calendar") {

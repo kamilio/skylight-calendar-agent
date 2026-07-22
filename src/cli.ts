@@ -3,6 +3,7 @@ import { runCLI } from "toolcraft/cli";
 import { root } from "./root.js";
 import { loadDotEnv } from "./env.js";
 import { flattenResponseLayoutForCli } from "./skylight/http.js";
+import { createLocalSkylightServices } from "./skylight/service.js";
 import { terminalSafeText } from "./skylight/text.js";
 import { packageVersion } from "./version.js";
 
@@ -124,5 +125,6 @@ if (oversizedName) {
   await runCLI(root, {
     rootUsageName: "skylight",
     version: packageVersion,
+    services: createLocalSkylightServices(),
   });
 }

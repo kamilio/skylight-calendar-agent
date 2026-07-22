@@ -1,6 +1,8 @@
-import { defineCommand, defineGroup, S, UserError } from "toolcraft";
-import { resolveFrameId } from "../skylight/frame.js";
-import { requestJson } from "../skylight/http.js";
+import { S, UserError } from "toolcraft";
+import {
+  defineSkylightCommand as defineCommand,
+  defineSkylightGroup as defineGroup,
+} from "../skylight/service.js";
 import {
   assertAtLeastOneDefined,
   assertValidDateOrDateTime,
@@ -25,8 +27,8 @@ export const mealsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/meals/categories`,
@@ -43,8 +45,8 @@ export const mealsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PATCH",
           path: `/api/frames/${frameId}/meals/categories/${pathSegment(ctx.params.categoryId, "categoryId")}`,
@@ -62,8 +64,8 @@ export const mealsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/meals/sittings`,
@@ -86,8 +88,8 @@ export const mealsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/meals/sittings/${pathSegment(ctx.params.mealId, "mealId")}/instances`,
@@ -121,8 +123,8 @@ export const mealsGroup = defineGroup({
             : parseJsonObject(ctx.params.extrasJson, "extrasJson");
         const recipeId = normalizeIdentifier(ctx.params.recipeId, "recipeId");
         const categoryId = normalizeIdentifier(ctx.params.categoryId, "categoryId");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/meals/sittings`,
@@ -152,8 +154,8 @@ export const mealsGroup = defineGroup({
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
         const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/meals/sittings`,
@@ -208,8 +210,8 @@ export const mealsGroup = defineGroup({
           ctx.params.applyTo === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.applyTo, "applyTo");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PATCH",
           path: `/api/frames/${frameId}/meals/sittings/${pathSegment(ctx.params.mealId, "mealId")}/instances/${pathSegment(ctx.params.instanceIso, "instanceIso")}`,
@@ -248,8 +250,8 @@ export const mealsGroup = defineGroup({
           ctx.params.applyTo === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.applyTo, "applyTo");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/meals/sittings/${pathSegment(ctx.params.mealId, "mealId")}/instances/${pathSegment(ctx.params.instanceIso, "instanceIso")}`,
@@ -273,8 +275,8 @@ export const mealsGroup = defineGroup({
         if (ctx.params.confirm !== true) {
           throw new UserError("Pass confirm=true to migrate dinner plans.");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/meals/sittings/migrate`,

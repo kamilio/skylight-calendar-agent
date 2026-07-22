@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+!.env.example
+auth.json
+skylight.har
+node_modules
+dist
+npm-debug.log*

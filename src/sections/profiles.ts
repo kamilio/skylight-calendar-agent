@@ -1,6 +1,9 @@
-import { defineCommand, defineGroup, S, UserError } from "toolcraft";
-import { listCalendarFrames, resolveFrameId } from "../skylight/frame.js";
-import { requestJson, sanitizeJsonResponseForOutput } from "../skylight/http.js";
+import { S, UserError } from "toolcraft";
+import { sanitizeJsonResponseForOutput } from "../skylight/http.js";
+import {
+  defineSkylightCommand as defineCommand,
+  defineSkylightGroup as defineGroup,
+} from "../skylight/service.js";
 import { getAuthorizationHeader } from "../skylight/auth.js";
 import {
   assertAtLeastOneDefined,
@@ -36,7 +39,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
-        requestJson({
+        ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: "/api/user",
@@ -51,7 +54,7 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PATCH",
           path: "/api/user/profile",
@@ -68,7 +71,7 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const preference = normalizeIdentifier(ctx.params.preference, "preference");
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PATCH",
           path: "/api/user/push_toggler",
@@ -87,7 +90,7 @@ export const profilesGroup = defineGroup({
         }),
       }),
       handler: async (ctx) =>
-        requestJson({
+        ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PATCH",
           path: "/api/user/klaviyo_toggler",
@@ -102,7 +105,7 @@ export const profilesGroup = defineGroup({
         email: emailParam({ description: "Email address", short: "e" }),
       }),
       handler: async (ctx) =>
-        requestJson({
+        ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: "/api/password_resets",
@@ -132,7 +135,7 @@ export const profilesGroup = defineGroup({
           throw new UserError("Set SKYLIGHT_PASSWORD or pass password to update the email.");
         }
         assertBoundedString(password, "password");
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: "/api/user",
@@ -146,7 +149,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
-        requestJson({
+        ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: "/api/user/referral_code",
@@ -158,7 +161,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
-        requestJson({
+        ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: "/api/plus_access",
@@ -170,7 +173,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
-        requestJson({
+        ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: "/api/plus_access/resend_entitlement_email",
@@ -187,7 +190,7 @@ export const profilesGroup = defineGroup({
         if (ctx.params.confirm !== true) {
           throw new UserError("Pass confirm=true to permanently delete the user account.");
         }
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: "/api/user",
@@ -200,7 +203,7 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
-        requestJson({
+        ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: "/api/user/export",
@@ -220,9 +223,9 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         if (ctx.params.type === undefined || ctx.params.type === "calendar") {
-          return listCalendarFrames(ctx);
+          return ctx.skylight.listCalendarFrames(ctx);
         }
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${ctx.params.type}`,
@@ -235,8 +238,8 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}`,
@@ -252,8 +255,8 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}`,
@@ -269,8 +272,8 @@ export const profilesGroup = defineGroup({
         name: nonBlankParam({ description: "New name", short: "n" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/rename`,
@@ -289,8 +292,8 @@ export const profilesGroup = defineGroup({
         if (ctx.params.confirm !== true) {
           throw new UserError("Pass confirm=true to hide the configured frame.");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/hide`,
@@ -309,8 +312,8 @@ export const profilesGroup = defineGroup({
         if (ctx.params.confirm !== true) {
           throw new UserError("Pass confirm=true to transfer frame ownership.");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/transfer_to_new_user`,
@@ -327,8 +330,8 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const shareToken = normalizeIdentifier(ctx.params.shareToken, "shareToken");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/share_token_redemptions`,
@@ -352,8 +355,8 @@ export const profilesGroup = defineGroup({
         if (ctx.params.birthday !== undefined) {
           assertValidMonthDay(ctx.params.birthday, "birthday");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/profile`,
@@ -370,8 +373,8 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/categories`,
@@ -386,8 +389,8 @@ export const profilesGroup = defineGroup({
         categoryId: nonBlankParam({ description: "Category id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}`,
@@ -403,8 +406,8 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/categories`,
@@ -421,8 +424,8 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/categories/find_or_create`,
@@ -440,8 +443,8 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}`,
@@ -468,8 +471,8 @@ export const profilesGroup = defineGroup({
         if (reassignToCategoryId === categoryId) {
           throw new UserError("reassignToCategoryId must differ from categoryId.");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/categories/${pathSegment(categoryId, "categoryId")}`,
@@ -494,8 +497,8 @@ export const profilesGroup = defineGroup({
           ctx.params.categorizationsJson,
           "categorizationsJson"
         );
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}/source_calendar_categorizations`,
@@ -513,8 +516,8 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/categories/${pathSegment(ctx.params.categoryId, "categoryId")}/family_member`,
@@ -528,8 +531,8 @@ export const profilesGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/devices`,
@@ -544,8 +547,8 @@ export const profilesGroup = defineGroup({
         deviceId: nonBlankParam({ description: "Device id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}`,
@@ -567,8 +570,8 @@ export const profilesGroup = defineGroup({
           ctx.params.role === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.role, "role");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/devices`,
@@ -589,8 +592,8 @@ export const profilesGroup = defineGroup({
         name: nonBlankParam({ description: "New name", short: "n" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}`,
@@ -610,8 +613,8 @@ export const profilesGroup = defineGroup({
         if (ctx.params.confirm !== true) {
           throw new UserError("Pass confirm=true to delete the device.");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}`,
@@ -630,8 +633,8 @@ export const profilesGroup = defineGroup({
         if (ctx.params.confirm !== true) {
           throw new UserError("Pass confirm=true to reset the device.");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}/reset`,
@@ -646,8 +649,8 @@ export const profilesGroup = defineGroup({
         deviceId: nonBlankParam({ description: "Device id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}/activation_code`,
@@ -664,8 +667,8 @@ export const profilesGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/devices/${pathSegment(ctx.params.deviceId, "deviceId")}`,

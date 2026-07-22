@@ -1,6 +1,8 @@
-import { defineCommand, defineGroup, S, UserError } from "toolcraft";
-import { resolveFrameId } from "../skylight/frame.js";
-import { requestJson } from "../skylight/http.js";
+import { S, UserError } from "toolcraft";
+import {
+  defineSkylightCommand as defineCommand,
+  defineSkylightGroup as defineGroup,
+} from "../skylight/service.js";
 import {
   assertValidDate,
   assertValidDateRange,
@@ -42,8 +44,8 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.after, ctx.params.before, "after", "before");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/chores`,
@@ -66,8 +68,8 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const chore = parseNonEmptyJsonObject(ctx.params.choreJson, "choreJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/chores/create_multiple`,
@@ -84,8 +86,8 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/chores`,
@@ -127,8 +129,8 @@ export const tasksGroup = defineGroup({
           ctx.params.recurrenceRrule === undefined
             ? null
             : [normalizeRrule(ctx.params.recurrenceRrule, "recurrenceRrule")];
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/chores/create_multiple`,
@@ -162,8 +164,8 @@ export const tasksGroup = defineGroup({
           ctx.params.applyTo === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.applyTo, "applyTo");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/chores/${pathSegment(ctx.params.choreId, "choreId")}`,
@@ -187,8 +189,8 @@ export const tasksGroup = defineGroup({
           ctx.params.applyTo === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.applyTo, "applyTo");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/chores/${pathSegment(ctx.params.choreId, "choreId")}`,
@@ -216,8 +218,8 @@ export const tasksGroup = defineGroup({
           ctx.params.categoryId === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.categoryId, "categoryId");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/chores/${pathSegment(ctx.params.seriesId, "seriesId")}/completions`,
@@ -238,8 +240,8 @@ export const tasksGroup = defineGroup({
         summary: nonBlankParam({ description: "Task summary", short: "s" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/task_box/items`,
@@ -261,8 +263,8 @@ export const tasksGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const body = parseNonEmptyJsonObject(ctx.params.bodyJson, "bodyJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/task_box/items`,
@@ -276,8 +278,8 @@ export const tasksGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/task_box/items`,
@@ -316,16 +318,16 @@ export const tasksGroup = defineGroup({
             throw new UserError("taskBoxItemJson must include an update field besides id.");
           }
         }
-        const frameId = await resolveFrameId(ctx);
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
         if (itemPath !== undefined) {
-          return requestJson({
+          return ctx.skylight.request({
             fetch: ctx.fetch,
             method: "PATCH",
             path: `/api/frames/${frameId}/task_box/items/${itemPath}`,
             body: requestBody,
           });
         }
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/task_box/items`,
@@ -341,8 +343,8 @@ export const tasksGroup = defineGroup({
         taskBoxItemId: nonBlankParam({ description: "Task Box item id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/task_box/items/${pathSegment(ctx.params.taskBoxItemId, "taskBoxItemId")}`,

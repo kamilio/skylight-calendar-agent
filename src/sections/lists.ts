@@ -1,6 +1,9 @@
-import { defineCommand, defineGroup, S, UserError } from "toolcraft";
-import { resolveFrameId } from "../skylight/frame.js";
-import { requestJson, sanitizeJsonResponseForOutput } from "../skylight/http.js";
+import { S, UserError } from "toolcraft";
+import { sanitizeJsonResponseForOutput } from "../skylight/http.js";
+import {
+  defineSkylightCommand as defineCommand,
+  defineSkylightGroup as defineGroup,
+} from "../skylight/service.js";
 import { errorMessage, terminalSafeText, truncateText } from "../skylight/text.js";
 import {
   assertWellFormedUnicode,
@@ -39,8 +42,8 @@ export const listsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/lists`,
@@ -55,8 +58,8 @@ export const listsGroup = defineGroup({
         listId: nonBlankParam({ description: "List id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}`,
@@ -88,8 +91,8 @@ export const listsGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/lists`,
@@ -117,8 +120,8 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const list = parseNonEmptyJsonObject(ctx.params.listJson, "listJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/lists`,
@@ -136,8 +139,8 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}`,
@@ -153,8 +156,8 @@ export const listsGroup = defineGroup({
         listId: nonBlankParam({ description: "List id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}`,
@@ -169,8 +172,8 @@ export const listsGroup = defineGroup({
         listId: nonBlankParam({ description: "List id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
@@ -188,8 +191,8 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const section = normalizeSection(ctx.params.section);
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
@@ -214,12 +217,12 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const section = normalizeSection(ctx.params.section);
-        const frameId = await resolveFrameId(ctx);
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
         const items: unknown[] = [];
         for (const [index, label] of ctx.params.labels.entries()) {
           try {
             items.push(
-              await requestJson({
+              await ctx.skylight.request({
                 fetch: ctx.fetch,
                 method: "POST",
                 path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
@@ -249,8 +252,8 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const item = parseNonEmptyJsonObject(ctx.params.itemJson, "itemJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items`,
@@ -269,8 +272,8 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const updates = parseNonEmptyJsonObject(ctx.params.updatesJson, "updatesJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/${pathSegment(ctx.params.itemId, "itemId")}`,
@@ -287,8 +290,8 @@ export const listsGroup = defineGroup({
         itemId: nonBlankParam({ description: "List item id" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/${pathSegment(ctx.params.itemId, "itemId")}`,
@@ -314,8 +317,8 @@ export const listsGroup = defineGroup({
           ctx.params.afterItemId === undefined
             ? null
             : parsePositiveSafeInteger(ctx.params.afterItemId, "afterItemId");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/${pathSegment(ctx.params.itemId, "itemId")}/move`,
@@ -340,8 +343,8 @@ export const listsGroup = defineGroup({
       handler: async (ctx) => {
         const itemIds = uniqueIdentifiers(ctx.params.itemIds, "itemIds");
         const section = normalizeSection(ctx.params.section);
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/bulk_update_section`,
@@ -365,8 +368,8 @@ export const listsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const itemIds = uniqueIdentifiers(ctx.params.itemIds, "itemIds");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/lists/${pathSegment(ctx.params.listId, "listId")}/list_items/bulk_destroy`,

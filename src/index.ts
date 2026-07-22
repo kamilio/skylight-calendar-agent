@@ -1,10 +1,21 @@
 import { UserError } from "toolcraft";
 import { createSDK, type CreateSDKOptions } from "toolcraft/sdk";
 import { root } from "./root.js";
+import {
+  createLocalSkylightServices,
+  type SkylightServices,
+} from "./skylight/service.js";
 import { errorMessage, terminalSafeText } from "./skylight/text.js";
 
 export { root };
 export { SkylightRequestError } from "./skylight/http.js";
+export {
+  createLocalSkylightServices,
+  createSkylightService,
+  type CreateSkylightServiceOptions,
+  type SkylightService,
+  type SkylightServices,
+} from "./skylight/service.js";
 
 function sanitizeSdkErrors<T extends object>(sdk: T): T {
   const clones = new WeakMap<object, object>();
@@ -56,6 +67,9 @@ function sanitizeSdkErrors<T extends object>(sdk: T): T {
   return wrap(sdk) as T;
 }
 
-export function createSkylightSDK(options?: CreateSDKOptions) {
-  return sanitizeSdkErrors(createSDK(root, options));
+export function createSkylightSDK(options: CreateSDKOptions<SkylightServices> = {}) {
+  return sanitizeSdkErrors(createSDK(root, {
+    ...options,
+    services: options.services ?? createLocalSkylightServices(),
+  }));
 }

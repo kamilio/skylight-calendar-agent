@@ -1,6 +1,8 @@
-import { defineCommand, defineGroup, S, UserError } from "toolcraft";
-import { resolveFrameId } from "../skylight/frame.js";
-import { requestJson } from "../skylight/http.js";
+import { S, UserError } from "toolcraft";
+import {
+  defineSkylightCommand as defineCommand,
+  defineSkylightGroup as defineGroup,
+} from "../skylight/service.js";
 import {
   boundedArrayParam,
   boundedStringParam,
@@ -32,9 +34,9 @@ export const photosGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
         const page = ctx.params.page ?? 1;
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/messages`,
@@ -51,8 +53,8 @@ export const photosGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const pageToken = normalizeIdentifier(ctx.params.pageToken, "pageToken");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/messages`,
@@ -69,8 +71,8 @@ export const photosGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const syncToken = normalizeIdentifier(ctx.params.syncToken, "syncToken");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/messages`,
@@ -90,8 +92,8 @@ export const photosGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const messageIds = uniqueIdentifiers(ctx.params.messageIds, "messageIds");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/messages/destroy_multiple`,
@@ -119,11 +121,11 @@ export const photosGroup = defineGroup({
         const encodedNewFrameIds = newFrameIds.map((newFrameId) =>
           pathSegment(newFrameId, "newFrameId")
         );
-        const frameId = await resolveFrameId(ctx);
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
         if (encodedNewFrameIds.includes(frameId)) {
           throw new UserError("newFrameIds must not include the source frame.");
         }
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/copy_to_frames`,
@@ -142,8 +144,8 @@ export const photosGroup = defineGroup({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}`,
@@ -158,8 +160,8 @@ export const photosGroup = defineGroup({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/all_likes`,
@@ -183,9 +185,9 @@ export const photosGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
         const page = ctx.params.page ?? 1;
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/comments`,
@@ -201,8 +203,8 @@ export const photosGroup = defineGroup({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}`,
@@ -217,8 +219,8 @@ export const photosGroup = defineGroup({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/likes`,
@@ -233,8 +235,8 @@ export const photosGroup = defineGroup({
         messageId: nonBlankParam({ description: "Message id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/likes`,
@@ -250,8 +252,8 @@ export const photosGroup = defineGroup({
         body: nonBlankParam({ description: "Comment body", short: "b" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/comments`,
@@ -268,8 +270,8 @@ export const photosGroup = defineGroup({
         commentId: nonBlankParam({ description: "Comment id", short: "c" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/comments/${pathSegment(ctx.params.commentId, "commentId")}`,
@@ -285,8 +287,8 @@ export const photosGroup = defineGroup({
         caption: boundedStringParam({ description: "New caption", short: "c" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/messages/${pathSegment(ctx.params.messageId, "messageId")}/caption`,
@@ -300,7 +302,7 @@ export const photosGroup = defineGroup({
       scope: ["cli", "sdk"],
       params: S.Object({}),
       handler: async (ctx) =>
-        requestJson({
+        ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/messages/cloud_upload_credentials`,
@@ -318,7 +320,7 @@ export const photosGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const payload = parseNonEmptyJsonObject(ctx.params.payloadJson, "payloadJson");
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/messages/uploads`,
@@ -335,7 +337,7 @@ export const photosGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const payload = parseNonEmptyJsonObject(ctx.params.payloadJson, "payloadJson");
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/upload_url`,
@@ -352,7 +354,7 @@ export const photosGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const payload = parseNonEmptyJsonObject(ctx.params.payloadJson, "payloadJson");
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/message_upload_urls`,
@@ -366,8 +368,8 @@ export const photosGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/albums`,
@@ -382,8 +384,8 @@ export const photosGroup = defineGroup({
         title: nonBlankParam({ description: "Album title", short: "t" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/albums`,
@@ -400,8 +402,8 @@ export const photosGroup = defineGroup({
         title: nonBlankParam({ description: "New title", short: "t" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/albums/${pathSegment(ctx.params.albumId, "albumId")}`,
@@ -417,8 +419,8 @@ export const photosGroup = defineGroup({
         albumId: nonBlankParam({ description: "Album id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/albums/${pathSegment(ctx.params.albumId, "albumId")}`,
@@ -442,9 +444,9 @@ export const photosGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
         const page = ctx.params.page ?? 1;
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/albums/${pathSegment(ctx.params.albumId, "albumId")}/messages`,
@@ -460,8 +462,8 @@ export const photosGroup = defineGroup({
         albumId: nonBlankParam({ description: "Album id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/albums/${pathSegment(ctx.params.albumId, "albumId")}/messages/all_ids`,
@@ -485,8 +487,8 @@ export const photosGroup = defineGroup({
       handler: async (ctx) => {
         const albumIds = uniqueIdentifiers(ctx.params.albumIds, "albumIds");
         const messageIds = uniqueIdentifiers(ctx.params.messageIds, "messageIds");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/albums/add_to`,
@@ -511,8 +513,8 @@ export const photosGroup = defineGroup({
       handler: async (ctx) => {
         const albumId = normalizeIdentifier(ctx.params.albumId, "albumId");
         const messageIds = uniqueIdentifiers(ctx.params.messageIds, "messageIds");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/albums/remove_from`,

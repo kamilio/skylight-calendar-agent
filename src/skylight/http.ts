@@ -180,7 +180,7 @@ function queryParameterText(value: string | number | boolean, key: string): stri
   return text;
 }
 
-export async function requestJson<TResponse>(opts: {
+export interface SkylightRequestOptions {
   fetch: typeof globalThis.fetch;
   env?: NodeJS.ProcessEnv;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -198,7 +198,9 @@ export async function requestJson<TResponse>(opts: {
   >;
   body?: unknown;
   preserveResponseForProcessing?: boolean;
-}): Promise<TResponse> {
+}
+
+export async function requestJson<TResponse>(opts: SkylightRequestOptions): Promise<TResponse> {
   const env = opts.env ?? process.env;
   const config = getSkylightRequestConfig(env);
   let serializedBody: string | undefined;

@@ -1,28 +1,29 @@
 #!/usr/bin/env node
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
+import { createHTTPMCPServer } from "toolcraft/http";
 import {
-  createHTTPMCPServer,
-  createJwksTokenVerifier,
-  type TinyHttpMcpServerOAuthOptions,
-} from "toolcraft/http";
+  createInMemoryHostedOAuthStorage,
+  hostedOAuth,
+  type HostedOAuthStorage,
+} from "toolcraft/http/hosted-oauth";
 import { loadDotEnv } from "./env.js";
 import { root } from "./root.js";
 import {
   httpMcpTokenFromEnvironment,
   tokenMatches,
 } from "./skylight/http-auth.js";
-import { createSkylightOAuthApp } from "./skylight/oauth-app.js";
+import {
+  createLocalSkylightServices,
+} from "./skylight/service.js";
+import { deriveOAuthKeyMaterial } from "./skylight/oauth-keys.js";
+import { createSkylightOAuthProvider } from "./skylight/oauth-provider.js";
+import type { StoredOAuthCredential } from "./skylight/oauth.js";
 import { terminalSafeText } from "./skylight/text.js";
 import { packageVersion } from "./version.js";
+import { skylightCalendarIconSvg } from "./branding.js";
 
 loadDotEnv();
-
-interface OAuthConfig {
-  authorizationServers: URL[];
-  jwksUrl: URL;
-  scopes: string[];
-}
 
 interface Config {
   hostname: string;
@@ -43,10 +44,10 @@ interface Config {
   trustedProxy: boolean;
   insecureNoAuth: boolean;
   embeddedOAuth: boolean;
-  oauth: OAuthConfig | null;
 }
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
+const SHUTDOWN_GRACE_MS = 50_000;
 
 function integer(value: string | undefined, fallback: number, label: string, minimum: number): number {
   if (value === undefined || value.length === 0) return fallback;
@@ -74,26 +75,18 @@ function csv(value: string | undefined): string[] {
   return (value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
 }
 
-function httpsUrl(value: string, label: string): URL {
-  const url = new URL(value);
-  if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
-    throw new Error(`${label} must be an HTTPS URL without credentials, query, or fragment.`);
+function rejectExternalOAuth(env: NodeJS.ProcessEnv): void {
+  if (
+    [
+      env.SKYLIGHT_MCP_OAUTH_AUTHORIZATION_SERVERS,
+      env.SKYLIGHT_MCP_OAUTH_JWKS_URL,
+      env.SKYLIGHT_MCP_OAUTH_SCOPES,
+    ].some((value) => (value?.trim() ?? "").length > 0)
+  ) {
+    throw new Error(
+      "External OAuth verification cannot bind an OAuth subject to a Skylight account safely. Use the built-in hosted OAuth flow for per-user accounts, or an explicit pre-shared HTTP token for a single account."
+    );
   }
-  return url;
-}
-
-function parseOAuth(env: NodeJS.ProcessEnv): OAuthConfig | null {
-  const authorizationServerValues = csv(env.SKYLIGHT_MCP_OAUTH_AUTHORIZATION_SERVERS);
-  const jwksValue = env.SKYLIGHT_MCP_OAUTH_JWKS_URL?.trim() ?? "";
-  if (authorizationServerValues.length === 0 && jwksValue.length === 0) return null;
-  if (authorizationServerValues.length === 0 || jwksValue.length === 0) {
-    throw new Error("OAuth requires both SKYLIGHT_MCP_OAUTH_AUTHORIZATION_SERVERS and SKYLIGHT_MCP_OAUTH_JWKS_URL.");
-  }
-  return {
-    authorizationServers: authorizationServerValues.map((value) => httpsUrl(value, "OAuth authorization server")),
-    jwksUrl: httpsUrl(jwksValue, "OAuth JWKS URL"),
-    scopes: csv(env.SKYLIGHT_MCP_OAUTH_SCOPES).length > 0 ? csv(env.SKYLIGHT_MCP_OAUTH_SCOPES) : ["mcp"],
-  };
 }
 
 function parseArguments(argv: string[], env: NodeJS.ProcessEnv): Config {
@@ -111,7 +104,7 @@ function parseArguments(argv: string[], env: NodeJS.ProcessEnv): Config {
       continue;
     }
     if (argument === "--help") {
-      process.stdout.write(`skylight-calendar-mcp-http [options]\n\nOptions:\n  --hostname <host>       Bind host (default 127.0.0.1)\n  --port <port>           Bind port (default 8787; 0 for explicit-token mode)\n  --path <path>           MCP path (default /mcp)\n  --public-url <url>      Canonical externally reachable MCP URL\n  --insecure-no-auth      Disable auth (loopback only)\n\nBrowser OAuth login is enabled automatically unless an explicit HTTP token or external OAuth server is configured.\n`);
+      process.stdout.write(`skylight-calendar-mcp-http [options]\n\nOptions:\n  --hostname <host>       Bind host (default 127.0.0.1)\n  --port <port>           Bind port (default 8787; 0 for explicit-token mode)\n  --path <path>           MCP path (default /mcp)\n  --public-url <url>      Canonical externally reachable MCP URL\n  --insecure-no-auth      Disable auth (loopback only)\n\nBrowser OAuth login is enabled automatically unless an explicit HTTP token is configured.\n`);
       process.exit(0);
     }
     if (!argument?.startsWith("--")) throw new Error(`Unknown argument ${JSON.stringify(argument)}.`);
@@ -137,22 +130,16 @@ function parseArguments(argv: string[], env: NodeJS.ProcessEnv): Config {
     throw new Error("Non-loopback HTTP MCP binding requires an https --public-url behind a TLS reverse proxy.");
   }
   if (insecureNoAuth && !loopback) throw new Error("--insecure-no-auth is allowed only on loopback.");
-  const oauth = parseOAuth(env);
+  rejectExternalOAuth(env);
   const embeddedOAuth = embeddedOAuthRequested ||
-    (!insecureNoAuth && oauth === null && (env.SKYLIGHT_MCP_HTTP_TOKEN?.trim() ?? "").length === 0);
-  if (embeddedOAuthRequested && oauth !== null) {
-    throw new Error("Embedded OAuth login and an external OAuth authorization server cannot be enabled together.");
-  }
+    (!insecureNoAuth && (env.SKYLIGHT_MCP_HTTP_TOKEN?.trim() ?? "").length === 0);
   if (embeddedOAuth && publicUrl === null && port === 0) {
     throw new Error("Automatic OAuth login requires a fixed port when no public URL is configured.");
   }
   if (embeddedOAuth && publicUrl !== null && publicUrl.protocol !== "https:" && !LOOPBACK_HOSTS.has(publicUrl.hostname)) {
     throw new Error("Embedded OAuth login requires an HTTPS public URL unless the URL is loopback.");
   }
-  if (oauth !== null && publicUrl?.protocol !== "https:") {
-    throw new Error("OAuth requires an HTTPS SKYLIGHT_MCP_HTTP_PUBLIC_URL.");
-  }
-  if ((oauth !== null || embeddedOAuth) && insecureNoAuth) {
+  if (embeddedOAuth && insecureNoAuth) {
     throw new Error("OAuth and --insecure-no-auth cannot be enabled together.");
   }
   return {
@@ -174,7 +161,6 @@ function parseArguments(argv: string[], env: NodeJS.ProcessEnv): Config {
     trustedProxy: boolean(env.SKYLIGHT_MCP_HTTP_TRUST_PROXY, "SKYLIGHT_MCP_HTTP_TRUST_PROXY"),
     insecureNoAuth,
     embeddedOAuth,
-    oauth,
   };
 }
 
@@ -189,6 +175,17 @@ function json(res: ServerResponse, status: number, body: unknown, headers: Recor
     ...headers,
   });
   res.end(serialized);
+}
+
+function svg(res: ServerResponse, body: string): void {
+  res.writeHead(200, {
+    "content-type": "image/svg+xml; charset=utf-8",
+    "content-length": String(Buffer.byteLength(body)),
+    "cache-control": "public, max-age=86400",
+    "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'",
+    "x-content-type-options": "nosniff",
+  });
+  res.end(body);
 }
 
 function requestHost(req: IncomingMessage): string {
@@ -215,59 +212,73 @@ function bearer(req: IncomingMessage): string | null {
   return match?.[1] ?? null;
 }
 
-function protectedResourcePaths(path: string): string[] {
-  return path === "/"
-    ? ["/.well-known/oauth-protected-resource"]
-    : [`/.well-known/oauth-protected-resource${path}`];
+interface HostedOAuthResources {
+  storage: HostedOAuthStorage<StoredOAuthCredential>;
+  close(): Promise<void>;
 }
 
-function protectedResourceDocument(publicUrl: URL, oauth: OAuthConfig): Record<string, unknown> {
+function requiredHostedSecret(env: NodeJS.ProcessEnv, name: string): string {
+  const value = env[name]?.trim() ?? "";
+  if (value.length === 0) {
+    throw new Error(`${name} is required with SKYLIGHT_OAUTH_DB_PATH.`);
+  }
+  return value;
+}
+
+async function createHostedOAuthResources(
+  env: NodeJS.ProcessEnv
+): Promise<HostedOAuthResources> {
+  const databasePath = env.SKYLIGHT_OAUTH_DB_PATH?.trim() ?? "";
+  if (databasePath.length === 0) {
+    if ((env.SKYLIGHT_OAUTH_MASTER_KEY?.trim() ?? "").length > 0) {
+      throw new Error(
+        "SKYLIGHT_OAUTH_DB_PATH is required with SKYLIGHT_OAUTH_MASTER_KEY."
+      );
+    }
+    return {
+      storage: createInMemoryHostedOAuthStorage<StoredOAuthCredential>({
+        development: true,
+      }),
+      async close() {},
+    };
+  }
+
+  const { SQLiteSkylightOAuthStore } = await import(
+    "./skylight/oauth-sqlite-store.js"
+  );
+  const keyMaterial = deriveOAuthKeyMaterial(
+    requiredHostedSecret(env, "SKYLIGHT_OAUTH_MASTER_KEY")
+  );
+  const storage = new SQLiteSkylightOAuthStore({
+    databasePath,
+    ...keyMaterial,
+  });
   return {
-    resource: publicUrl.toString(),
-    authorization_servers: oauth.authorizationServers.map((url) => url.toString()),
-    bearer_methods_supported: ["header"],
-    scopes_supported: oauth.scopes,
+    storage,
+    async close() {
+      storage.close();
+    },
   };
 }
 
 async function main(): Promise<void> {
   const config = parseArguments(process.argv.slice(2), process.env);
-  const token = config.insecureNoAuth || config.oauth !== null || config.embeddedOAuth
+  const token = config.insecureNoAuth || config.embeddedOAuth
     ? null
     : httpMcpTokenFromEnvironment();
   let resolvedPort = config.port;
   const canonicalUrl = (): URL =>
     config.publicUrl ?? new URL(`http://${config.hostname.includes(":") ? `[${config.hostname}]` : config.hostname}:${resolvedPort}${config.path}`);
-  const embeddedOAuth = config.embeddedOAuth
-    ? createSkylightOAuthApp({
-        publicUrl: config.publicUrl ?? canonicalUrl(),
-        onAuthorizationUrl(url) {
-          process.stderr.write(`Open Skylight login: ${url.toString()}\n`);
-        },
-      })
-    : null;
-  const oauthOptions: TinyHttpMcpServerOAuthOptions | undefined = embeddedOAuth?.mcpAuthorization ?? (config.oauth === null
-    ? undefined
-    : {
-      resource: config.publicUrl as URL,
-      authorizationServers: config.oauth.authorizationServers,
-      bearerMethodsSupported: ["header"],
-      scopesSupported: config.oauth.scopes,
-      requiredScopes: config.oauth.scopes,
-      verifier: createJwksTokenVerifier({
-        jwksUrl: config.oauth.jwksUrl,
-        requireAccessTokenType: true,
-      }),
-    });
   const configuredHosts = new Set([
     ...LOOPBACK_HOSTS,
     config.hostname.toLowerCase(),
     ...(config.publicUrl === null ? [] : [config.publicUrl.hostname.toLowerCase()]),
     ...config.allowedHosts,
   ]);
-  const mcp = await createHTTPMCPServer(root, {
+  const transportOptions = {
     name: "skylight-calendar-agent",
     version: packageVersion,
+    sessionIdGenerator: undefined,
     enableJsonResponse: true,
     allowedHosts: [...configuredHosts],
     allowedOrigins: [...config.allowedOrigins],
@@ -281,37 +292,99 @@ async function main(): Promise<void> {
     sseKeepAliveMs: config.sseKeepAliveMs,
     maxConcurrentToolCalls: config.maxConcurrentToolCalls,
     trustedProxy: config.trustedProxy,
-    ...(oauthOptions === undefined ? {} : { oauth: oauthOptions }),
+  } as const;
+
+  if (config.embeddedOAuth) {
+    const resources = await createHostedOAuthResources(process.env);
+    try {
+      const mcp = await createHTTPMCPServer(root, {
+        ...transportOptions,
+        oauth: hostedOAuth({
+          publicUrl: canonicalUrl().toString(),
+          storage: resources.storage,
+          provider: createSkylightOAuthProvider(),
+          advanced: { branding: { title: "Skylight Calendar" } },
+        }),
+      });
+      const handle = await mcp.listenHttp({
+        hostname: config.hostname,
+        port: config.port,
+        requestTimeoutMs: 30_000,
+        headersTimeoutMs: 10_000,
+        keepAliveTimeoutMs: 5_000,
+      });
+      resolvedPort = handle.port;
+      process.stdout.write(`${canonicalUrl().toString()}\n`);
+      process.stderr.write(
+        `Skylight OAuth login is available through ${new URL("/authorize", canonicalUrl()).toString()}.\n`
+      );
+
+      let closing = false;
+      const shutdown = async () => {
+        try {
+          await handle.close();
+        } finally {
+          await resources.close();
+        }
+      };
+      const onSignal = () => {
+        if (closing) {
+          handle.closeAllConnections();
+          process.exit(1);
+        }
+        closing = true;
+        const deadline = setTimeout(() => {
+          handle.closeAllConnections();
+          process.exit(1);
+        }, SHUTDOWN_GRACE_MS);
+        deadline.unref();
+        void shutdown().then(
+          () => {
+            clearTimeout(deadline);
+            process.exit(0);
+          },
+          () => {
+            clearTimeout(deadline);
+            process.exit(1);
+          }
+        );
+      };
+      process.on("SIGINT", onSignal);
+      process.on("SIGTERM", onSignal);
+      return;
+    } catch (error) {
+      await resources.close();
+      throw error;
+    }
+  }
+
+  const mcp = await createHTTPMCPServer(root, {
+    ...transportOptions,
+    services: createLocalSkylightServices(),
   });
   const authFailures = new Map<string, { count: number; resetAt: number }>();
 
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? "/", canonicalUrl());
-      const host = normalizedHostname(requestHost(req));
-      if (!configuredHosts.has(host)) return json(res, 421, { error: "misdirected_request" });
       if (url.pathname === "/healthz") {
         if (req.method !== "GET") return json(res, 405, { error: "method_not_allowed" }, { allow: "GET" });
         return json(res, 200, { ok: true, name: "skylight-calendar-agent", version: packageVersion });
       }
-      if (config.oauth !== null && protectedResourcePaths(config.path).includes(url.pathname)) {
-        if (req.method !== "GET") return json(res, 405, { error: "method_not_allowed" }, { allow: "GET" });
-        return json(res, 200, protectedResourceDocument(config.publicUrl as URL, config.oauth), {
-          "cache-control": "public, max-age=300",
-        });
-      }
-      if (embeddedOAuth !== null && protectedResourcePaths(config.path).includes(url.pathname)) {
-        if (req.method !== "GET") return json(res, 405, { error: "method_not_allowed" }, { allow: "GET" });
-        return json(res, 200, {
-          resource: canonicalUrl().toString(),
-          authorization_servers: embeddedOAuth.mcpAuthorization.authorizationServers,
-          bearer_methods_supported: embeddedOAuth.mcpAuthorization.bearerMethodsSupported,
-          scopes_supported: embeddedOAuth.mcpAuthorization.scopesSupported,
-        }, { "cache-control": "public, max-age=300" });
-      }
-      if (embeddedOAuth !== null && url.pathname !== config.path && embeddedOAuth.handles(url.pathname)) {
-        await embeddedOAuth.handle(req, res);
-        return;
+      const host = normalizedHostname(requestHost(req));
+      if (!configuredHosts.has(host)) return json(res, 421, { error: "misdirected_request" });
+      if (url.pathname === "/icon.svg") {
+        if (req.method !== "GET" && req.method !== "HEAD") {
+          return json(res, 405, { error: "method_not_allowed" }, { allow: "GET, HEAD" });
+        }
+        if (req.method === "HEAD") {
+          res.writeHead(200, {
+            "content-type": "image/svg+xml; charset=utf-8",
+            "cache-control": "public, max-age=86400",
+          });
+          return res.end();
+        }
+        return svg(res, skylightCalendarIconSvg);
       }
       if (url.pathname !== config.path) return json(res, 404, { error: "not_found" });
 
@@ -355,9 +428,6 @@ async function main(): Promise<void> {
   });
   resolvedPort = (server.address() as AddressInfo).port;
   process.stdout.write(`${canonicalUrl().toString()}\n`);
-  if (embeddedOAuth !== null) {
-    process.stderr.write(`Skylight login page: ${new URL("/", canonicalUrl()).toString()}\n`);
-  }
 
   let closing = false;
   const shutdown = async () => {
@@ -372,7 +442,21 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     closing = true;
-    void shutdown().then(() => process.exit(0), () => process.exit(1));
+    const deadline = setTimeout(() => {
+      server.closeAllConnections();
+      process.exit(1);
+    }, SHUTDOWN_GRACE_MS);
+    deadline.unref();
+    void shutdown().then(
+      () => {
+        clearTimeout(deadline);
+        process.exit(0);
+      },
+      () => {
+        clearTimeout(deadline);
+        process.exit(1);
+      }
+    );
   };
   process.on("SIGINT", onSignal);
   process.on("SIGTERM", onSignal);

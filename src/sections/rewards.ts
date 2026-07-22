@@ -1,6 +1,8 @@
-import { defineCommand, defineGroup, S } from "toolcraft";
-import { resolveFrameId } from "../skylight/frame.js";
-import { requestJson } from "../skylight/http.js";
+import { S } from "toolcraft";
+import {
+  defineSkylightCommand as defineCommand,
+  defineSkylightGroup as defineGroup,
+} from "../skylight/service.js";
 import {
   assertValidDateTime,
   assertValidDateTimeRange,
@@ -42,8 +44,8 @@ export const rewardsGroup = defineGroup({
         } else if (ctx.params.redeemedAtMax !== undefined) {
           assertValidDateTime(ctx.params.redeemedAtMax, "redeemedAtMax");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/rewards`,
@@ -62,8 +64,8 @@ export const rewardsGroup = defineGroup({
         rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}`,
@@ -79,8 +81,8 @@ export const rewardsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const reward = parseNonEmptyJsonObject(ctx.params.rewardJson, "rewardJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/rewards`,
@@ -98,8 +100,8 @@ export const rewardsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const reward = parseNonEmptyJsonObject(ctx.params.rewardJson, "rewardJson");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PATCH",
           path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}`,
@@ -115,8 +117,8 @@ export const rewardsGroup = defineGroup({
         rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}`,
@@ -131,8 +133,8 @@ export const rewardsGroup = defineGroup({
         rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}/redeem`,
@@ -147,8 +149,8 @@ export const rewardsGroup = defineGroup({
         rewardId: nonBlankParam({ description: "Reward id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/rewards/${pathSegment(ctx.params.rewardId, "rewardId")}/unredeem`,
@@ -161,8 +163,8 @@ export const rewardsGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/reward_points`,
@@ -187,8 +189,8 @@ export const rewardsGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const categoryIds = uniqueIdentifiers(ctx.params.categoryIds, "categoryIds");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/reward_points`,

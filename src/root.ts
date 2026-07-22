@@ -1,4 +1,4 @@
-import { defineGroup } from "toolcraft";
+import { defineSkylightGroup as defineGroup } from "./skylight/service.js";
 import { calendarGroup } from "./sections/calendar.js";
 import { tasksGroup } from "./sections/tasks.js";
 import { rewardsGroup } from "./sections/rewards.js";

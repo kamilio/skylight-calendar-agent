@@ -1,4 +1,8 @@
-import { defineCommand, defineGroup, S, UserError } from "toolcraft";
+import { S, UserError } from "toolcraft";
+import {
+  defineSkylightCommand as defineCommand,
+  defineSkylightGroup as defineGroup,
+} from "../skylight/service.js";
 import { getAuthorizationStatus, loginWithPassword } from "../skylight/auth.js";
 import { systemAuthorizationStore } from "../skylight/credential-store.js";
 import {

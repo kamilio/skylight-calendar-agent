@@ -1,7 +1,8 @@
-import { defineCommand, defineGroup, S, UserError } from "toolcraft";
-import { getSkylightTimezone } from "../skylight/config.js";
-import { resolveFrameId } from "../skylight/frame.js";
-import { requestJson } from "../skylight/http.js";
+import { S, UserError } from "toolcraft";
+import {
+  defineSkylightCommand as defineCommand,
+  defineSkylightGroup as defineGroup,
+} from "../skylight/service.js";
 import {
   assertAtLeastOneDefined,
   assertValidDateOrDateTime,
@@ -47,8 +48,8 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/event_notification_settings`,
@@ -78,8 +79,8 @@ export const calendarGroup = defineGroup({
         if (!ctx.params.early && ctx.params.earlyMinutesBefore !== undefined) {
           throw new UserError("earlyMinutesBefore cannot be set when early is false.");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/event_notification_settings`,
@@ -107,9 +108,9 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         assertValidDateRange(ctx.params.dateMin, ctx.params.dateMax, "dateMin", "dateMax");
-        const timezone = normalizeTimezone(ctx.params.timezone ?? getSkylightTimezone());
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const timezone = normalizeTimezone(ctx.params.timezone ?? ctx.skylight.timezone());
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/calendar_events`,
@@ -138,9 +139,9 @@ export const calendarGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const timezone = normalizeTimezone(ctx.params.timezone ?? getSkylightTimezone());
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const timezone = normalizeTimezone(ctx.params.timezone ?? ctx.skylight.timezone());
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/calendar_events/search`,
@@ -165,9 +166,9 @@ export const calendarGroup = defineGroup({
         ),
       }),
       handler: async (ctx) => {
-        const timezone = normalizeTimezone(ctx.params.timezone ?? getSkylightTimezone());
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const timezone = normalizeTimezone(ctx.params.timezone ?? ctx.skylight.timezone());
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/calendar_events/countdowns`,
@@ -186,8 +187,8 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/calendar_events/recent_invited_emails`,
@@ -237,7 +238,7 @@ export const calendarGroup = defineGroup({
         if ((ctx.params.lat === undefined) !== (ctx.params.lng === undefined)) {
           throw new UserError("lat and lng must be provided together.");
         }
-        const timezone = normalizeTimezone(ctx.params.timezone ?? getSkylightTimezone());
+        const timezone = normalizeTimezone(ctx.params.timezone ?? ctx.skylight.timezone());
         const eventNotificationSettingAttributes =
           ctx.params.notificationSettingJson === undefined
             ? undefined
@@ -261,8 +262,8 @@ export const calendarGroup = defineGroup({
             : normalizeIdentifier(ctx.params.kind, "kind");
         const recurrenceRule =
           ctx.params.rrule === undefined ? null : [normalizeRrule(ctx.params.rrule)];
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/calendar_events`,
@@ -406,8 +407,8 @@ export const calendarGroup = defineGroup({
                 ctx.params.notificationSettingJson,
                 "notificationSettingJson"
               );
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/calendar_events/${pathSegment(ctx.params.eventId, "eventId")}`,
@@ -448,8 +449,8 @@ export const calendarGroup = defineGroup({
           ctx.params.applyTo === undefined
             ? undefined
             : normalizeIdentifier(ctx.params.applyTo, "applyTo");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/calendar_events/${pathSegment(ctx.params.eventId, "eventId")}`,
@@ -465,8 +466,8 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/calendars`,
@@ -481,8 +482,8 @@ export const calendarGroup = defineGroup({
         accountId: nonBlankParam({ description: "Calendar account id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/calendars/${pathSegment(ctx.params.accountId, "accountId")}`,
@@ -519,8 +520,8 @@ export const calendarGroup = defineGroup({
         if (activeCalendars === undefined) {
           throw new UserError("Specify activeCalendars or set clearActiveCalendars=true.");
         }
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/calendars/${pathSegment(ctx.params.accountId, "accountId")}`,
@@ -541,8 +542,8 @@ export const calendarGroup = defineGroup({
           "https:",
           "webcal:",
         ]);
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/webcal_accounts`,
@@ -556,8 +557,8 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/webcal_accounts`,
@@ -588,9 +589,9 @@ export const calendarGroup = defineGroup({
           "failureRedirectUrl",
           ["http:", "https:"]
         );
-        const frameId = await resolveFrameId(ctx);
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
         const twoWaySync = ctx.params.twoWaySync ?? true;
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/calendars/authorization_request_url`,
@@ -610,8 +611,8 @@ export const calendarGroup = defineGroup({
       scope: ["cli", "mcp", "sdk"],
       params: S.Object({}),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/source_calendars`,
@@ -626,8 +627,8 @@ export const calendarGroup = defineGroup({
         calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "GET",
           path: `/api/frames/${frameId}/source_calendars/${pathSegment(ctx.params.calendarId, "calendarId")}`,
@@ -646,16 +647,16 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const attributes = parseNonEmptyJsonObject(ctx.params.attributesJson, "attributesJson");
-        const frameId = await resolveFrameId(ctx);
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
         if (ctx.params.calendarId) {
-          return requestJson({
+          return ctx.skylight.request({
             fetch: ctx.fetch,
             method: "PUT",
             path: `/api/frames/${frameId}/source_calendars/${pathSegment(ctx.params.calendarId, "calendarId")}`,
             body: attributes,
           });
         }
-        return requestJson({
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/source_calendars`,
@@ -671,8 +672,8 @@ export const calendarGroup = defineGroup({
         calendarId: nonBlankParam({ description: "Source calendar id", short: "i" }),
       }),
       handler: async (ctx) => {
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "DELETE",
           path: `/api/frames/${frameId}/source_calendars/${pathSegment(ctx.params.calendarId, "calendarId")}`,
@@ -688,8 +689,8 @@ export const calendarGroup = defineGroup({
       }),
       handler: async (ctx) => {
         const calendarId = normalizeIdentifier(ctx.params.calendarId, "calendarId");
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "POST",
           path: `/api/frames/${frameId}/source_calendars/set_default_for_new_events`,
@@ -713,8 +714,8 @@ export const calendarGroup = defineGroup({
           ctx.params.categorizationsJson,
           "categorizationsJson"
         );
-        const frameId = await resolveFrameId(ctx);
-        return requestJson({
+        const frameId = await ctx.skylight.resolveFrameId(ctx);
+        return ctx.skylight.request({
           fetch: ctx.fetch,
           method: "PUT",
           path: `/api/frames/${frameId}/source_calendars/${pathSegment(ctx.params.calendarId, "calendarId")}/source_calendar_categorizations`,

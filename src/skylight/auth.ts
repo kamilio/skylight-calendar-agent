@@ -18,7 +18,6 @@ import { assertBoundedString, assertWellFormedUnicode } from "./validation.js";
 const MAX_ERROR_BODY_LENGTH = 2_000;
 const MAX_CREDENTIAL_LENGTH = 16_384;
 const OAUTH_EXPIRY_SKEW_MS = 60_000;
-let runtimeAuthorizationStore: AuthorizationStore | null = null;
 interface LoginState {
   requests: Map<string, Promise<StoredOAuthCredential>>;
   credentials: Map<string, StoredOAuthCredential>;
@@ -41,13 +40,9 @@ const storedRefreshes = new WeakMap<
   Map<string, Promise<StoredOAuthCredential>>
 >();
 
-export function setRuntimeAuthorizationStore(store: AuthorizationStore | null): void {
-  runtimeAuthorizationStore = store;
-}
-
 function defaultAuthorizationStore(useStoredCredentials: boolean): AuthorizationStore | null {
   if (!useStoredCredentials) return null;
-  return runtimeAuthorizationStore ?? systemAuthorizationStore();
+  return systemAuthorizationStore();
 }
 
 async function refreshStoredOAuth(opts: {
@@ -56,6 +51,13 @@ async function refreshStoredOAuth(opts: {
   store: AuthorizationStore;
   credential: StoredOAuthCredential;
 }): Promise<StoredOAuthCredential> {
+  if (opts.store.refreshOAuthCredential !== undefined) {
+    return opts.store.refreshOAuthCredential({
+      fetch: opts.fetch,
+      env: opts.env,
+      credential: opts.credential,
+    });
+  }
   let byToken = storedRefreshes.get(opts.store);
   if (byToken === undefined) {
     byToken = new Map();
@@ -249,13 +251,20 @@ export async function loginWithPassword(opts: {
   env?: NodeJS.ProcessEnv;
   email: string;
   password: string;
+  signal?: AbortSignal;
 }): Promise<StoredOAuthCredential> {
   const env = opts.env ?? process.env;
   const email = loginEmail(opts.email);
   if (email.length === 0) throw new UserError("Email must not be blank.");
   if (opts.password.length === 0) throw new UserError("Password must not be blank.");
   assertBoundedString(opts.password, "Password");
-  return loginWithOAuth({ fetch: opts.fetch, env, email, password: opts.password });
+  return loginWithOAuth({
+    fetch: opts.fetch,
+    env,
+    email,
+    password: opts.password,
+    ...(opts.signal === undefined ? {} : { signal: opts.signal }),
+  });
 }
 
 export interface AuthorizationStatus {

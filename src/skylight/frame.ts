@@ -5,11 +5,12 @@ import {
   requestJson,
   sanitizeJsonResponseForOutput,
   SkylightRequestError,
+  type SkylightRequestOptions,
 } from "./http.js";
 import { errorMessage, terminalSafeText, truncateText } from "./text.js";
 import { assertJsonCompatible, normalizeIdentifier, pathSegment } from "./validation.js";
 
-type FramesListResponse = {
+export type FramesListResponse = {
   data: Array<{
     id: string;
     attributes?: {
@@ -19,19 +20,42 @@ type FramesListResponse = {
   }>;
 };
 
-const frameResolutions = new WeakMap<
-  typeof globalThis.fetch,
-  Map<string, Promise<string>>
->();
 const MAX_DISPLAYED_FRAMES = 10;
 
-function frameResolutionKey(config: ReturnType<typeof getSkylightFrameConfig>): string {
-  const env = process.env;
+type FrameRequestOptions = Omit<
+  SkylightRequestOptions,
+  "env" | "authorizationStore"
+>;
+
+export interface FrameResolver {
+  listCalendarFrames(
+    ctx: { fetch: typeof globalThis.fetch },
+    options?: { forDiscovery?: boolean }
+  ): Promise<FramesListResponse>;
+  resolveFrameId(ctx: {
+    fetch: typeof globalThis.fetch;
+    params?: unknown;
+  }): Promise<string>;
+}
+
+export interface CreateFrameResolverOptions {
+  env?: NodeJS.ProcessEnv;
+  requestJson?<TResponse>(opts: FrameRequestOptions): Promise<TResponse>;
+  cacheIdentity?: string;
+}
+
+function frameResolutionKey(
+  config: ReturnType<typeof getSkylightFrameConfig>,
+  env: NodeJS.ProcessEnv,
+  cacheIdentity: string | undefined
+): string {
   return createHash("sha256")
     .update(
       JSON.stringify([
+        cacheIdentity,
         config.apiBaseUrl,
         config.calendarShareId,
+        config.frameId,
         env.SKYLIGHT_AUTH_HEADER,
         env.SKYLIGHT_BASIC_TOKEN,
         env.SKYLIGHT_BEARER_TOKEN,
@@ -111,12 +135,14 @@ function validateFramesListResponse(value: unknown): FramesListResponse {
   return { ...(value as FramesListResponse), data: normalizedData };
 }
 
-export async function listCalendarFrames(ctx: {
-  fetch: typeof globalThis.fetch;
-}, options: { forDiscovery?: boolean } = {}): Promise<FramesListResponse> {
+async function listCalendarFramesWithRequest(
+  ctx: { fetch: typeof globalThis.fetch },
+  request: <TResponse>(opts: FrameRequestOptions) => Promise<TResponse>,
+  options: { forDiscovery?: boolean } = {}
+): Promise<FramesListResponse> {
   let frames: FramesListResponse;
   try {
-    frames = validateFramesListResponse(await requestJson<unknown>({
+    frames = validateFramesListResponse(await request<unknown>({
       fetch: ctx.fetch,
       method: "GET",
       path: "/api/frames/calendar",
@@ -124,7 +150,7 @@ export async function listCalendarFrames(ctx: {
     }));
   } catch (error) {
     if (!(error instanceof SkylightRequestError) || error.status !== 404) throw error;
-    frames = validateFramesListResponse(await requestJson<unknown>({
+    frames = validateFramesListResponse(await request<unknown>({
       fetch: ctx.fetch,
       method: "GET",
       path: "/api/frames",
@@ -136,10 +162,13 @@ export async function listCalendarFrames(ctx: {
 
 async function discoverFrameId(
   ctx: { fetch: typeof globalThis.fetch },
+  request: <TResponse>(opts: FrameRequestOptions) => Promise<TResponse>,
   calendarShareId: string | null,
   configuredFrameId: string | null
 ): Promise<string> {
-  const frames = await listCalendarFrames(ctx, { forDiscovery: true });
+  const frames = await listCalendarFramesWithRequest(ctx, request, {
+    forDiscovery: true,
+  });
 
   const ids = (frames.data ?? [])
     .map((frame) => {
@@ -193,28 +222,64 @@ async function discoverFrameId(
   );
 }
 
-export async function resolveFrameId(ctx: {
+export function createFrameResolver(
+  options: CreateFrameResolverOptions = {}
+): FrameResolver {
+  const frameResolutions = new WeakMap<
+    typeof globalThis.fetch,
+    Map<string, Promise<string>>
+  >();
+  const request =
+    options.requestJson ??
+    (<TResponse>(opts: FrameRequestOptions) => requestJson<TResponse>(opts));
+
+  return {
+    listCalendarFrames(ctx, listOptions = {}) {
+      return listCalendarFramesWithRequest(ctx, request, listOptions);
+    },
+    async resolveFrameId(ctx) {
+      validateCommandParams(ctx.params);
+      validateIdentifierParams(ctx.params);
+      const env = options.env ?? process.env;
+      const config = getSkylightFrameConfig(env);
+      const fromEnv = config.frameId?.trim();
+      const key = frameResolutionKey(config, env, options.cacheIdentity);
+      let resolutions = frameResolutions.get(ctx.fetch);
+      if (resolutions === undefined) {
+        resolutions = new Map();
+        frameResolutions.set(ctx.fetch, resolutions);
+      }
+      const existing = resolutions.get(key);
+      if (existing !== undefined) return existing;
+      const resolution = discoverFrameId(
+        ctx,
+        request,
+        config.calendarShareId,
+        fromEnv || null
+      );
+      resolutions.set(key, resolution);
+      try {
+        return await resolution;
+      } catch (error) {
+        if (resolutions.get(key) === resolution) resolutions.delete(key);
+        throw error;
+      }
+    },
+  };
+}
+
+const defaultFrameResolver = createFrameResolver();
+
+export function listCalendarFrames(
+  ctx: { fetch: typeof globalThis.fetch },
+  options: { forDiscovery?: boolean } = {}
+): Promise<FramesListResponse> {
+  return defaultFrameResolver.listCalendarFrames(ctx, options);
+}
+
+export function resolveFrameId(ctx: {
   fetch: typeof globalThis.fetch;
   params?: unknown;
 }): Promise<string> {
-  validateCommandParams(ctx.params);
-  validateIdentifierParams(ctx.params);
-  const config = getSkylightFrameConfig();
-  const fromEnv = config.frameId?.trim();
-  const key = frameResolutionKey(config);
-  let resolutions = frameResolutions.get(ctx.fetch);
-  if (resolutions === undefined) {
-    resolutions = new Map();
-    frameResolutions.set(ctx.fetch, resolutions);
-  }
-  const existing = resolutions.get(key);
-  if (existing !== undefined) return existing;
-  const resolution = discoverFrameId(ctx, config.calendarShareId, fromEnv || null);
-  resolutions.set(key, resolution);
-  try {
-    return await resolution;
-  } catch (error) {
-    if (resolutions.get(key) === resolution) resolutions.delete(key);
-    throw error;
-  }
+  return defaultFrameResolver.resolveFrameId(ctx);
 }
