@@ -60,12 +60,7 @@ export function dateParam(options: { description: string; short?: string }) {
 }
 
 export function nonBlankParam(options: { description: string; short?: string; secret?: boolean }) {
-  return S.String({
-    ...options,
-    minLength: 1,
-    maxLength: MAX_GENERAL_STRING_LENGTH,
-    pattern: "\\S",
-  });
+  return S.String(options);
 }
 
 export function boundedStringParam(options: { description: string; short?: string }) {

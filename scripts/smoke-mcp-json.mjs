@@ -18,7 +18,7 @@ const server = http.createServer((request, response) => {
       response.end('[{"category_id":"category-1","points":12}]');
       return;
     }
-    if (request.method === "DELETE" && request.url === "/api/frames/42/lists/7") {
+    if (request.method === "DELETE" && request.url === "/api/frames/42/lists/6874534") {
       response.statusCode = 204;
       response.end();
       return;
@@ -137,7 +137,7 @@ try {
     method: "tools/call",
     params: {
       name: "skylight__lists__delete",
-      arguments: { list_id: "7" },
+      arguments: { list_id: "6874534" },
     },
   });
   child.stdin.write("{invalid json\n");

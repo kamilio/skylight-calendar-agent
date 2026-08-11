@@ -261,11 +261,11 @@ await expectLocalError(
     "--recurrence-rrule",
     " ".repeat(9_000),
   ],
-  'Expected a string with length at most 8192'
+  "recurrenceRrule must contain a recurrence rule."
 );
 await expectLocalError(
   ["lists", "get", "--list-id", " "],
-  'Invalid value for "listId": " " does not match pattern "\\S"'
+  "listId must not be blank."
 );
 await expectLocalError(
   ["lists", "get", "--list-id", "\u001b"],

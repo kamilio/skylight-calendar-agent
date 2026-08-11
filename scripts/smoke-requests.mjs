@@ -13,10 +13,23 @@ const server = http.createServer((request, response) => {
       response.end('{"data":[{"id":"42","attributes":{"apps":["calendar"]}}]}');
       return;
     }
+    const parsedBody = body ? JSON.parse(body) : null;
+    if (
+      request.method === "POST" &&
+      ((request.url === "/api/frames/42/lists" &&
+        typeof parsedBody?.label === "string" &&
+        parsedBody.label.trim() === "") ||
+        (typeof parsedBody?.title === "string" && parsedBody.title.trim() === ""))
+    ) {
+      response.statusCode = 422;
+      response.setHeader("content-type", "application/json");
+      response.end('{"error":"label must not be blank"}');
+      return;
+    }
     requests.push({
       method: request.method,
       url: request.url,
-      body: body ? JSON.parse(body) : null,
+      body: parsedBody,
     });
     if (request.method === "DELETE") {
       response.statusCode = 204;

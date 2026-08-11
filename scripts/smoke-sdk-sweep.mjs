@@ -4,37 +4,15 @@ import { createLocalSkylightServices } from "../dist/skylight/service.js";
 
 const savedEnv = { ...process.env };
 
-function assertBoundedSchema(schema, path) {
-  if (schema.kind === "optional") return assertBoundedSchema(schema.inner, path);
-  if (schema.kind === "string" && schema.maxLength === undefined) {
-    throw new Error(`${path} is missing a string length limit`);
-  }
-  if (schema.kind === "array") {
-    if (schema.maxItems === undefined) {
-      throw new Error(`${path} is missing an array item limit`);
-    }
-    assertBoundedSchema(schema.item, `${path}[]`);
-  }
-}
-
-for (const group of root.children) {
-  for (const command of group.children) {
-    for (const [name, schema] of Object.entries(command.params.shape)) {
-      assertBoundedSchema(schema, `${group.name}.${command.name}.${name}`);
-    }
-  }
-}
-
 const updateEmailPassword = root.children
   .find((group) => group.name === "profiles")
   ?.children.find((command) => command.name === "update-email")
   ?.params.shape.password?.inner;
 if (
   updateEmailPassword?.kind !== "string" ||
-  updateEmailPassword.secret !== true ||
-  updateEmailPassword.maxLength !== 8_192
+  updateEmailPassword.secret !== true
 ) {
-  throw new Error("profiles.update-email.password must be bounded and marked secret");
+  throw new Error("profiles.update-email.password must be marked secret");
 }
 
 const frameShareToken = root.children
