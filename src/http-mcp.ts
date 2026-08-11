@@ -8,7 +8,7 @@ import {
   type HostedOAuthStorage,
 } from "toolcraft/http/hosted-oauth";
 import { loadDotEnv } from "./env.js";
-import { root } from "./root.js";
+import { mcpRoot } from "./mcp-root.js";
 import {
   httpMcpTokenFromEnvironment,
   tokenMatches,
@@ -297,7 +297,7 @@ async function main(): Promise<void> {
   if (config.embeddedOAuth) {
     const resources = await createHostedOAuthResources(process.env);
     try {
-      const mcp = await createHTTPMCPServer(root, {
+      const mcp = await createHTTPMCPServer(mcpRoot, {
         ...transportOptions,
         oauth: hostedOAuth({
           publicUrl: canonicalUrl().toString(),
@@ -358,7 +358,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const mcp = await createHTTPMCPServer(root, {
+  const mcp = await createHTTPMCPServer(mcpRoot, {
     ...transportOptions,
     services: createLocalSkylightServices(),
   });

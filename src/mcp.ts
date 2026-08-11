@@ -2,7 +2,7 @@
 import readline from "node:readline";
 import { createMCPServer } from "toolcraft/mcp";
 import type { JSONRPCMessage, SDKTransport } from "tiny-stdio-mcp-server";
-import { root } from "./root.js";
+import { mcpRoot } from "./mcp-root.js";
 import { loadDotEnv } from "./env.js";
 import { createLocalSkylightServices } from "./skylight/service.js";
 import { terminalSafeText } from "./skylight/text.js";
@@ -10,7 +10,7 @@ import { packageVersion } from "./version.js";
 
 loadDotEnv();
 
-const server = createMCPServer(root, {
+const server = createMCPServer(mcpRoot, {
   name: "skylight-calendar-agent",
   version: packageVersion,
   services: createLocalSkylightServices(),

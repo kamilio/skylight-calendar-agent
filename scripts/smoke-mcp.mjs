@@ -201,51 +201,35 @@ child.stdout.on("data", (chunk) => {
       if (names.includes(name)) throw new Error(`MCP exposes sensitive tool: ${name}`);
     }
 
-    const bulkCreate = tools.find((tool) => tool.name === "skylight__lists__items_create");
-    if (bulkCreate?.inputSchema?.properties?.labels?.minItems !== 1) {
-      throw new Error("Bulk list item creation must require at least one item");
-    }
-
-    for (const [toolName, parameterNames] of Object.entries({
-      skylight__lists__items_move_section: ["item_ids"],
-      skylight__lists__items_delete: ["item_ids"],
-      skylight__photos__delete_many: ["message_ids"],
-      skylight__photos__copy_to_frames: ["message_ids", "new_frame_ids"],
-      skylight__photos__album_add: ["album_ids", "message_ids"],
-      skylight__photos__album_remove: ["message_ids"],
-      skylight__rewards__points_add: ["category_ids"],
-    })) {
-      const tool = tools.find((candidate) => candidate.name === toolName);
-      for (const parameterName of parameterNames) {
-        if (tool?.inputSchema?.properties?.[parameterName]?.minItems !== 1) {
-          throw new Error(`${toolName}.${parameterName} must require at least one item`);
+    const forbiddenSchemaKeywords = new Set([
+      "format",
+      "maxItems",
+      "maximum",
+      "maxLength",
+      "minItems",
+      "minimum",
+      "minLength",
+      "pattern",
+    ]);
+    function assertTypeOnlySchema(value, path) {
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => assertTypeOnlySchema(item, `${path}[${index}]`));
+        return;
+      }
+      if (value === null || typeof value !== "object") return;
+      for (const [key, child] of Object.entries(value)) {
+        if (forbiddenSchemaKeywords.has(key)) {
+          throw new Error(`${path} exposes custom MCP validation keyword ${key}`);
         }
+        assertTypeOnlySchema(child, `${path}.${key}`);
       }
     }
+    for (const tool of tools) assertTypeOnlySchema(tool.inputSchema, tool.name);
 
-    for (const toolName of [
-      "skylight__photos__list",
-      "skylight__photos__comments",
-      "skylight__photos__album_messages",
-    ]) {
-      const page = tools.find((tool) => tool.name === toolName)?.inputSchema?.properties?.page;
-      if (
-        page?.type !== "integer" ||
-        page.minimum !== 1 ||
-        page.maximum !== Number.MAX_SAFE_INTEGER
-      ) {
-        throw new Error(`${toolName}.page must be a positive integer`);
-      }
-    }
-
-    const points = tools.find((tool) => tool.name === "skylight__rewards__points_add")
-      ?.inputSchema?.properties?.points;
-    if (
-      points?.type !== "integer" ||
-      points.minimum !== Number.MIN_SAFE_INTEGER ||
-      points.maximum !== Number.MAX_SAFE_INTEGER
-    ) {
-      throw new Error("Reward points must use the JavaScript safe integer range");
+    const page = tools.find((tool) => tool.name === "skylight__photos__list")
+      ?.inputSchema?.properties?.page;
+    if (page?.type !== "integer") {
+      throw new Error("Photo page must retain its declared integer type");
     }
 
     const chores = tools.find((tool) => tool.name === "skylight__tasks__chores");
