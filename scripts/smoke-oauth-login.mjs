@@ -14,6 +14,8 @@ import { createSkylightOAuthProvider } from "../dist/skylight/oauth-provider.js"
 import { SQLiteSkylightOAuthStore } from "../dist/skylight/oauth-sqlite-store.js";
 
 const encodedMasterKey = randomBytes(32).toString("base64url");
+const savedTimezone = process.env.SKYLIGHT_TIMEZONE;
+process.env.SKYLIGHT_TIMEZONE = "America/Chicago";
 const firstKeyMaterial = deriveOAuthKeyMaterial(encodedMasterKey);
 const restartedKeyMaterial = deriveOAuthKeyMaterial(encodedMasterKey);
 assert.equal(firstKeyMaterial.signingPrivateKey.asymmetricKeyType, "ec");
@@ -278,6 +280,8 @@ try {
   await handle.close();
   storage.close();
   await rm(storageDirectory, { recursive: true, force: true });
+  if (savedTimezone === undefined) delete process.env.SKYLIGHT_TIMEZONE;
+  else process.env.SKYLIGHT_TIMEZONE = savedTimezone;
 }
 
 console.log("hosted-oauth-login-isolation-and-callback-ok");
