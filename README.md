@@ -220,6 +220,8 @@ The SDK reads the same `SKYLIGHT_*` variables from `process.env` and accepts nat
 
 Request failures preserve their structured `SkylightRequestError` type, which is exported with `status`, `method`, and `path` fields for SDK error handling. SDK error messages are stripped of terminal control characters.
 
+`lists.itemsCreate` stops at the first failed item. Its error message reports how many items were created and identifies the failed item; HTTP failures retain the original `SkylightRequestError` and its fields. Earlier successful items are not rolled back, and neither they nor the failed item are automatically retried. Check the reported progress before retrying so that already-created items are not duplicated.
+
 ### MCP safety
 
 Commands that reveal or mint credentials, OAuth authorization URLs, device activation codes, and signed upload URLs; trigger account emails, exports, migrations, hardware reset/deletion, or hidden-frame state; accept account passwords or share tokens; delete the user account; or transfer frame ownership are intentionally limited to the CLI and SDK. They are not advertised as MCP tools.

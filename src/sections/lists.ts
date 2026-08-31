@@ -1,5 +1,5 @@
 import { S, UserError } from "toolcraft";
-import { sanitizeJsonResponseForOutput } from "../skylight/http.js";
+import { sanitizeJsonResponseForOutput, SkylightRequestError } from "../skylight/http.js";
 import {
   defineSkylightCommand as defineCommand,
   defineSkylightGroup as defineGroup,
@@ -243,9 +243,12 @@ export const listsGroup = defineGroup({
             );
           } catch (error) {
             const detail = errorMessage(error);
-            throw new UserError(
-              `Created ${index} of ${ctx.params.labels.length} items. Failed on item ${index + 1} (${JSON.stringify(displayLabel(label))}): ${detail}`
-            );
+            const message = `Created ${index} of ${ctx.params.labels.length} items. Failed on item ${index + 1} (${JSON.stringify(displayLabel(label))}): ${detail}`;
+            if (error instanceof SkylightRequestError) {
+              error.message = message;
+              throw error;
+            }
+            throw new UserError(message);
           }
         }
         return sanitizeJsonResponseForOutput({ items });
